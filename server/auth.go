@@ -24,7 +24,25 @@ func _readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, 
 	defer body.Close()
 	nbody := io.LimitReader(body, 30*1024*1024)
 
-	b, err := io.ReadAll(nbody)
+	var b []byte
+	var err error
+
+	done := make(chan bool)
+	go func() {
+		b, err = io.ReadAll(nbody)
+		done <- true
+	}()
+
+	select {
+	case <-ctx.Done():
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		} else {
+			err = errors.New("closed context before reading response")
+		}
+	case <-done:
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
