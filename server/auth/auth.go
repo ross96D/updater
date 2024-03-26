@@ -1,4 +1,4 @@
-package server
+package auth
 
 import (
 	"bytes"
@@ -9,18 +9,21 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"time"
 
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/ross96D/updater/share"
 )
 
 const UserAuthHeader = "Authorization"
 const GithubAuthHeader = "X-Hub-Signature-256"
 
-var invalidGithubToken = errors.New("invalid github authorization header")
-var invalidUserToken = errors.New("invalid user authorization header")
-var noAuthHeader = errors.New("authorization header is missing")
+var errInvalidGithubToken = errors.New("invalid github authorization header")
+var errInvalidUserToken = errors.New("invalid user authorization header")
+var errNoAuthHeader = errors.New("authorization header is missing")
 
-func _readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, error) {
+func readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, error) {
 	defer body.Close()
 	nbody := io.LimitReader(body, 30*1024*1024)
 
@@ -50,14 +53,18 @@ func _readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, 
 	return rc, b, nil
 }
 
-func autorizeGithub(next http.Handler) http.Handler {
+type userTypeKey string
+
+var UserTypeKey userTypeKey = "origin"
+
+func AuthMiddelware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		rawToken := r.Header.Get(GithubAuthHeader)
 
 		if rawToken != "" {
 			var b []byte
-			r.Body, b, err = _readBody(r.Context(), r.Body)
+			r.Body, b, err = readBody(r.Context(), r.Body)
 			if err != nil {
 				http.Error(w, "internal server error\n"+err.Error(), 500)
 				return
@@ -65,7 +72,7 @@ func autorizeGithub(next http.Handler) http.Handler {
 
 			if err = __github_auth__([]byte(rawToken), b); err == nil {
 				// add something to identify which github `workflow?` called
-				ctx := context.WithValue(r.Context(), "origin", "github")
+				ctx := context.WithValue(r.Context(), UserTypeKey, "github")
 				r = r.WithContext(ctx)
 				next.ServeHTTP(w, r)
 				return
@@ -75,7 +82,7 @@ func autorizeGithub(next http.Handler) http.Handler {
 		rawToken = r.Header.Get(UserAuthHeader)
 		if err = __user_auth__([]byte(rawToken)); err == nil {
 			// add something to identify which user called
-			ctx := context.WithValue(r.Context(), "origin", "user")
+			ctx := context.WithValue(r.Context(), UserTypeKey, "user")
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 			return
@@ -93,7 +100,7 @@ func parseGithubSignature(token []byte) (hmac []byte, signature []byte, err erro
 		}
 	}
 	if i == len(token) {
-		err = invalidGithubToken
+		err = errInvalidGithubToken
 		return
 	}
 	hmac, signature = token[:i], token[i+1:]
@@ -123,7 +130,7 @@ func checkGithubSignature(alg string, excpected []byte, payload []byte, key []by
 
 func __github_auth__(token []byte, body []byte) error {
 	if len(token) == 0 {
-		return noAuthHeader
+		return errNoAuthHeader
 	}
 	hmac, signature, err := parseGithubSignature(token)
 	if err != nil {
@@ -140,26 +147,47 @@ func parseUserToken(rawToken []byte) (token []byte, err error) {
 		}
 	}
 	if i == len(rawToken) {
-		err = invalidUserToken
+		err = errInvalidUserToken
 		return
 	}
 	token = rawToken[i+1:]
 	return
 }
 
-func checkUserToken(token []byte) error {
+func checkUserToken(token []byte, key []byte) error {
+	parsedToken, err := jwt.Parse(token, jwt.WithKey(jwa.HS256, key))
+	if err != nil {
+		return err
+	}
+	_ = parsedToken.Subject()
 	return nil
+}
+
+func newUserToken(sub string, key []byte, expiry time.Duration) ([]byte, error) {
+	token, err := jwt.NewBuilder().
+		Expiration(time.Now().Add(expiry)).
+		Subject(sub).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	signed, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, key))
+	return signed, err
+}
+
+func NewUserToken(user string) ([]byte, error) {
+	return newUserToken(user, share.Config().SecretKey, share.Config().JwtUserExpiry)
 }
 
 func __user_auth__(rawToken []byte) error {
 	if len(rawToken) == 0 {
-		return noAuthHeader
+		return errNoAuthHeader
 	}
 	token, err := parseUserToken(rawToken)
 	if err != nil {
 		return err
 	}
-	return checkUserToken(token)
+	return checkUserToken(token, share.Config().SecretKey)
 }
 
 func authFailed(w http.ResponseWriter, err error) {

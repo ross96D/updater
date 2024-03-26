@@ -1,3 +1,5 @@
+//go:build windows
+
 package taskservice
 
 import "github.com/ross96D/taskmaster"

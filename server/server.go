@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/ross96D/updater/server/auth"
 	"github.com/ross96D/updater/share"
 )
 
@@ -24,7 +25,7 @@ func (s *Server) Start() error {
 
 func (s *Server) setHandlers() {
 	s.router.Group(func(r chi.Router) {
-		r.Use(autorizeGithub)
+		r.Use(auth.AuthMiddelware)
 		r.Get("/update", update)
 	})
 }
