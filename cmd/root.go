@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	taskservice "github.com/ross96D/updater/share/task_service"
+	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/spf13/cobra"
 )
 

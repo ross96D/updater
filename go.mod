@@ -3,6 +3,7 @@ module github.com/ross96D/updater
 go 1.22.0
 
 require (
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/ross96D/taskmaster v0.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
