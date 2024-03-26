@@ -1,9 +1,16 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"io"
 	"net/http"
+
+	"github.com/ross96D/updater/share"
 )
 
 const UserAuthHeader = "Authorization"
@@ -11,26 +18,52 @@ const GithubAuthHeader = "X-Hub-Signature-256"
 
 var invalidGithubToken = errors.New("invalid github authorization header")
 var invalidUserToken = errors.New("invalid user authorization header")
+var noAuthHeader = errors.New("authorization header is missing")
+
+func _readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, error) {
+	defer body.Close()
+	nbody := io.LimitReader(body, 30*1024*1024)
+
+	b, err := io.ReadAll(nbody)
+	if err != nil {
+		return nil, nil, err
+	}
+	rc := io.NopCloser(bytes.NewBuffer(b))
+	return rc, b, nil
+}
 
 func autorizeGithub(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rawToken := []byte(r.Header.Get(GithubAuthHeader))
-		if __github_auth__(rawToken) {
-			ctx := context.WithValue(r.Context(), "origin", "github")
-			r = r.WithContext(ctx)
-			next.ServeHTTP(w, r)
-			return
+		var err error
+		rawToken := r.Header.Get(GithubAuthHeader)
+
+		if rawToken != "" {
+			var b []byte
+			r.Body, b, err = _readBody(r.Context(), r.Body)
+			if err != nil {
+				http.Error(w, "internal server error\n"+err.Error(), 500)
+				return
+			}
+
+			if err = __github_auth__([]byte(rawToken), b); err == nil {
+				// add something to identify which github `workflow?` called
+				ctx := context.WithValue(r.Context(), "origin", "github")
+				r = r.WithContext(ctx)
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 
-		rawToken = []byte(r.Header.Get(UserAuthHeader))
-		if __user_auth__(rawToken) {
+		rawToken = r.Header.Get(UserAuthHeader)
+		if err = __user_auth__([]byte(rawToken)); err == nil {
+			// add something to identify which user called
 			ctx := context.WithValue(r.Context(), "origin", "user")
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		authFailed(w, "")
+		authFailed(w, err)
 	})
 }
 
@@ -49,16 +82,36 @@ func parseGithubSignature(token []byte) (hmac []byte, signature []byte, err erro
 	return
 }
 
-func checkGithubSignature(hmac []byte, signature []byte) bool {
-	return true
+func checkGithubSignature(alg string, excpected []byte, payload []byte, key []byte) (err error) {
+	// TODO maybe make a switch to handle differents hmac
+	_ = alg
+
+	if len(payload) == 0 {
+		return errors.New("invalid: empty body")
+	}
+
+	h := hmac.New(sha256.New, key)
+	h.Write(payload)
+	hashed := h.Sum(nil)
+
+	dst := make([]byte, 2*len(hashed))
+	hex.Encode(dst, hashed)
+
+	if !hmac.Equal(dst, excpected) {
+		err = errors.New("signatures didn't match")
+	}
+	return
 }
 
-func __github_auth__(token []byte) bool {
+func __github_auth__(token []byte, body []byte) error {
 	if len(token) == 0 {
-		return false
+		return noAuthHeader
 	}
-	_, _, _ = parseGithubSignature(token)
-	return true
+	hmac, signature, err := parseGithubSignature(token)
+	if err != nil {
+		return err
+	}
+	return checkGithubSignature(string(hmac), signature, body, []byte(share.Config().GithubSignature256))
 }
 
 func parseUserToken(rawToken []byte) (token []byte, err error) {
@@ -76,18 +129,21 @@ func parseUserToken(rawToken []byte) (token []byte, err error) {
 	return
 }
 
-func checkUserToken(token []byte) bool {
-	return true
+func checkUserToken(token []byte) error {
+	return nil
 }
 
-func __user_auth__(rawToken []byte) bool {
+func __user_auth__(rawToken []byte) error {
 	if len(rawToken) == 0 {
-		return false
+		return noAuthHeader
 	}
-	_, _ = parseUserToken(rawToken)
-	return true
+	token, err := parseUserToken(rawToken)
+	if err != nil {
+		return err
+	}
+	return checkUserToken(token)
 }
 
-func authFailed(w http.ResponseWriter, realm string) {
-	w.WriteHeader(http.StatusUnauthorized)
+func authFailed(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusUnauthorized)
 }

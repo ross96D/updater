@@ -44,3 +44,22 @@ func TestParseUserToken(t *testing.T) {
 		assert.Equal(t, string(test.Digest), string(digest))
 	}
 }
+
+func TestCheckGithubSignature(t *testing.T) {
+	type Test struct {
+		HashedSecret []byte
+		Body         []byte
+		Secret       string
+	}
+	testInputs := []Test{
+		{
+			HashedSecret: []byte("757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"),
+			Body:         []byte("Hello, World!"),
+			Secret:       "It's a Secret to Everybody",
+		},
+	}
+	for _, test := range testInputs {
+		err := checkGithubSignature("sha256", test.HashedSecret, test.Body, []byte(test.Secret))
+		assert.Equal(t, nil, err)
+	}
+}

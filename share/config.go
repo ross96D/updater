@@ -1,7 +1,8 @@
 package share
 
 type config struct {
-	Port int
+	Port               int
+	GithubSignature256 string
 }
 
 var conf config
