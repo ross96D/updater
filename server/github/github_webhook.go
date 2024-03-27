@@ -54,13 +54,14 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 	return nil
 }
 
-func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset) {
+func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset) error {
 	client := github.NewClient(nil).WithAuthToken(app.GithubAuthToken)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
 	if err != nil {
 		// TODO how to handle
 		panic(err)
 	}
+	defer rc.Close()
 
 	path := filepath.Join(*share.Config().BasePath, *asset.Name)
 	if err = share.CreateFile(rc, lenght, path); err != nil {
@@ -68,12 +69,19 @@ func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		panic(err)
 	}
 
+	// TODO Do the checksum to verify download is correct
+
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		// TODO how to handle
 		panic(err)
 	}
 
-	if err = os.Rename(app.AppPath, path); err != nil {
+	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
+		// TODO how to handle
+		panic(err)
+	}
+
+	if err = os.Rename(path, app.AppPath); err != nil {
 		// TODO how to handle
 		panic(err)
 	}
@@ -82,7 +90,8 @@ func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		// TODO how to handle
 		panic(err)
 	}
-	rc.Close()
+
+	return nil
 }
 
 // func updateTaskSched(_ context.Context, rc io.ReadCloser, taskSchedPath string, appPath string) error {
