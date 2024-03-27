@@ -5,6 +5,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/ross96D/updater/cmd"
+	"github.com/spf13/cobra"
 )
 
 func main() {
@@ -18,5 +19,6 @@ func main() {
 	}
 	defer pprof.StopCPUProfile()
 
+	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()
 }
