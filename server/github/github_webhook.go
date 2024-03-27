@@ -1,6 +1,7 @@
 package github
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -47,14 +48,14 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 	release := event.Release
 	for _, asset := range release.Assets {
 		if app.AssetName == *asset.Name {
-			handleAssetMatch(app, asset)
+			return handleAssetMatch(app, asset, release)
 		}
 	}
 
 	return nil
 }
 
-func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset) error {
+func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
 	client := github.NewClient(nil).WithAuthToken(app.GithubAuthToken)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
 	if err != nil {
@@ -69,7 +70,25 @@ func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		panic(err)
 	}
 
-	// TODO Do the checksum to verify download is correct
+	checksum, err := share.GetChecksum(app, release)
+	if err != nil {
+		// TODO how to handle
+		panic(err)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		// TODO how to handle
+		panic(err)
+	}
+	verify, err := share.VerifyWithChecksum(checksum, f, sha256.New()) // TODO make the hash algorithm be configurable
+	if err != nil {
+		// TODO how to handle
+		panic(err)
+	}
+	if !verify {
+		// TODO how to handle
+		panic("file is a piece of shit")
+	}
 
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		// TODO how to handle

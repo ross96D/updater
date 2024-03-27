@@ -34,7 +34,7 @@ func Config() configuration.Configuration {
 	return *config
 }
 
-func GetChecksum(app configuration.Application, release *github.RepositoryRelease) (result []byte, err error) {
+func GetChecksum(app *configuration.Application, release *github.RepositoryRelease) (result []byte, err error) {
 	switch chsm := app.Checksum.(type) {
 	case configuration.DirectChecksum:
 		return directChecksum(chsm, app, release)
@@ -47,7 +47,7 @@ func GetChecksum(app configuration.Application, release *github.RepositoryReleas
 	}
 }
 
-func getAsset(app configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
+func getAsset(app *configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
 	client := github.NewClient(nil).WithAuthToken(app.GithubAuthToken)
 
 	var checksumAsset *github.ReleaseAsset
@@ -68,14 +68,9 @@ func getAsset(app configuration.Application, release *github.RepositoryRelease, 
 
 func directChecksum(
 	chsm configuration.DirectChecksum,
-	app configuration.Application,
+	app *configuration.Application,
 	release *github.RepositoryRelease,
 ) (result []byte, err error) {
-
-	if release == nil {
-		err = errors.New("undefined release")
-		return
-	}
 
 	rc, err := getAsset(app, release, chsm.AssetName)
 	if err != nil {
@@ -92,14 +87,9 @@ func directChecksum(
 
 func aggregateChecksum(
 	chsm configuration.AggregateChecksum,
-	app configuration.Application,
+	app *configuration.Application,
 	release *github.RepositoryRelease,
 ) (result []byte, err error) {
-
-	if release == nil {
-		err = errors.New("undefined release")
-		return
-	}
 
 	rc, err := getAsset(app, release, chsm.AssetName)
 	if err != nil {
