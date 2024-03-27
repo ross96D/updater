@@ -1,2 +1,5 @@
 cpu_profiler
 main.exe
+
+out/
+config.pkl
