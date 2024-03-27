@@ -1,16 +1,22 @@
 package share
 
-import "time"
+import (
+	"context"
 
-type config struct {
-	Port               int
-	GithubSignature256 string
-	SecretKey          []byte
-	JwtUserExpiry      time.Duration
+	"github.com/ross96D/updater/share/configuration"
+)
+
+var config *configuration.Configuration
+var path string = "config.pkl"
+
+func Init() {
+	var err error
+	config, err = configuration.LoadFromPath(context.Background(), path)
+	if err != nil {
+		panic(err)
+	}
 }
 
-var conf config
-
-func Config() config {
-	return conf
+func Config() configuration.Configuration {
+	return *config
 }

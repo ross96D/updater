@@ -1,0 +1,24 @@
+@go.Package { name = "github.com/ross96D/updater/share/configuration" }
+module updater.share.Configuration
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.6.0#/go.pkl"
+
+class AcceptedEvents {
+    owner: String
+    repo: String
+    downloadable_assests: List<String>
+    url: String
+}
+
+/// The port to listen on.
+port: UInt16
+
+gitub_signature256: String
+
+secret_key: String
+
+jwtUserExpiry: Duration
+
+github_auth_token: String
+
+events: List<AcceptedEvents>

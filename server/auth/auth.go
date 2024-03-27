@@ -136,7 +136,7 @@ func __github_auth__(token []byte, body []byte) error {
 	if err != nil {
 		return err
 	}
-	return checkGithubSignature(string(hmac), signature, body, []byte(share.Config().GithubSignature256))
+	return checkGithubSignature(string(hmac), signature, body, []byte(share.Config().GitubSignature256))
 }
 
 func parseUserToken(rawToken []byte) (token []byte, err error) {
@@ -176,7 +176,7 @@ func newUserToken(sub string, key []byte, expiry time.Duration) ([]byte, error) 
 }
 
 func NewUserToken(user string) ([]byte, error) {
-	return newUserToken(user, share.Config().SecretKey, share.Config().JwtUserExpiry)
+	return newUserToken(user, []byte(share.Config().SecretKey), share.Config().JwtUserExpiry.GoDuration())
 }
 
 func __user_auth__(rawToken []byte) error {
@@ -187,7 +187,7 @@ func __user_auth__(rawToken []byte) error {
 	if err != nil {
 		return err
 	}
-	return checkUserToken(token, share.Config().SecretKey)
+	return checkUserToken(token, []byte(share.Config().SecretKey))
 }
 
 func authFailed(w http.ResponseWriter, err error) {
