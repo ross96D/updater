@@ -29,3 +29,13 @@ func (ts *TaskService) Stop(path string) {
 func (ts *TaskService) Run(path string) {
 	panic("taskservice is a only windows service")
 }
+
+func Stop(taskPath string) error {
+	// no-op
+	return nil
+}
+
+func Start(taskPath string) error {
+	// no-op
+	return nil
+}
