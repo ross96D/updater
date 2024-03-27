@@ -14,6 +14,10 @@ func Init(path string) {
 	if err != nil {
 		panic(err)
 	}
+
+	if config.BasePath == nil {
+		panic("base_path need to be fulfill")
+	}
 }
 
 func Config() configuration.Configuration {
