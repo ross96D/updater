@@ -1,0 +1,8 @@
+version: 3
+
+tasks:
+  build: go build -o ./out/bin/updater main.go
+
+  run:
+    - task: build
+    - ./out/bin/updater
