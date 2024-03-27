@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/server/auth"
+	github_handler "github.com/ross96D/updater/server/github"
 	"github.com/ross96D/updater/share"
 )
 
@@ -38,7 +39,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	eventType := r.Header.Get(github.EventTypeHeader)
-	handleGithubWebhook(payload, eventType)
+	github_handler.HandleGithubWebhook(payload, eventType)
 	// call github api to check if we should update
 
 	// if there is an update available
