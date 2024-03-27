@@ -18,5 +18,5 @@ type Application struct {
 
 	AppPath string `pkl:"app_path"`
 
-	AssetVerify *string `pkl:"asset_verify"`
+	Checksum any `pkl:"checksum"`
 }

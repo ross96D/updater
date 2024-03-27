@@ -8,6 +8,20 @@ class TaskSched {
     app_path: String
 }
 
+class DirectChecksum {
+    asset_name: String
+}
+
+class AggregateChecksum {
+    asset_name: String
+    key: String?
+}
+
+class CustomChecksum {
+    command: String
+    args: List<String>?
+}
+
 class Application {
     owner: String
     repo: String
@@ -18,7 +32,7 @@ class Application {
     asset_name: String
     task_sched_path: String
     app_path: String
-    asset_verify: String? // TODO this need to be some kind of plugin because i dont know about some standart
+    checksum: DirectChecksum | AggregateChecksum | CustomChecksum
 }
 
 /// The port to listen on.
