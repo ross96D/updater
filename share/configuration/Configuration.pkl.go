@@ -11,15 +11,13 @@ type Configuration struct {
 	// The port to listen on.
 	Port uint16 `pkl:"port"`
 
-	GitubSignature256 string `pkl:"gitub_signature256"`
+	UserSecretKey string `pkl:"user_secret_key"`
 
-	SecretKey string `pkl:"secret_key"`
+	UserJwtExpiry *pkl.Duration `pkl:"user_jwt_expiry"`
 
-	JwtUserExpiry *pkl.Duration `pkl:"jwtUserExpiry"`
+	Apps []*Application `pkl:"apps"`
 
-	GithubAuthToken string `pkl:"github_auth_token"`
-
-	Events []*AcceptedEvents `pkl:"events"`
+	BasePath *string `pkl:"base_path"`
 }
 
 // LoadFromPath loads the pkl module at the given path and evaluates it into a Configuration

@@ -3,22 +3,31 @@ module updater.share.Configuration
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.6.0#/go.pkl"
 
-class AcceptedEvents {
+class TaskSched {
+    task_path: String
+    app_path: String
+}
+
+class Application {
     owner: String
     repo: String
-    downloadable_assests: List<String>
-    url: String
+    host: String = "github.com"
+    gitub_signature256: String
+    github_auth_token: String
+
+    asset_name: String
+    task_sched_path: String
+    app_path: String
+    asset_verify: String? // TODO this need to be some kind of plugin because i dont know about some standart
 }
 
 /// The port to listen on.
 port: UInt16
 
-gitub_signature256: String
+user_secret_key: String
 
-secret_key: String
+user_jwt_expiry: Duration
 
-jwtUserExpiry: Duration
+apps: List<Application>
 
-github_auth_token: String
-
-events: List<AcceptedEvents>
+base_path: String?

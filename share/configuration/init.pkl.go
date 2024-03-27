@@ -5,5 +5,6 @@ import "github.com/apple/pkl-go/pkl"
 
 func init() {
 	pkl.RegisterMapping("updater.share.Configuration", Configuration{})
-	pkl.RegisterMapping("updater.share.Configuration#AcceptedEvents", AcceptedEvents{})
+	pkl.RegisterMapping("updater.share.Configuration#Application", Application{})
+	pkl.RegisterMapping("updater.share.Configuration#TaskSched", TaskSched{})
 }
