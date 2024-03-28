@@ -108,7 +108,15 @@ func aggregateChecksum(
 	scanner := bufio.NewScanner(rc)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.HasSuffix(line, key) {
+		index := strings.Index(line, " ")
+		if index == -1 {
+			continue
+		}
+		if index+1 >= len(line) {
+			continue
+		}
+		keyName := line[index+1:]
+		if key == keyName {
 			checksum = strings.TrimSpace(strings.Split(line, " ")[0])
 			break
 		}
