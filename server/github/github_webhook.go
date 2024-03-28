@@ -56,7 +56,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 }
 
 func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
-	client := github.NewClient(nil).WithAuthToken(app.GithubAuthToken)
+	client := share.NewGithubClient(app, nil)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
 	if err != nil {
 		// TODO how to handle

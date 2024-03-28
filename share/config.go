@@ -48,7 +48,7 @@ func GetChecksum(app *configuration.Application, release *github.RepositoryRelea
 }
 
 func getAsset(app *configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
-	client := github.NewClient(nil).WithAuthToken(app.GithubAuthToken)
+	client := NewGithubClient(app, nil)
 
 	var checksumAsset *github.ReleaseAsset
 	for _, asset := range release.Assets {
