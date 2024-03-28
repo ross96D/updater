@@ -19,6 +19,7 @@ type Server struct {
 func New() *Server {
 	s := new(Server)
 	s.router = chi.NewMux()
+	s.setHandlers()
 	return s
 }
 
@@ -34,13 +35,20 @@ func (s *Server) setHandlers() {
 }
 
 func update(w http.ResponseWriter, r *http.Request) {
-	payload, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-	eventType := r.Header.Get(github.EventTypeHeader)
-	github_handler.HandleGithubWebhook(payload, eventType)
-	// call github api to check if we should update
+	origin := r.Context().Value(auth.UserTypeKey)
 
-	// if there is an update available
+	switch origin {
+	case "github":
+		payload, err := io.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+		eventType := r.Header.Get(github.EventTypeHeader)
+		github_handler.HandleGithubWebhook(payload, eventType)
+
+	case "user":
+		panic("unimplemented")
+	default:
+		panic("unhandled request origin")
+	}
 }

@@ -21,11 +21,10 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 	}
 	switch event := event.(type) {
 	case *github.ReleaseEvent:
-		handleReleaseEvent(event)
+		return handleReleaseEvent(event)
 	default:
 		panic(errors.New("unhandled event"))
 	}
-	return nil
 }
 
 func handleReleaseEvent(event *github.ReleaseEvent) error {
@@ -59,55 +58,45 @@ func handleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 	client := share.NewGithubClient(app, nil)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
 	if err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 	defer rc.Close()
 
 	path := filepath.Join(*share.Config().BasePath, *asset.Name)
 	if err = share.CreateFile(rc, lenght, path); err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 
 	checksum, err := share.GetChecksum(app, release)
 	if err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 	verify, err := share.VerifyWithChecksum(checksum, f, sha256.New()) // TODO make the hash algorithm be configurable
 	if err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 	if !verify {
-		// TODO how to handle
-		panic("file is a piece of shit")
+		return errors.New("asset could not be verified")
 	}
 
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 
 	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 
 	if err = os.Rename(path, app.AppPath); err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 
 	if err = taskservice.Start(app.TaskSchedPath); err != nil {
-		// TODO how to handle
-		panic(err)
+		return err
 	}
 
 	return nil
