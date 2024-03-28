@@ -129,7 +129,7 @@ func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (
 		cmd = exec.Command(chsm.Command)
 	}
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "GITHUB_TOKEN=%s"+githubAuthToken)
+	cmd.Env = append(cmd.Env, "GITHUB_TOKEN="+githubAuthToken)
 	result, err = cmd.Output()
 	if err != nil {
 		err = fmt.Errorf("custom checksum %w", err)
