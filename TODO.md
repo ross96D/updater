@@ -12,3 +12,11 @@
             2. The only thing that the user custom specification program should do is send to the stdout the value of the checksum as **bytes**, not as a **hex encoding string**
             3. The configuration is a list of strings. The first value is the command or the path to the executable and the rest of the values on the list is the arguments that would be passed to the command.
             4. If the process exit code needs to be 0
+- [x] Make the specification for the update enpoint for user request
+    1. The payload needs to be a json having the app index from the configuration
+    2. To get the index of the app there has to be another endpoint that exposes the configured apps with his indexes in form of a json
+        - index: number
+        - host: string
+        - owner: string
+        - repo: string
+        - asset_name: string
