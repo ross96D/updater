@@ -42,6 +42,6 @@ user_secret_key: String
 
 user_jwt_expiry: Duration
 
-apps: List<Application>
+apps: Listing<Application>
 
 base_path: String?
