@@ -1,0 +1,20 @@
+amends "../../share/configuration/definitions.pkl"
+
+port = 11111
+user_secret_key = ""
+user_jwt_expiry = 2.min
+apps {
+    new Application {
+        owner = "ross96D"
+        repo = "updater"
+        gitub_signature256 = "-"
+        github_auth_token = "-"
+
+        asset_name = "-"
+        task_sched_path = "-"
+        app_path = "-"
+        checksum = new DirectChecksum {
+            asset_name = "-"
+        }
+    }
+}
