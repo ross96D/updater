@@ -18,6 +18,8 @@ import (
 
 var config *configuration.Configuration
 
+var defaultPath string = "nothing for now"
+
 func Init(path string) {
 	var err error
 	config, err = configuration.LoadFromPath(context.Background(), path)
@@ -26,7 +28,7 @@ func Init(path string) {
 	}
 
 	if config.BasePath == nil {
-		panic("base_path need to be fulfill")
+		config.BasePath = &defaultPath
 	}
 }
 
