@@ -17,4 +17,17 @@ apps {
             asset_name = "-"
         }
     }
+    new Application {
+        owner = "ross96D"
+        repo = "updater2"
+        gitub_signature256 = "-"
+        github_auth_token = "-"
+
+        asset_name = "--"
+        task_sched_path = "-"
+        app_path = "-"
+        checksum = new DirectChecksum {
+            asset_name = "-"
+        }
+    }
 }

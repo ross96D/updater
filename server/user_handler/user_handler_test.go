@@ -29,6 +29,13 @@ func TestHandleUserAppsList(t *testing.T) {
 			Repo:      "updater",
 			AssetName: "-",
 		},
+		{
+			Index:     1,
+			Host:      "github.com",
+			Owner:     "ross96D",
+			Repo:      "updater2",
+			AssetName: "--",
+		},
 	}
 
 	assert.Equal(t, len(expected), len(apps))
