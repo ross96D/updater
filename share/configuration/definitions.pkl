@@ -37,6 +37,11 @@ class Application {
     checksum: DirectChecksum | AggregateChecksum | CustomChecksum | NoChecksum
 }
 
+class User {
+    name: String
+    password: String
+}
+
 /// The port to listen on.
 port: UInt16
 
@@ -45,5 +50,7 @@ user_secret_key: String
 user_jwt_expiry: Duration
 
 apps: Listing<Application>
+
+users: Listing<User>
 
 base_path: String?

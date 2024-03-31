@@ -17,6 +17,8 @@ type Configuration struct {
 
 	Apps []*Application `pkl:"apps"`
 
+	Users []*User `pkl:"users"`
+
 	BasePath *string `pkl:"base_path"`
 }
 
