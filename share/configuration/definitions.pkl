@@ -35,6 +35,8 @@ class Application {
     task_sched_path: String
     app_path: String
     checksum: DirectChecksum | AggregateChecksum | CustomChecksum | NoChecksum
+
+    use_cache: Boolean = true
 }
 
 class User {

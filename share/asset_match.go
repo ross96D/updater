@@ -1,48 +1,25 @@
 package share
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	taskservice "github.com/ross96D/updater/task_service"
 )
 
-func verifyChecksum(checksum []byte, path string) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	verify, err := VerifyWithChecksum(checksum, f, sha256.New()) // TODO make the hash algorithm be configurable
-	if err != nil {
-		return err
-	}
-	if !verify {
-		return errors.New("asset could not be verified")
-	}
-	return nil
-}
+var ErrIsChached = fmt.Errorf("asset is cached")
+var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
 
 func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
-	client := NewGithubClient(app, nil)
-	rc, lenght, err := downloadableAsset(client, *asset.URL)
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
-
-	path := filepath.Join(*Config().BasePath, *asset.Name)
-	if err = CreateFile(rc, lenght, path); err != nil {
-		return err
-	}
-
+	// get the checksum
 	var verify = true
 	checksum, err := GetChecksum(app, release)
 	if err != nil {
@@ -53,10 +30,32 @@ func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		}
 	}
 
+	// if there is a checksum, verify that the app is not the same as the internet using the hashes
+	// if there is no checksum then the cache verification will be performed later on the function
+	if verify && app.UseCache && cacheWithChecksum(checksum, app) {
+		return ErrIsChached
+	}
+
+	client := NewGithubClient(app, nil)
+	rc, lenght, err := downloadableAsset(client, *asset.URL)
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Join(*Config().BasePath, *asset.Name)
+	if err = CreateFile(rc, lenght, path); err != nil {
+		return err
+	}
+
 	if verify {
-		err = verifyChecksum(checksum, path)
-		if err != nil {
-			return err
+		// verifiy that the checksum correspond to the downloaded asset
+		if !verifyChecksum(checksum, path) {
+			return ErrUnverifiedAsset
+		}
+	} else {
+		// as there is no checksum hash the both, the app file and the downloaded one.
+		if cacheWithFile(path, app) {
+			return ErrIsChached
 		}
 	}
 
@@ -121,4 +120,61 @@ func getHeaders(ghclient *github.Client, url string) (lenght int64, err error) {
 	}
 	lenght = resp.ContentLength
 	return
+}
+
+func verifyChecksum(checksum []byte, path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	verify, err := VerifyWithChecksum(checksum, f, NewFileHash()) // TODO make the hash algorithm be configurable
+	if err != nil {
+		return false
+	}
+	if !verify {
+		return false
+	}
+	return true
+}
+
+func hashFile(path string, hasher hash.Hash) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return nil, err
+	}
+	return hasher.Sum(nil), nil
+}
+
+func cacheWithChecksum(checksum []byte, app *configuration.Application) (isCached bool) {
+	file, err := os.Open(app.AppPath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	hash, err := hashFile(app.AppPath, NewFileHash())
+	if err != nil {
+		return
+	}
+
+	return slices.Equal(hash, checksum)
+}
+
+func cacheWithFile(path string, app *configuration.Application) (isCached bool) {
+	hashFileDownload, err := hashFile(path, NewFileHash())
+	if err != nil {
+		return
+	}
+
+	hashApp, err := hashFile(app.AppPath, NewFileHash())
+	if err != nil {
+		return
+	}
+
+	return slices.Equal(hashApp, hashFileDownload)
 }

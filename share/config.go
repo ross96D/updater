@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
+	"hash/crc32"
 	"io"
 	"net/http"
 	"os"
@@ -168,4 +170,8 @@ func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (
 		return
 	}
 	return
+}
+
+func NewFileHash() hash.Hash {
+	return crc32.NewIEEE()
 }

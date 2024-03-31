@@ -19,4 +19,6 @@ type Application struct {
 	AppPath string `pkl:"app_path"`
 
 	Checksum any `pkl:"checksum"`
+
+	UseCache bool `pkl:"use_cache"`
 }
