@@ -46,8 +46,8 @@ func update(w http.ResponseWriter, r *http.Request) {
 
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		// TODO handle
-		panic(err)
+		http.Error(w, "internal error", 500)
+		return
 	}
 	defer r.Body.Close()
 	switch origin {
@@ -55,18 +55,17 @@ func update(w http.ResponseWriter, r *http.Request) {
 		eventType := r.Header.Get(github.EventTypeHeader)
 		err = github_handler.HandleGithubWebhook(payload, eventType)
 		if err != nil {
-			// TODO handle
-			panic(err)
+			http.Error(w, "internal error", 500)
 		}
 
 	case "user":
 		err = user_handler.HandlerUserUpdate(payload)
 		if err != nil {
-			// TODO handle
-			panic(err)
+			http.Error(w, "internal error", 500)
 		}
 	default:
-		panic("unhandled request origin")
+		log.Println("unhandled origin")
+		http.Error(w, "internal error", 500)
 	}
 }
 
