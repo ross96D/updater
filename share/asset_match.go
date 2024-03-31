@@ -14,7 +14,7 @@ import (
 	taskservice "github.com/ross96D/updater/task_service"
 )
 
-func verify_checksum(checksum []byte, path string) error {
+func verifyChecksum(checksum []byte, path string) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -43,18 +43,18 @@ func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		return err
 	}
 
-	var verifyChecksum = true
+	var verify = true
 	checksum, err := GetChecksum(app, release)
 	if err != nil {
 		if err != ErrNoChecksum {
-			verifyChecksum = false
+			verify = false
 		} else {
 			return err
 		}
 	}
 
-	if verifyChecksum {
-		err = verify_checksum(checksum, path)
+	if verify {
+		err = verifyChecksum(checksum, path)
 		if err != nil {
 			return err
 		}
