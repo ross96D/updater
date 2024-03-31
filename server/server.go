@@ -39,6 +39,32 @@ func (s *Server) setHandlers() {
 		r.Post("/update", update)
 		r.Get("/list", list)
 	})
+	s.router.Post("/login", login)
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	name, pass, ok := r.BasicAuth()
+	if !ok {
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+	valid := false
+	for _, user := range share.Config().Users {
+		if name == user.Name && pass == user.Password {
+			valid = true
+			break
+		}
+	}
+	if !valid {
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+	token, err := auth.NewUserToken(name)
+	if err != nil {
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+	w.Write(token)
 }
 
 func update(w http.ResponseWriter, r *http.Request) {
