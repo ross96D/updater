@@ -14,6 +14,22 @@ import (
 	taskservice "github.com/ross96D/updater/task_service"
 )
 
+func verify_checksum(checksum []byte, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	verify, err := VerifyWithChecksum(checksum, f, sha256.New()) // TODO make the hash algorithm be configurable
+	if err != nil {
+		return err
+	}
+	if !verify {
+		return errors.New("asset could not be verified")
+	}
+	return nil
+}
+
 func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
 	client := NewGithubClient(app, nil)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
@@ -27,20 +43,21 @@ func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		return err
 	}
 
+	var verifyChecksum = true
 	checksum, err := GetChecksum(app, release)
 	if err != nil {
-		return err
+		if err != ErrNoChecksum {
+			verifyChecksum = false
+		} else {
+			return err
+		}
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	verify, err := VerifyWithChecksum(checksum, f, sha256.New()) // TODO make the hash algorithm be configurable
-	if err != nil {
-		return err
-	}
-	if !verify {
-		return errors.New("asset could not be verified")
+
+	if verifyChecksum {
+		err = verify_checksum(checksum, path)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {

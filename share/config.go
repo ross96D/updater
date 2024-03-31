@@ -20,6 +20,8 @@ var config *configuration.Configuration
 
 var defaultPath string = "nothing for now"
 
+var ErrNoChecksum = errors.New("no checksum")
+
 func Init(path string) {
 	var err error
 	config, err = configuration.LoadFromPath(context.Background(), path)
@@ -44,6 +46,8 @@ func GetChecksum(app *configuration.Application, release *github.RepositoryRelea
 		return aggregateChecksum(chsm, app, release)
 	case configuration.CustomChecksum:
 		return customChecksum(chsm, app.GithubAuthToken)
+	case configuration.NoChecksum:
+		return
 	default:
 		return nil, errors.New("unknown checksum type")
 	}

@@ -9,5 +9,6 @@ func init() {
 	pkl.RegisterMapping("updater.share.Configuration#DirectChecksum", DirectChecksum{})
 	pkl.RegisterMapping("updater.share.Configuration#AggregateChecksum", AggregateChecksum{})
 	pkl.RegisterMapping("updater.share.Configuration#CustomChecksum", CustomChecksum{})
+	pkl.RegisterMapping("updater.share.Configuration#NoChecksum", NoChecksum{})
 	pkl.RegisterMapping("updater.share.Configuration#TaskSched", TaskSched{})
 }

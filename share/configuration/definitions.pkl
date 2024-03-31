@@ -22,6 +22,8 @@ class CustomChecksum {
     args: List<String>?
 }
 
+class NoChecksum {}
+
 class Application {
     owner: String
     repo: String
@@ -32,7 +34,7 @@ class Application {
     asset_name: String
     task_sched_path: String
     app_path: String
-    checksum: DirectChecksum | AggregateChecksum | CustomChecksum
+    checksum: DirectChecksum | AggregateChecksum | CustomChecksum | NoChecksum
 }
 
 /// The port to listen on.
