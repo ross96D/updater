@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/ross96D/updater/server"
 	"github.com/ross96D/updater/share"
-	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/spf13/cobra"
 )
 
@@ -18,12 +19,10 @@ var rootCmd = &cobra.Command{
 		share.Init(configurationPath)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		ts, err := taskservice.New()
-		if err != nil {
-			panic(err)
+		if err := server.New().Start(); err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err.Error())
+			os.Exit(1)
 		}
-		_ = ts
-		// ts.Run("\\test")
 	},
 }
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -26,6 +27,7 @@ func New() *Server {
 }
 
 func (s *Server) Start() error {
+	log.Println("starting server on " + ":" + strconv.Itoa(int(share.Config().Port)))
 	return http.ListenAndServe(":"+strconv.Itoa(int(share.Config().Port)), s.router)
 }
 
