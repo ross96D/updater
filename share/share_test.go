@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/apple/pkl-go/pkl"
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/stretchr/testify/assert"
@@ -73,4 +74,51 @@ func TestDirectChecksum(t *testing.T) {
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "direct_checksum", string(checksum))
+}
+
+func TestReload(t *testing.T) {
+	Init("config_test.pkl")
+	old := Config()
+
+	expected := configuration.Configuration{
+		Port:          1234,
+		UserSecretKey: "some_key",
+		UserJwtExpiry: &pkl.Duration{
+			Unit:  pkl.Minute,
+			Value: 2,
+		},
+		Apps:     []*configuration.Application{},
+		BasePath: &defaultPath,
+	}
+	assert.Equal(t, expected, old)
+
+	err := Reload("config_test_reload.pkl")
+	assert.Equal(t, nil, err)
+	reloaded := Config()
+
+	assert.NotEqual(t, old, reloaded)
+
+	expected = configuration.Configuration{
+		Port:          1234,
+		UserSecretKey: "some_key",
+		UserJwtExpiry: &pkl.Duration{
+			Unit:  pkl.Hour,
+			Value: 2,
+		},
+		Apps: []*configuration.Application{
+			{
+				Owner:             "ross96D",
+				Repo:              "updater",
+				Host:              "github.com",
+				GitubSignature256: "sign",
+				GithubAuthToken:   "auth",
+				AssetName:         "some asset name",
+				TaskSchedPath:     "/is/a/path",
+				AppPath:           "/is/a/path",
+				Checksum:          &configuration.NoChecksum{},
+			},
+		},
+		BasePath: &defaultPath,
+	}
+	assert.Equal(t, expected, reloaded)
 }

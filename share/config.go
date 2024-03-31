@@ -34,6 +34,20 @@ func Init(path string) {
 	}
 }
 
+func Reload(path string) error {
+	newConfig, err := configuration.LoadFromPath(context.Background(), path)
+	if err != nil {
+		return err
+	}
+
+	config = newConfig
+
+	if config.BasePath == nil {
+		config.BasePath = &defaultPath
+	}
+	return nil
+}
+
 func Config() configuration.Configuration {
 	return *config
 }
