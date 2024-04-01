@@ -30,18 +30,54 @@ func (ts *TaskService) GetRegisteredTasks() (taskmaster.RegisteredTaskCollection
 	return ts.service.GetRegisteredTasks()
 }
 
-func (ts *TaskService) Stop(path string) {
+func (ts *TaskService) Stop(path string) error {
 	task, err := ts.service.GetRegisteredTask(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	task.Stop()
+	return task.Stop()
 }
 
-func (ts *TaskService) Run(path string) {
+func (ts *TaskService) Run(path string) error {
 	task, err := ts.service.GetRegisteredTask(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	task.Run()
+	_, err = task.Run()
+	return err
+}
+
+var ts *TaskService
+
+func get() (*TaskService, error) {
+	var err error
+	if ts == nil {
+		ts, err = New()
+	}
+	if ts != nil && !ts.service.IsConnected() {
+		ts = nil
+		return get()
+	}
+	return ts, err
+}
+
+func close() {
+	ts.Disconnect()
+	ts = nil
+}
+
+func Stop(path string) error {
+	ts, err := get()
+	if err != nil {
+		return err
+	}
+	return ts.Stop(path)
+}
+
+func Start(path string) error {
+	ts, err := get()
+	if err != nil {
+		return err
+	}
+	return ts.Run(path)
 }
