@@ -10,7 +10,7 @@ import (
 )
 
 func TestHandleUserAppsList(t *testing.T) {
-	share.Init("config_test.pkl")
+	share.Init("config_test.cue")
 	buff := bytes.NewBuffer([]byte{})
 	err := HandleUserAppsList(buff)
 	assert.Equal(t, nil, err)

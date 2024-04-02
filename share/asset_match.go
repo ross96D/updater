@@ -18,7 +18,7 @@ import (
 var ErrIsChached = fmt.Errorf("asset is cached")
 var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
 
-func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
+func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
 	// get the checksum
 	var verify = true
 	checksum, err := GetChecksum(app, release)
@@ -42,7 +42,7 @@ func HandleAssetMatch(app *configuration.Application, asset *github.ReleaseAsset
 		return err
 	}
 
-	path := filepath.Join(*Config().BasePath, *asset.Name)
+	path := filepath.Join(Config().BasePath, *asset.Name)
 	if err = CreateFile(rc, lenght, path); err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func hashFile(path string, hasher hash.Hash) ([]byte, error) {
 	return hasher.Sum(nil), nil
 }
 
-func cacheWithChecksum(checksum []byte, app *configuration.Application) (isCached bool) {
+func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached bool) {
 	file, err := os.Open(app.AppPath)
 	if err != nil {
 		return
@@ -165,7 +165,7 @@ func cacheWithChecksum(checksum []byte, app *configuration.Application) (isCache
 	return slices.Equal(hash, checksum)
 }
 
-func cacheWithFile(path string, app *configuration.Application) (isCached bool) {
+func cacheWithFile(path string, app configuration.Application) (isCached bool) {
 	hashFileDownload, err := hashFile(path, NewFileHash())
 	if err != nil {
 		return

@@ -6,3 +6,5 @@ tasks:
   run:
     - task: build
     - ./out/bin/updater
+
+  schema: go run share/configuration/gen/main.go > share/configuration/schema.json

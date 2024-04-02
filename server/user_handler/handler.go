@@ -11,12 +11,12 @@ import (
 	"github.com/ross96D/updater/share/configuration"
 )
 
-func GetReleaseRepository(app *configuration.Application) (*github.RepositoryRelease, *github.Response, error) {
+func GetReleaseRepository(app configuration.Application) (*github.RepositoryRelease, *github.Response, error) {
 	client := share.NewGithubClient(app, nil)
 	return client.Repositories.GetLatestRelease(context.TODO(), app.Owner, app.Repo)
 }
 
-func GetAsset(app *configuration.Application, release *github.RepositoryRelease) (*github.ReleaseAsset, error) {
+func GetAsset(app configuration.Application, release *github.RepositoryRelease) (*github.ReleaseAsset, error) {
 
 	for _, asset := range release.Assets {
 		if app.AssetName == *asset.Name {

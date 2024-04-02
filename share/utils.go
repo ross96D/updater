@@ -43,7 +43,7 @@ func CreateFile(rc io.ReadCloser, length int64, path string) (err error) {
 	return nil
 }
 
-func NewGithubClient(app *configuration.Application, httpClient *http.Client) *github.Client {
+func NewGithubClient(app configuration.Application, httpClient *http.Client) *github.Client {
 	var client *github.Client
 	if app.GithubAuthToken == "" {
 		client = github.NewClient(httpClient)

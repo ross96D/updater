@@ -3,8 +3,8 @@ package share
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/apple/pkl-go/pkl"
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +13,7 @@ import (
 func TestCustomChecksum(t *testing.T) {
 	command := configuration.CustomChecksum{
 		Command: "python3",
-		Args:    &[]string{"custom_checksum.py"},
+		Args:    []string{"custom_checksum.py"},
 	}
 	checksum, err := customChecksum(command, "git_token")
 	assert.Equal(t, nil, err)
@@ -30,7 +30,7 @@ func TestAggregateChecksum(t *testing.T) {
 		configuration.AggregateChecksum{
 			AssetName: "aggregate_checksum.txt",
 		},
-		&configuration.Application{
+		configuration.Application{
 			Owner:     "ross96D",
 			Repo:      "updater",
 			AssetName: "valid_key",
@@ -47,7 +47,7 @@ func TestAggregateChecksum(t *testing.T) {
 			AssetName: "aggregate_checksum.txt",
 			Key:       &key,
 		},
-		&configuration.Application{
+		configuration.Application{
 			Owner: "ross96D",
 			Repo:  "updater",
 		},
@@ -65,7 +65,7 @@ func TestDirectChecksum(t *testing.T) {
 
 	checksum, err := directChecksum(
 		configuration.DirectChecksum{AssetName: "direct_checksum.txt"},
-		&configuration.Application{
+		configuration.Application{
 			Owner: "ross96D",
 			Repo:  "updater",
 		},
@@ -77,22 +77,20 @@ func TestDirectChecksum(t *testing.T) {
 }
 
 func TestReload(t *testing.T) {
-	Init("config_test.pkl")
+	Init("config_test.cue")
 	old := Config()
 
 	expected := configuration.Configuration{
 		Port:          1234,
 		UserSecretKey: "some_key",
-		UserJwtExpiry: &pkl.Duration{
-			Unit:  pkl.Minute,
-			Value: 2,
-		},
-		Apps:     []*configuration.Application{},
-		BasePath: &defaultPath,
+		UserJwtExpiry: configuration.Duration(2 * time.Minute),
+		Apps:          []configuration.Application{},
+		Users:         []configuration.User{},
+		BasePath:      defaultPath,
 	}
 	assert.Equal(t, expected, old)
 
-	err := Reload("config_test_reload.pkl")
+	err := Reload("config_test_reload.cue")
 	assert.Equal(t, nil, err)
 	reloaded := Config()
 
@@ -101,24 +99,23 @@ func TestReload(t *testing.T) {
 	expected = configuration.Configuration{
 		Port:          1234,
 		UserSecretKey: "some_key",
-		UserJwtExpiry: &pkl.Duration{
-			Unit:  pkl.Hour,
-			Value: 2,
-		},
-		Apps: []*configuration.Application{
+		UserJwtExpiry: configuration.Duration(2 * time.Hour),
+		Apps: []configuration.Application{
 			{
-				Owner:             "ross96D",
-				Repo:              "updater",
-				Host:              "github.com",
-				GitubSignature256: "sign",
-				GithubAuthToken:   "auth",
-				AssetName:         "some asset name",
-				TaskSchedPath:     "/is/a/path",
-				AppPath:           "/is/a/path",
-				Checksum:          &configuration.NoChecksum{},
+				Owner:              "ross96D",
+				Repo:               "updater",
+				Host:               "github.com",
+				GithubSignature256: "sign",
+				GithubAuthToken:    "auth",
+				AssetName:          "some asset name",
+				TaskSchedPath:      "/is/a/path",
+				AppPath:            "/is/a/path",
+				Checksum:           configuration.Checksum{C: configuration.NoChecksum{}},
+				UseCache:           true,
 			},
 		},
-		BasePath: &defaultPath,
+		Users:    []configuration.User{},
+		BasePath: defaultPath,
 	}
 	assert.Equal(t, expected, reloaded)
 }

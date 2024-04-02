@@ -33,7 +33,7 @@ func handleReleaseEvent(event *github.ReleaseEvent) error {
 }
 
 func onPublishEdit(event *github.ReleaseEvent) error {
-	index := slices.IndexFunc(share.Config().Apps, func(e *configuration.Application) bool {
+	index := slices.IndexFunc(share.Config().Apps, func(e configuration.Application) bool {
 		return *event.Repo.URL == fmt.Sprintf("github.com/%s/%s", e.Owner, e.Repo)
 	})
 	if index == -1 {

@@ -18,7 +18,7 @@ import (
 	"github.com/ross96D/updater/share/configuration"
 )
 
-var config *configuration.Configuration
+var config configuration.Configuration
 
 var defaultPath string = "nothing for now"
 
@@ -26,36 +26,36 @@ var ErrNoChecksum = errors.New("no checksum")
 
 func Init(path string) {
 	var err error
-	config, err = configuration.LoadFromPath(context.Background(), path)
+	config, err = configuration.Load(path)
 	if err != nil {
 		panic(err)
 	}
 
-	if config.BasePath == nil {
-		config.BasePath = &defaultPath
+	if config.BasePath == "" {
+		config.BasePath = defaultPath
 	}
 }
 
 func Reload(path string) error {
-	newConfig, err := configuration.LoadFromPath(context.Background(), path)
+	newConfig, err := configuration.Load(path)
 	if err != nil {
 		return err
 	}
 
 	config = newConfig
 
-	if config.BasePath == nil {
-		config.BasePath = &defaultPath
+	if config.BasePath == "" {
+		config.BasePath = defaultPath
 	}
 	return nil
 }
 
 func Config() configuration.Configuration {
-	return *config
+	return config
 }
 
-func GetChecksum(app *configuration.Application, release *github.RepositoryRelease) (result []byte, err error) {
-	switch chsm := app.Checksum.(type) {
+func GetChecksum(app configuration.Application, release *github.RepositoryRelease) (result []byte, err error) {
+	switch chsm := app.Checksum.C.(type) {
 	case configuration.DirectChecksum:
 		return directChecksum(chsm, app, release)
 	case configuration.AggregateChecksum:
@@ -69,7 +69,7 @@ func GetChecksum(app *configuration.Application, release *github.RepositoryRelea
 	}
 }
 
-func getAsset(app *configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
+func getAsset(app configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
 	client := NewGithubClient(app, nil)
 
 	var checksumAsset *github.ReleaseAsset
@@ -90,7 +90,7 @@ func getAsset(app *configuration.Application, release *github.RepositoryRelease,
 
 func directChecksum(
 	chsm configuration.DirectChecksum,
-	app *configuration.Application,
+	app configuration.Application,
 	release *github.RepositoryRelease,
 ) (result []byte, err error) {
 
@@ -109,7 +109,7 @@ func directChecksum(
 
 func aggregateChecksum(
 	chsm configuration.AggregateChecksum,
-	app *configuration.Application,
+	app configuration.Application,
 	release *github.RepositoryRelease,
 ) (result []byte, err error) {
 
@@ -154,7 +154,7 @@ func aggregateChecksum(
 func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (result []byte, err error) {
 	var cmd *exec.Cmd
 	if chsm.Args != nil {
-		cmd = exec.Command(chsm.Command, *chsm.Args...)
+		cmd = exec.Command(chsm.Command, chsm.Args...)
 	} else {
 		cmd = exec.Command(chsm.Command)
 	}
