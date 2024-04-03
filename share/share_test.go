@@ -119,3 +119,23 @@ func TestReload(t *testing.T) {
 	}
 	assert.Equal(t, expected, reloaded)
 }
+
+func TestSingleLineSlice(t *testing.T) {
+	result := SingleLineSlice([]string{"sas", "dss"})
+	assert.Equal(t, "[sas, dss]", result)
+
+	result = SingleLineSlice([]struct {
+		name   string
+		number int
+	}{
+		{
+			name:   "name1",
+			number: 1,
+		},
+		{
+			name:   "name2",
+			number: 2,
+		},
+	})
+	assert.Equal(t, "[{name:name1 number:1}, {name:name2 number:2}]", result)
+}
