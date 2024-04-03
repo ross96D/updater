@@ -20,9 +20,8 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 	case *github.ReleaseEvent:
 		return handleReleaseEvent(event)
 	default:
-		err = errors.New("unhandled event " + fmt.Sprintf("%+v", event))
-		log.Println(err.Error())
-		return err
+		log.Printf("unhandled event %+v\n", event)
+		return errors.New("unhandled event")
 	}
 }
 
@@ -31,8 +30,8 @@ func handleReleaseEvent(event *github.ReleaseEvent) error {
 	case "published", "edited":
 		return onPublishEdit(event)
 	default:
-		err := fmt.Errorf("unhandled action for release event %s", *event.Action)
-		return err
+		log.Printf("unhandled action for release event %s\n", *event.Action)
+		return errors.New("unhandled action for release event")
 	}
 }
 
