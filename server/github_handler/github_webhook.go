@@ -3,6 +3,7 @@ package github_handler
 import (
 	"errors"
 	"fmt"
+	"log"
 	"slices"
 
 	"github.com/google/go-github/v60/github"
@@ -19,7 +20,9 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 	case *github.ReleaseEvent:
 		return handleReleaseEvent(event)
 	default:
-		panic(errors.New("unhandled event"))
+		err = errors.New("unhandled event " + fmt.Sprintf("%+v", event))
+		log.Println(err.Error())
+		return err
 	}
 }
 
@@ -28,7 +31,8 @@ func handleReleaseEvent(event *github.ReleaseEvent) error {
 	case "published", "edited":
 		return onPublishEdit(event)
 	default:
-		panic("unhandled action for release event")
+		err := fmt.Errorf("unhandled action for release event %s", *event.Action)
+		return err
 	}
 }
 
