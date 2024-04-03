@@ -36,5 +36,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&configurationPath, "config", "c", "config.pkl", "set the path to the configuration file")
+	rootCmd.Flags().StringVarP(&configurationPath, "config", "c", "config.cue", "set the path to the configuration file")
 }
