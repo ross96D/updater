@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	path_url "net/url"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-var url string
+var baseUrl string
 var user string
 var pass string
 var token string
@@ -21,18 +22,21 @@ var rootCommand = &cobra.Command{
 var reloadCommand = &cobra.Command{
 	Use: "reload",
 	Run: func(cmd *cobra.Command, args []string) {
-		login()
+		if err := reload(); err != nil {
+			println(err.Error())
+			os.Exit(1)
+		}
 	},
 }
 
 func init() {
 	rootCommand.AddCommand(reloadCommand)
-	rootCommand.PersistentFlags().StringVarP(&url, "host", "H", "http://localhost:10000", "set the url of the updater service. The default value is http://localhost:10000")
+	rootCommand.PersistentFlags().StringVarP(&baseUrl, "host", "H", "http://localhost:10000", "set the url of the updater service. The default value is http://localhost:10000")
 	rootCommand.PersistentFlags().StringVarP(&user, "user", "u", "", "user name")
 	// TODO maybe this is needed to be read from an env variable or a config file, but for now as this is for testing mainly.. just who cares
 	rootCommand.PersistentFlags().StringVarP(&pass, "password", "p", "", "user password")
-	rootCommand.MarkFlagRequired("user")
-	rootCommand.MarkFlagRequired("password")
+	rootCommand.MarkPersistentFlagRequired("user")
+	rootCommand.MarkPersistentFlagRequired("password")
 }
 
 func main() {
@@ -48,6 +52,11 @@ func reload() (err error) {
 			return err
 		}
 	}
+	url, err := path_url.JoinPath(baseUrl, "reload")
+	if err != nil {
+		return err
+	}
+
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	request.Header.Add("Authorization", "Bearer "+token)
 	resp, err := http.DefaultClient.Do(request)
@@ -62,6 +71,10 @@ func reload() (err error) {
 }
 
 func login() (string, error) {
+	url, err := path_url.JoinPath(baseUrl, "login")
+	if err != nil {
+		return "", err
+	}
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return "", err
