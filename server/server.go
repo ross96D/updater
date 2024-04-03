@@ -101,13 +101,13 @@ func update(w http.ResponseWriter, r *http.Request) {
 		eventType := r.Header.Get(github.EventTypeHeader)
 		err = github_handler.HandleGithubWebhook(payload, eventType)
 		if err != nil {
-			http.Error(w, "internal error", 500)
+			http.Error(w, "internal error "+err.Error(), 500)
 		}
 
 	case "user":
 		err = user_handler.HandlerUserUpdate(payload)
 		if err != nil {
-			http.Error(w, "internal error", 500)
+			http.Error(w, "internal error "+err.Error(), 500)
 		}
 	default:
 		log.Println("unhandled origin")
