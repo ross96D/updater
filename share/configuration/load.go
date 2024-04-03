@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"bytes"
 	_ "embed"
 	"errors"
 	"io"
@@ -32,22 +33,32 @@ func writeDefinition() error {
 	return nil
 }
 
-func writeConfig(userConfigPath string) error {
+func writeConfig(rc io.ReadCloser) error {
+	defer rc.Close()
 	configFile, err := os.Create(configPath)
 	if err != nil {
 		return err
 	}
 	defer configFile.Close()
+	_, err = io.Copy(configFile, rc)
 
+	return err
+}
+
+func writeConfigPath(userConfigPath string) error {
 	userConfig, err := os.Open(userConfigPath)
 	if err != nil {
 		return err
 	}
 	defer userConfig.Close()
 
-	_, err = io.Copy(configFile, userConfig)
+	return writeConfig(userConfig)
+}
 
-	return err
+func writeConfigString(userConfig string) error {
+	buff := bytes.NewBufferString(userConfig)
+	buffCloser := io.NopCloser(buff)
+	return writeConfig(buffCloser)
 }
 
 func _load() (c Configuration, err error) {
@@ -75,7 +86,21 @@ func Load(userConfigPath string) (c Configuration, err error) {
 		return
 	}
 
-	err = writeConfig(userConfigPath)
+	err = writeConfigPath(userConfigPath)
+	if err != nil {
+		return
+	}
+
+	return _load()
+}
+
+func LoadString(userConfig string) (c Configuration, err error) {
+	err = writeDefinition()
+	if err != nil {
+		return
+	}
+
+	err = writeConfigString(userConfig)
 	if err != nil {
 		return
 	}

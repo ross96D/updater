@@ -38,8 +38,28 @@ func (s *Server) setHandlers() {
 		r.Use(auth.AuthMiddelware)
 		r.Post("/update", update)
 		r.Get("/list", list)
+		r.Post("/reload", reload)
 	})
 	s.router.Post("/login", login)
+}
+
+func reload(w http.ResponseWriter, r *http.Request) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	// TODO is this right? i am not shure because this is only usefull on testing.. maybe use a header to confirm that we want to use the default config file
+	if len(data) == 0 {
+		err = share.Reload("config.cue")
+	} else {
+		err = share.ReloadString(string(data))
+	}
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 func login(w http.ResponseWriter, r *http.Request) {

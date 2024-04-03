@@ -25,15 +25,29 @@ var defaultPath string = "nothing for now"
 var ErrNoChecksum = errors.New("no checksum")
 
 func Init(path string) {
-	var err error
-	config, err = configuration.Load(path)
+	newConfig, err := configuration.Load(path)
 	if err != nil {
 		panic(err)
 	}
 
+	changeConfig(newConfig)
+}
+
+func changeConfig(newConfig configuration.Configuration) {
+	config = newConfig
+
 	if config.BasePath == "" {
 		config.BasePath = defaultPath
 	}
+}
+
+func ReloadString(data string) error {
+	newConfig, err := configuration.LoadString(data)
+	if err != nil {
+		return err
+	}
+	changeConfig(newConfig)
+	return nil
 }
 
 func Reload(path string) error {
@@ -42,11 +56,7 @@ func Reload(path string) error {
 		return err
 	}
 
-	config = newConfig
-
-	if config.BasePath == "" {
-		config.BasePath = defaultPath
-	}
+	changeConfig(newConfig)
 	return nil
 }
 
