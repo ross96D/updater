@@ -20,3 +20,4 @@
         - owner: string
         - repo: string
         - asset_name: string
+- [ ] Add a config rollback functionality
