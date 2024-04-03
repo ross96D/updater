@@ -21,3 +21,5 @@
         - repo: string
         - asset_name: string
 - [ ] Add a config rollback functionality
+- [ ] Change github_signature256 to github_webhook_secret
+- [ ] Remove all panics and correctly handle the errors
