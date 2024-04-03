@@ -1,10 +1,25 @@
 version: 3
 
 tasks:
-  build: go build -o ./out/bin/updater main.go
+  build:
+    vars:
+      TASK_NAME:
+        sh: task get_name
+    cmd: go build -o ./out/bin/{{.TASK_NAME}} main.go
+
+  get_name_windows:
+    platforms:
+      - "windows"
+    cmd: echo "updater.exe"
+  get_name_linux:
+    platforms:
+      - "linux"
+    cmd: echo "updater"
+  get_name:
+    cmds:
+      - task: get_name_windows
+      - task: get_name_linux
 
   run:
     - task: build
     - ./out/bin/updater
-
-  schema: go run share/configuration/gen/main.go > share/configuration/schema.json
