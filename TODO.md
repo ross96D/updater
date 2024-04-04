@@ -25,4 +25,4 @@
 - [x] Remove all panics and correctly handle the errors
 - [x] We need a lock on the file moving/copying/pasting thing becasue we could be reading on a file that are trying to write and the operating system will complain
 - [x] On fail make shure to let the state as it was
-- [ ] Set the cpu profiler only with a flag
+- [x] Set the cpu profiler only with a flag

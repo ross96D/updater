@@ -37,4 +37,5 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVarP(&configurationPath, "config", "c", "config.cue", "set the path to the configuration file")
+	rootCmd.PersistentFlags().Bool("profile", false, "profile the cpu of the process and creates a file with the content")
 }

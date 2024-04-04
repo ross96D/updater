@@ -9,15 +9,20 @@ import (
 )
 
 func main() {
-	file, err := os.Create("cpu_profiler")
-	if err != nil {
-		panic(err)
-	}
+	for _, arg := range os.Args {
+		if arg == "--profile" {
+			file, err := os.Create("cpu_profiler")
+			if err != nil {
+				panic(err)
+			}
 
-	if err = pprof.StartCPUProfile(file); err != nil {
-		panic(err)
+			if err = pprof.StartCPUProfile(file); err != nil {
+				panic(err)
+			}
+			defer pprof.StopCPUProfile()
+			break
+		}
 	}
-	defer pprof.StopCPUProfile()
 
 	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()
