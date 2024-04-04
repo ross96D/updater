@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
@@ -18,6 +19,7 @@ import (
 
 var ErrIsChached = fmt.Errorf("asset is cached")
 var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
+var _mutHandleAssetMatch = sync.Mutex{}
 
 func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
 	// get the checksum
@@ -73,7 +75,15 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		return err
 	}
+	defer func() {
+		log.Println("Run the task")
+		if err := taskservice.Start(app.TaskSchedPath); err != nil {
+			log.Println("Error reruning the task", err.Error())
+		}
+	}()
 
+	_mutHandleAssetMatch.Lock()
+	defer _mutHandleAssetMatch.Unlock()
 	log.Println("Moving app to app.old")
 	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
 		return err
@@ -81,11 +91,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 
 	log.Println("Moving asset to app path")
 	if err = Copy(tempPath, app.AppPath); err != nil {
-		return err
-	}
-
-	log.Println("Run the task")
-	if err = taskservice.Start(app.TaskSchedPath); err != nil {
+		// TODO roll back
 		return err
 	}
 
@@ -165,6 +171,9 @@ func hashFile(path string, hasher hash.Hash) ([]byte, error) {
 }
 
 func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached bool) {
+	_mutHandleAssetMatch.Lock()
+	defer _mutHandleAssetMatch.Unlock()
+
 	file, err := os.Open(app.AppPath)
 	if err != nil {
 		return
@@ -180,6 +189,9 @@ func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached
 }
 
 func cacheWithFile(path string, app configuration.Application) (isCached bool) {
+	_mutHandleAssetMatch.Lock()
+	defer _mutHandleAssetMatch.Unlock()
+
 	hashFileDownload, err := hashFile(path, NewFileHash())
 	if err != nil {
 		return
