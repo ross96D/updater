@@ -27,7 +27,8 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 
 func handleReleaseEvent(event *github.ReleaseEvent) error {
 	switch *event.Action {
-	case "released", "published", "edited", "created":
+	// case "released", "published", "edited", "created":
+	case "published":
 		log.Println("github event action", *event.Action)
 		return onPublishEdit(event)
 	default:
