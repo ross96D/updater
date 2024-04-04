@@ -24,3 +24,4 @@
 - [ ] Change github_signature256 to github_webhook_secret
 - [ ] Remove all panics and correctly handle the errors
 - [ ] We need a lock on the file moving/copying/pasting thing becasue we could be reading on a file that are trying to write and the operating system will complain
+- [ ] On fail make shure to let the state as it was
