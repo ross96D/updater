@@ -5,7 +5,7 @@ apps: [
 	{
 		owner:               "ross96D"
 		repo:                "updater"
-		github_signature256: "sign"
+		github_webhook_secret: "sign"
 		github_auth_token:   "auth"
 		asset_name:          "some asset name"
 		task_sched_path:     "/is/a/path"

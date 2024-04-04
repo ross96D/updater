@@ -21,7 +21,7 @@
         - repo: string
         - asset_name: string
 - [ ] Add a config rollback functionality
-- [ ] Change github_signature256 to github_webhook_secret
+- [x] Change github_signature256 to github_webhook_secret
 - [x] Remove all panics and correctly handle the errors
 - [x] We need a lock on the file moving/copying/pasting thing becasue we could be reading on a file that are trying to write and the operating system will complain
 - [x] On fail make shure to let the state as it was

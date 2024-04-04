@@ -28,7 +28,7 @@ import "time"
     owner!: string
     repo!: string
     host: string | *"github.com" 
-    github_signature256!: string
+    github_webhook_secret!: string
     github_auth_token?: string
     
     asset_name!: string

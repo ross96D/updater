@@ -137,7 +137,7 @@ func __github_auth__(token []byte, body []byte) error {
 		return err
 	}
 	for _, app := range share.Config().Apps {
-		err = checkGithubSignature(string(hmac), signature, body, []byte(app.GithubSignature256))
+		err = checkGithubSignature(string(hmac), signature, body, []byte(app.GithubWebhookSecret))
 		if err == nil {
 			return nil
 		}

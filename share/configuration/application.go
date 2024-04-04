@@ -7,12 +7,12 @@ import (
 )
 
 type Application struct {
-	Owner              string `json:"owner"`
-	Repo               string `json:"repo"`
-	Host               string `json:"host"`
-	GithubSignature256 string `json:"github_signature256"`
-	GithubAuthToken    string `json:"github_auth_token"`
-	AssetName          string `json:"asset_name"`
+	Owner               string `json:"owner"`
+	Repo                string `json:"repo"`
+	Host                string `json:"host"`
+	GithubWebhookSecret string `json:"github_webhook_secret"`
+	GithubAuthToken     string `json:"github_auth_token"`
+	AssetName           string `json:"asset_name"`
 
 	TaskSchedPath string   `json:"task_sched_path"`
 	AppPath       string   `json:"app_path"`

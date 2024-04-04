@@ -5,7 +5,7 @@ apps: [
     {
         owner: "ross96D"
         repo: "updater"
-        github_signature256: "-"
+        github_webhook_secret: "-"
         github_auth_token: "-"
 
         asset_name: "-"
@@ -18,7 +18,7 @@ apps: [
     {
         owner: "ross96D"
         repo: "updater2"
-        github_signature256: "-"
+        github_webhook_secret: "-"
         github_auth_token: "-"
 
         asset_name: "--"
