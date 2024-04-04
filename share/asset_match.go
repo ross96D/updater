@@ -45,22 +45,26 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 		return err
 	}
 
-	path := filepath.Join(Config().BasePath, *asset.Name)
-	log.Println("save asset to temporary file in", path)
-	if err = CreateFile(rc, lenght, path); err != nil {
+	tempPath := filepath.Join(Config().BasePath, *asset.Name)
+	log.Println("save asset to temporary file in", tempPath)
+	if tempPath, err = CreateFile(rc, lenght, tempPath); err != nil {
 		return err
 	}
+	// remove temp file
+	defer func() {
+		os.Remove(tempPath)
+	}()
 
 	if verify {
 		log.Println("verifiying checksum")
 		// verifiy that the checksum correspond to the downloaded asset
-		if !verifyChecksum(checksum, path) {
+		if !verifyChecksum(checksum, tempPath) {
 			return ErrUnverifiedAsset
 		}
 	} else {
 		log.Println("checking if asset is already installed")
 		// as there is no checksum hash the both, the app file and the downloaded one.
-		if cacheWithFile(path, app) {
+		if cacheWithFile(tempPath, app) {
 			return ErrIsChached
 		}
 	}
@@ -76,7 +80,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	}
 
 	log.Println("Moving asset to app path")
-	if err = Copy(path, app.AppPath); err != nil {
+	if err = Copy(tempPath, app.AppPath); err != nil {
 		return err
 	}
 

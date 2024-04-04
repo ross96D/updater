@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
@@ -33,18 +34,20 @@ func VerifyWithChecksum(checksum []byte, rc io.ReadCloser, hasher hash.Hash) (re
 	return true, nil
 }
 
-func CreateFile(rc io.ReadCloser, length int64, path string) (err error) {
+func CreateFile(rc io.ReadCloser, length int64, path string) (resultPath string, err error) {
 	defer rc.Close()
 	_ = length
-
+	now := time.Now()
+	resultPath = path + fmt.Sprintf("%d.%d.%d", now.Minute(), now.Second(), now.Nanosecond())
 	file, err := os.Create(path)
 	if err != nil {
 		return
 	}
+	defer file.Close()
 	if _, err = io.Copy(file, rc); err != nil {
 		return
 	}
-	return nil
+	return
 }
 
 func NewGithubClient(app configuration.Application, httpClient *http.Client) *github.Client {
