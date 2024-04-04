@@ -9,6 +9,7 @@ import (
 	"hash"
 	"hash/crc32"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -39,6 +40,8 @@ func changeConfig(newConfig configuration.Configuration) {
 	if config.BasePath == "" {
 		config.BasePath = defaultPath
 	}
+
+	log.Printf("configuration %+v", config)
 }
 
 func ReloadString(data string) error {
@@ -73,7 +76,7 @@ func GetChecksum(app configuration.Application, release *github.RepositoryReleas
 	case configuration.CustomChecksum:
 		return customChecksum(chsm, app.GithubAuthToken)
 	case configuration.NoChecksum:
-		return
+		return nil, ErrNoChecksum
 	default:
 		return nil, errors.New("unknown checksum type")
 	}

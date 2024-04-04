@@ -51,6 +51,10 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 	if err != nil {
 		return err
 	}
+	if len(release.Assets) == 0 {
+		log.Println("release with out assets")
+		return errors.New("release with out assets")
+	}
 
 	for _, asset := range release.Assets {
 		if app.AssetName == *asset.Name {

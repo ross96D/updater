@@ -23,7 +23,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	var verify = true
 	checksum, err := GetChecksum(app, release)
 	if err != nil {
-		if err != ErrNoChecksum {
+		if err == ErrNoChecksum {
 			verify = false
 		} else {
 			return err
