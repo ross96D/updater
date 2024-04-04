@@ -113,3 +113,20 @@ func SingleLineSlice[T any](slice []T) string {
 	bytes = append(bytes, ']')
 	return string(bytes)
 }
+
+// TODO this should move if possible for the use case needed
+func Copy(src string, dst string) error {
+	destFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0771)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	srcFile, err := os.Open(src)
+	defer srcFile.Close()
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(destFile, srcFile)
+	return err
+}
