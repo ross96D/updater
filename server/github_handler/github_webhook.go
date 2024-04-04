@@ -27,6 +27,7 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 func handleReleaseEvent(event *github.ReleaseEvent) error {
 	switch *event.Action {
 	case "released", "published", "edited", "created":
+		log.Println("github event action", *event.Action)
 		return onPublishEdit(event)
 	default:
 		log.Printf("unhandled action for release event %s\n", *event.Action)
@@ -52,5 +53,5 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		}
 	}
 	log.Printf("asset not found asset to match: %s release assets: %s\n", app.AssetName, share.SingleLineSlice(release.Assets))
-	return nil
+	return errors.New("not found asset match")
 }
