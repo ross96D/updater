@@ -1,6 +1,7 @@
 package github_handler
 
 import (
+	"context"
 	"errors"
 	"log"
 	"slices"
@@ -46,7 +47,11 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		return errors.New("release event from repo not configured")
 	}
 	app := share.Config().Apps[index]
-	release := event.Release
+	release, err := getRelease(eventOwner, eventRepo, *event.Release.ID)
+	if err != nil {
+		return err
+	}
+
 	for _, asset := range release.Assets {
 		if app.AssetName == *asset.Name {
 			return share.HandleAssetMatch(app, asset, release)
@@ -54,4 +59,11 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 	}
 	log.Printf("asset not found asset to match: %s release assets: %s\n", app.AssetName, share.SingleLineSlice(release.Assets))
 	return errors.New("not found asset match")
+}
+
+func getRelease(owner string, repo string, id int64) (*github.RepositoryRelease, error) {
+	client := github.NewClient(nil)
+	resp, _, err := client.Repositories.GetRelease(context.Background(), owner, repo, id)
+	// TODO so, if there is an error and the github response exist.. the github response should be added to the error or logged.
+	return resp, err
 }
