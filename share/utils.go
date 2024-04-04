@@ -39,7 +39,7 @@ func CreateFile(rc io.ReadCloser, length int64, path string) (resultPath string,
 	_ = length
 	now := time.Now()
 	resultPath = path + fmt.Sprintf("%d.%d.%d", now.Minute(), now.Second(), now.Nanosecond())
-	file, err := os.Create(path)
+	file, err := os.Create(resultPath)
 	if err != nil {
 		return
 	}

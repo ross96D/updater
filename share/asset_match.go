@@ -54,6 +54,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	}
 	// remove temp file
 	defer func() {
+		log.Println("removing temporary file")
 		os.Remove(tempPath)
 	}()
 

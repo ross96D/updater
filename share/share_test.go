@@ -1,7 +1,10 @@
 package share
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"os"
 	"testing"
 	"time"
 
@@ -138,4 +141,25 @@ func TestSingleLineSlice(t *testing.T) {
 		},
 	})
 	assert.Equal(t, "[{name:name1 number:1}, {name:name2 number:2}]", result)
+}
+
+func TestCreateTempFile(t *testing.T) {
+	data := "hello world"
+	buff := bytes.NewBuffer([]byte(data))
+	path, err := CreateFile(io.NopCloser(buff), int64(len(data)), "testfile")
+	assert.Equal(t, nil, err)
+
+	f, err := os.Open(path)
+	assert.Equal(t, nil, err)
+	t.Cleanup(func() {
+		f.Close()
+		err = os.Remove(path)
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	bytes, err := io.ReadAll(f)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, data, string(bytes))
 }
