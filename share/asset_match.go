@@ -19,7 +19,7 @@ import (
 
 var ErrIsChached = fmt.Errorf("asset is cached")
 var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
-var _mutHandleAssetMatch = sync.Mutex{}
+var _mutexHandleAssetMatch = sync.Mutex{}
 
 func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
 	// get the checksum
@@ -82,8 +82,8 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 		}
 	}()
 
-	_mutHandleAssetMatch.Lock()
-	defer _mutHandleAssetMatch.Unlock()
+	_mutexHandleAssetMatch.Lock()
+	defer _mutexHandleAssetMatch.Unlock()
 	log.Println("Moving app to app.old")
 	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
 		return err
@@ -91,7 +91,9 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 
 	log.Println("Moving asset to app path")
 	if err = Copy(tempPath, app.AppPath); err != nil {
-		// TODO roll back
+		// Roll back
+		os.Remove(app.AppPath)
+		os.Rename(app.AppPath+".old", app.AppPath)
 		return err
 	}
 
@@ -171,8 +173,8 @@ func hashFile(path string, hasher hash.Hash) ([]byte, error) {
 }
 
 func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached bool) {
-	_mutHandleAssetMatch.Lock()
-	defer _mutHandleAssetMatch.Unlock()
+	_mutexHandleAssetMatch.Lock()
+	defer _mutexHandleAssetMatch.Unlock()
 
 	file, err := os.Open(app.AppPath)
 	if err != nil {
@@ -189,8 +191,8 @@ func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached
 }
 
 func cacheWithFile(path string, app configuration.Application) (isCached bool) {
-	_mutHandleAssetMatch.Lock()
-	defer _mutHandleAssetMatch.Unlock()
+	_mutexHandleAssetMatch.Lock()
+	defer _mutexHandleAssetMatch.Unlock()
 
 	hashFileDownload, err := hashFile(path, NewFileHash())
 	if err != nil {
