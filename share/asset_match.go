@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -29,6 +30,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 			return err
 		}
 	}
+	log.Println("should verify the asset", verify)
 
 	// if there is a checksum, verify that the app is not the same as the internet using the hashes
 	// if there is no checksum then the cache verification will be performed later on the function
@@ -36,6 +38,7 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 		return ErrIsChached
 	}
 
+	log.Println("Donwloading asset")
 	client := NewGithubClient(app, nil)
 	rc, lenght, err := downloadableAsset(client, *asset.URL)
 	if err != nil {
@@ -43,34 +46,41 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	}
 
 	path := filepath.Join(Config().BasePath, *asset.Name)
+	log.Println("save asset to temporary file in", path)
 	if err = CreateFile(rc, lenght, path); err != nil {
 		return err
 	}
 
 	if verify {
+		log.Println("verifiying checksum")
 		// verifiy that the checksum correspond to the downloaded asset
 		if !verifyChecksum(checksum, path) {
 			return ErrUnverifiedAsset
 		}
 	} else {
+		log.Println("checking if asset is already installed")
 		// as there is no checksum hash the both, the app file and the downloaded one.
 		if cacheWithFile(path, app) {
 			return ErrIsChached
 		}
 	}
 
+	log.Println("stoping task")
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		return err
 	}
 
+	log.Println("Moving app to app.old")
 	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
 		return err
 	}
 
-	if err = os.Rename(path, app.AppPath); err != nil {
+	log.Println("Moving asset to app path")
+	if err = Copy(path, app.AppPath); err != nil {
 		return err
 	}
 
+	log.Println("Run the task")
 	if err = taskservice.Start(app.TaskSchedPath); err != nil {
 		return err
 	}
