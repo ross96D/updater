@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"runtime/pprof"
 
@@ -23,6 +24,12 @@ func main() {
 			break
 		}
 	}
+
+	f, err := os.Create(".log")
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(f)
 
 	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()
