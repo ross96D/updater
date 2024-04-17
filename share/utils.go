@@ -126,10 +126,10 @@ func Copy(src string, dst string) error {
 	defer destFile.Close()
 
 	srcFile, err := os.Open(src)
-	defer srcFile.Close()
 	if err != nil {
 		return err
 	}
+	defer srcFile.Close()
 	_, err = io.Copy(destFile, srcFile)
 	return err
 }
