@@ -28,6 +28,10 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Duration(d).String())
+}
+
 func (d Duration) GoDuration() time.Duration {
 	return time.Duration(d)
 }
