@@ -71,12 +71,16 @@ func GetChecksum(app configuration.Application, release *github.RepositoryReleas
 	switch chsm := app.Checksum.C.(type) {
 	case configuration.DirectChecksum:
 		return directChecksum(chsm, app, release)
+
 	case configuration.AggregateChecksum:
 		return aggregateChecksum(chsm, app, release)
+
 	case configuration.CustomChecksum:
 		return customChecksum(chsm, app.GithubAuthToken)
+
 	case configuration.NoChecksum:
 		return nil, ErrNoChecksum
+
 	default:
 		return nil, errors.New("unknown checksum type")
 	}
@@ -101,6 +105,8 @@ func getAsset(app configuration.Application, release *github.RepositoryRelease, 
 	return
 }
 
+// the direct checksum search for the DirectChecksum.AssetName on the release, and if is found then
+// use the content of the file as the checksum
 func directChecksum(
 	chsm configuration.DirectChecksum,
 	app configuration.Application,
@@ -120,12 +126,19 @@ func directChecksum(
 	return hex.DecodeString(string(result))
 }
 
+// the aggregate checksum search for the AggregateChecksum.AssetName on the release, and if is found then
+// search for the (AggregateChecksum.Key ?? Application.AssetName) and use the hash for that
+//
+// The expected format is:
+//
+// <hexadecimal encoded hash><blank space><key1>
+//
+// <hexadecimal encoded hash><blank space><key2>
 func aggregateChecksum(
 	chsm configuration.AggregateChecksum,
 	app configuration.Application,
 	release *github.RepositoryRelease,
 ) (result []byte, err error) {
-
 	rc, err := getAsset(app, release, chsm.AssetName)
 	if err != nil {
 		return
@@ -164,6 +177,10 @@ func aggregateChecksum(
 	return hex.DecodeString(checksum)
 }
 
+// The custom checksum let the user make a custom script for the checksum implementation.
+// The script recieves the github token as an enviroment variable named "__UPDATER_GTIHUB_TOKEN"
+//
+// The script should output the hash value on the stdout as a hexadecimal encoded string.
 func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (result []byte, err error) {
 	var cmd *exec.Cmd
 	if chsm.Args != nil {
