@@ -108,7 +108,7 @@ func (d *Checksum) UnmarshalJSON(data []byte) error {
 		d.C = dc
 
 	case "CustomChecksum":
-		var nc NoChecksum
+		var nc CustomChecksum
 		err = json.Unmarshal(data, &nc)
 		if err != nil {
 			return err
