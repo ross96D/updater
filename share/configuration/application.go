@@ -24,7 +24,7 @@ type Application struct {
 	SystemPath    string   `json:"system_path"`
 	Checksum      Checksum `json:"checksum"`
 
-	AdditionalAssets []AdditionalAsset
+	AdditionalAssets []AdditionalAsset `json:"additional_assets"`
 
 	UseCache bool `json:"use_cache"`
 }
@@ -120,6 +120,47 @@ func (d *Checksum) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
+}
+
+func (d Checksum) MarshalJSON() ([]byte, error) {
+	if d.C == nil {
+		return []byte("null"), nil
+	}
+
+	switch v := d.C.(type) {
+	case AggregateChecksum:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			AggregateChecksum
+		}{
+			Type:              "AggregateChecksum",
+			AggregateChecksum: v,
+		})
+
+	case CustomChecksum:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			CustomChecksum
+		}{
+			Type:           "CustomChecksum",
+			CustomChecksum: v,
+		})
+
+	case DirectChecksum:
+		return json.Marshal(struct {
+			Type string `json:"type"`
+			DirectChecksum
+		}{
+			Type:           "DirectChecksum",
+			DirectChecksum: v,
+		})
+
+	case NoChecksum:
+		return json.Marshal(v)
+
+	default:
+		return nil, errors.New("unsupported type")
+	}
 }
 
 type AggregateChecksum struct {
