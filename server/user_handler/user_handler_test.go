@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ross96D/updater/share"
+	"github.com/ross96D/updater/share/configuration"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,18 +24,55 @@ func TestHandleUserAppsList(t *testing.T) {
 
 	expected := []App{
 		{
-			Index:     0,
-			Host:      "github.com",
-			Owner:     "ross96D",
-			Repo:      "updater",
-			AssetName: "-",
+			Index: 0,
+			Application: configuration.Application{
+				Host:                "github.com",
+				Owner:               "ross96D",
+				Repo:                "updater",
+				GithubWebhookSecret: "-",
+				GithubAuthToken:     "-",
+				AssetName:           "-",
+				TaskSchedPath:       "-",
+				SystemPath:          "-",
+
+				Checksum: configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
+				AdditionalAssets: []configuration.AdditionalAsset{
+					{
+						Name:       "asset1",
+						SystemPath: "path1",
+						Checksum: configuration.Checksum{
+							C: configuration.DirectChecksum{
+								AssetName: "-",
+							},
+						},
+					},
+					{
+						Name:       "asset1",
+						SystemPath: "path1",
+						Checksum: configuration.Checksum{
+							C: configuration.DirectChecksum{
+								AssetName: "-",
+							},
+						},
+					},
+				},
+				UseCache: true,
+			},
 		},
 		{
-			Index:     1,
-			Host:      "github.com",
-			Owner:     "ross96D",
-			Repo:      "updater2",
-			AssetName: "--",
+			Index: 1,
+			Application: configuration.Application{
+				Host:                "github.com",
+				Owner:               "ross96D",
+				Repo:                "updater2",
+				GithubWebhookSecret: "-",
+				GithubAuthToken:     "-",
+				AssetName:           "--",
+				TaskSchedPath:       "-",
+				SystemPath:          "-",
+				Checksum:            configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
+				UseCache:            true,
+			},
 		},
 	}
 

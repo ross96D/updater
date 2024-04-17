@@ -52,11 +52,8 @@ func HandlerUserUpdate(payload []byte) error {
 }
 
 type App struct {
-	Index     int    `json:"index"`
-	Host      string `json:"host"`
-	Owner     string `json:"owner"`
-	Repo      string `json:"repo"`
-	AssetName string `json:"asset_name"`
+	Index int `json:"index"`
+	configuration.Application
 }
 
 func HandleUserAppsList(w io.Writer) error {
@@ -65,11 +62,8 @@ func HandleUserAppsList(w io.Writer) error {
 	apps := make([]App, 0, len(list))
 	for i, v := range list {
 		app := App{
-			Index:     i,
-			Host:      v.Host,
-			Owner:     v.Owner,
-			Repo:      v.Repo,
-			AssetName: v.AssetName,
+			Index:       i,
+			Application: v,
 		}
 		apps = append(apps, app)
 	}

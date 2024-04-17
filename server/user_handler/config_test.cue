@@ -13,6 +13,22 @@ apps: [
 		checksum: {
 			direct_asset_name: "-"
 		}
+		additional_assets: [
+			{
+				name:        "asset1"
+				system_path: "path1"
+				checksum: {
+					direct_asset_name: "-"
+				}
+			},
+			{
+				name:        "asset1"
+				system_path: "path1"
+				checksum: {
+					direct_asset_name: "-"
+				}
+			},
+		]
 	},
 	{
 		owner:                 "ross96D"
