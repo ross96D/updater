@@ -22,6 +22,12 @@ import "time"
     args?: [...string]
 }
 
+#AdditionalAsset: {
+    name: string
+    system_path: string
+    checksum: #DirectChecksum | #AggregateChecksum | #CustomChecksum | *#NoChecksum
+}
+
 #NoChecksum: {}
 
 #Application: {
@@ -33,9 +39,11 @@ import "time"
     
     asset_name!: string
     task_sched_path!: string
-    app_path!: string
+    system_path!: string
     
     checksum: #DirectChecksum | #AggregateChecksum | #CustomChecksum | *#NoChecksum
+
+    additional_assets?: [...#AdditionalAsset]
 
     use_cache: bool | *true 
 }

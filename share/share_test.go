@@ -112,7 +112,7 @@ func TestReload(t *testing.T) {
 				GithubAuthToken:     "auth",
 				AssetName:           "some asset name",
 				TaskSchedPath:       "/is/a/path",
-				AppPath:             "/is/a/path",
+				SystemPath:          "/is/a/path",
 				Checksum:            configuration.Checksum{C: configuration.NoChecksum{}},
 				UseCache:            true,
 			},

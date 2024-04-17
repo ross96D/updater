@@ -86,15 +86,15 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 	_mutexHandleAssetMatch.Lock()
 	defer _mutexHandleAssetMatch.Unlock()
 	log.Println("Moving app to app.old")
-	if err = os.Rename(app.AppPath, app.AppPath+".old"); err != nil {
+	if err = os.Rename(app.SystemPath, app.SystemPath+".old"); err != nil {
 		return err
 	}
 
 	log.Println("Moving asset to app path")
-	if err = Copy(tempPath, app.AppPath); err != nil {
+	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
-		os.Remove(app.AppPath)
-		os.Rename(app.AppPath+".old", app.AppPath)
+		os.Remove(app.SystemPath)
+		os.Rename(app.SystemPath+".old", app.SystemPath)
 		return err
 	}
 
@@ -177,13 +177,13 @@ func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached
 	_mutexHandleAssetMatch.Lock()
 	defer _mutexHandleAssetMatch.Unlock()
 
-	file, err := os.Open(app.AppPath)
+	file, err := os.Open(app.SystemPath)
 	if err != nil {
 		return
 	}
 	defer file.Close()
 
-	hash, err := hashFile(app.AppPath, NewFileHash())
+	hash, err := hashFile(app.SystemPath, NewFileHash())
 	if err != nil {
 		return
 	}
@@ -200,7 +200,7 @@ func cacheWithFile(path string, app configuration.Application) (isCached bool) {
 		return
 	}
 
-	hashApp, err := hashFile(app.AppPath, NewFileHash())
+	hashApp, err := hashFile(app.SystemPath, NewFileHash())
 	if err != nil {
 		return
 	}

@@ -6,6 +6,12 @@ import (
 	"errors"
 )
 
+type AdditionalAsset struct {
+	Name       string   `json:"name"`
+	SystemPath string   `json:"system_path"`
+	Checksum   Checksum `json:"checksum"`
+}
+
 type Application struct {
 	Owner               string `json:"owner"`
 	Repo                string `json:"repo"`
@@ -15,8 +21,10 @@ type Application struct {
 	AssetName           string `json:"asset_name"`
 
 	TaskSchedPath string   `json:"task_sched_path"`
-	AppPath       string   `json:"app_path"`
+	SystemPath    string   `json:"system_path"`
 	Checksum      Checksum `json:"checksum"`
+
+	AdditionalAssets []AdditionalAsset
 
 	UseCache bool `json:"use_cache"`
 }
