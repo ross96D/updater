@@ -21,10 +21,14 @@ var ErrIsChached = fmt.Errorf("asset is cached")
 var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
 var _mutexHandleAssetMatch = sync.Mutex{}
 
-func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset, release *github.RepositoryRelease) error {
+func HandleAssetMatch(
+	app configuration.Application,
+	asset *github.ReleaseAsset,
+	release *github.RepositoryRelease,
+) error {
 	// get the checksum
 	var verify = true
-	checksum, err := GetChecksum(app, release)
+	checksum, err := GetChecksum(app, app.Checksum, release)
 	if err != nil {
 		if err == ErrNoChecksum {
 			verify = false
@@ -72,6 +76,11 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 		}
 	}
 
+	additionalAssetsTempPath, err := CreateAdditionalAssets(app, release)
+	if err != nil {
+		log.Println("error downloading assets", err.Error())
+	}
+
 	log.Println("stoping task")
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		return err
@@ -98,7 +107,82 @@ func HandleAssetMatch(app configuration.Application, asset *github.ReleaseAsset,
 		return err
 	}
 
+	for _, p := range additionalAssetsTempPath {
+		if err = os.Rename(p.SystemPath, p.SystemPath+".old"); err != nil {
+			// log error
+			continue
+		}
+		if err = Copy(p.TempPath, p.SystemPath); err != nil {
+			// Roll back
+			os.Remove(p.SystemPath)
+			os.Rename(p.SystemPath+".old", p.SystemPath)
+			return err
+		}
+	}
+
 	return nil
+}
+
+type additionalAssetPath struct {
+	SystemPath string
+	TempPath   string
+}
+
+func CreateAdditionalAssets(
+	app configuration.Application,
+	release *github.RepositoryRelease,
+) ([]additionalAssetPath, error) {
+	result := make([]additionalAssetPath, 0, len(app.AdditionalAssets))
+	for _, a := range app.AdditionalAssets {
+		if index := slices.IndexFunc(release.Assets, func(e *github.ReleaseAsset) bool {
+			return *e.Name == a.Name
+		}); index >= 0 {
+			path, err := HandleAdditionalAsset(app, a, release.Assets[index], release)
+			if err != nil {
+				// error log
+				log.Println("error handling additional asset", a.Name, "error", err.Error())
+				continue
+			}
+			result = append(result, additionalAssetPath{
+				SystemPath: a.SystemPath,
+				TempPath:   path,
+			})
+		}
+
+	}
+	return result, nil
+}
+
+func HandleAdditionalAsset(
+	app configuration.Application,
+	appAsset configuration.AdditionalAsset,
+	asset *github.ReleaseAsset,
+	release *github.RepositoryRelease,
+) (string, error) {
+	var verify = true
+	checksum, err := GetChecksum(app, appAsset.Checksum, release)
+	if err != nil {
+		if err == ErrNoChecksum {
+			verify = false
+		} else {
+			return "", err
+		}
+	}
+	// if there is a checksum, verify that the app is not the same as the internet using the hashes
+	// if there is no checksum then the cache verification will be performed later on the function
+	if verify && app.UseCache && cacheWithChecksum(checksum, app) {
+		return "", ErrIsChached
+	}
+
+	client := NewGithubClient(app, nil)
+	rc, lenght, err := downloadableAsset(client, *asset.URL)
+	if err != nil {
+		return "", err
+	}
+
+	tempPath := filepath.Join(Config().BasePath, *asset.Name)
+
+	return CreateFile(rc, lenght, tempPath)
 }
 
 func downloadableAsset(ghclient *github.Client, url string) (rc io.ReadCloser, lenght int64, err error) {

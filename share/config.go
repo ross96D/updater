@@ -31,10 +31,16 @@ func Init(path string) {
 		panic(err)
 	}
 
-	changeConfig(newConfig)
+	if err = changeConfig(newConfig); err != nil {
+		panic(err)
+	}
 }
 
-func changeConfig(newConfig configuration.Configuration) {
+func changeConfig(newConfig configuration.Configuration) (err error) {
+	if err = configPathValidation(newConfig); err != nil {
+		return
+	}
+
 	config = newConfig
 
 	if config.BasePath == "" {
@@ -42,6 +48,12 @@ func changeConfig(newConfig configuration.Configuration) {
 	}
 
 	log.Printf("configuration %+v", config)
+	return
+}
+
+func configPathValidation(configuration.Configuration) error {
+	// TODO
+	return nil
 }
 
 func ReloadString(data string) error {
@@ -49,8 +61,7 @@ func ReloadString(data string) error {
 	if err != nil {
 		return err
 	}
-	changeConfig(newConfig)
-	return nil
+	return changeConfig(newConfig)
 }
 
 func Reload(path string) error {
@@ -67,8 +78,8 @@ func Config() configuration.Configuration {
 	return config
 }
 
-func GetChecksum(app configuration.Application, release *github.RepositoryRelease) (result []byte, err error) {
-	switch chsm := app.Checksum.C.(type) {
+func GetChecksum(app configuration.Application, checksum configuration.Checksum, release *github.RepositoryRelease) (result []byte, err error) {
+	switch chsm := checksum.C.(type) {
 	case configuration.DirectChecksum:
 		return directChecksum(chsm, app, release)
 

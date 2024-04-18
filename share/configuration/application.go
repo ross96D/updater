@@ -6,10 +6,18 @@ import (
 	"errors"
 )
 
+type AssetName interface {
+	GetAsset() string
+}
+
 type AdditionalAsset struct {
 	Name       string   `json:"name"`
 	SystemPath string   `json:"system_path"`
 	Checksum   Checksum `json:"checksum"`
+}
+
+func (a AdditionalAsset) GetAsset() string {
+	return a.Name
 }
 
 type Application struct {
@@ -27,6 +35,10 @@ type Application struct {
 	AdditionalAssets []AdditionalAsset `json:"additional_assets"`
 
 	UseCache bool `json:"use_cache"`
+}
+
+func (a Application) GetAsset() string {
+	return a.AssetName
 }
 
 type IChecksum interface {
