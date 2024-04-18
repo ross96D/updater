@@ -1,6 +1,7 @@
 package share
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"hash"
@@ -185,15 +186,14 @@ func HandleAdditionalAsset(
 	return CreateFile(rc, lenght, tempPath)
 }
 
-func downloadableAsset(ghclient *github.Client, url string) (rc io.ReadCloser, lenght int64, err error) {
-	client := ghclient.Client()
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func downloadableAsset(client *github.Client, url string) (rc io.ReadCloser, lenght int64, err error) {
+	req, err := client.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("Accept", "application/octet-stream")
 
 	if err != nil {
 		return
 	}
-	resp, err := client.Do(req)
+	resp, err := client.BareDo(context.TODO(), req)
 	if err != nil {
 		return
 	}
@@ -202,7 +202,7 @@ func downloadableAsset(ghclient *github.Client, url string) (rc io.ReadCloser, l
 		return
 	}
 	if resp.ContentLength < 0 {
-		if resp.ContentLength, err = getHeaders(ghclient, url); err != nil {
+		if resp.ContentLength, err = getHeaders(client, url); err != nil {
 			err = fmt.Errorf("head request: %w", err)
 			return
 		}
@@ -210,14 +210,13 @@ func downloadableAsset(ghclient *github.Client, url string) (rc io.ReadCloser, l
 	return resp.Body, resp.ContentLength, nil
 }
 
-func getHeaders(ghclient *github.Client, url string) (lenght int64, err error) {
-	client := ghclient.Client()
-	req, err := http.NewRequest(http.MethodHead, url, nil)
+func getHeaders(client *github.Client, url string) (lenght int64, err error) {
+	req, err := client.NewRequest(http.MethodHead, url, nil)
 	req.Header.Set("Accept", "application/octet-stream")
 	if err != nil {
 		return
 	}
-	resp, err := client.Do(req)
+	resp, err := client.BareDo(context.TODO(), req)
 	if err != nil {
 		return
 	}
