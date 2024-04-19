@@ -5,13 +5,37 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+const testPath = "test_path"
+const testSysPath = "test_sys_path"
+
+func testConfig() configuration.Configuration {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	testPath := filepath.Join(cwd, testPath)
+	err = os.Mkdir(testPath, 0777)
+	if err != nil {
+		panic(err)
+	}
+	return configuration.Configuration{
+		Port:          65432,
+		UserJwtExpiry: configuration.Duration(0),
+		BasePath:      testPath,
+	}
+}
 
 func TestCustomChecksum(t *testing.T) {
 	command := configuration.CustomChecksum{
@@ -162,4 +186,50 @@ func TestCreateTempFile(t *testing.T) {
 	bytes, err := io.ReadAll(f)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, data, string(bytes))
+}
+
+func TestConfigPathValidationLinux(t *testing.T) {
+	if runtime.GOOS != "Linux" {
+		t.SkipNow()
+	}
+	//! TODO check for windows
+	conf := configuration.Configuration{
+		BasePath: "/valid/path",
+		Apps: []configuration.Application{
+			{
+				SystemPath: "/app/valid/path",
+				AdditionalAssets: []configuration.AdditionalAsset{
+					{
+						SystemPath: "/asset/valid/path",
+					},
+				},
+			},
+		},
+	}
+
+	err := configPathValidation(conf)
+	assert.Equal(t, []string{}, err)
+}
+
+func TestConfigPathValidationWindows(t *testing.T) {
+	if runtime.GOOS != "Windows" {
+		t.SkipNow()
+	}
+	//! TODO check for windows
+	conf := configuration.Configuration{
+		BasePath: "C:\\\\valid\\path",
+		Apps: []configuration.Application{
+			{
+				SystemPath: "D:\\\\app\\valid\\path",
+				AdditionalAssets: []configuration.AdditionalAsset{
+					{
+						SystemPath: "D:\\\\asset\\valid\\path",
+					},
+				},
+			},
+		},
+	}
+
+	err := configPathValidation(conf)
+	assert.Equal(t, []string{}, err)
 }

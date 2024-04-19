@@ -37,23 +37,35 @@ func Init(path string) {
 }
 
 func changeConfig(newConfig configuration.Configuration) (err error) {
-	if err = configPathValidation(newConfig); err != nil {
+	if newConfig.BasePath == "" {
+		newConfig.BasePath = defaultPath
+	}
+	if invalidPaths := configPathValidation(newConfig); len(invalidPaths) != 0 {
+		err = fmt.Errorf("invalid paths:\n%s", strings.Join(invalidPaths, "\n"))
 		return
 	}
-
 	config = newConfig
-
-	if config.BasePath == "" {
-		config.BasePath = defaultPath
-	}
-
 	log.Printf("configuration %+v", config)
 	return
 }
 
-func configPathValidation(configuration.Configuration) error {
-	// TODO
-	return nil
+func configPathValidation(config configuration.Configuration) (invalidPaths []string) {
+	var isCorrect bool
+	invalidPaths = make([]string, 0)
+	if isCorrect = ValidPath(config.BasePath); !isCorrect {
+		invalidPaths = append(invalidPaths, config.BasePath)
+	}
+	for _, app := range config.Apps {
+		if isCorrect = ValidPath(app.SystemPath); !isCorrect {
+			invalidPaths = append(invalidPaths, app.SystemPath)
+		}
+		for _, asset := range app.AdditionalAssets {
+			if isCorrect = ValidPath(asset.SystemPath); !isCorrect {
+				invalidPaths = append(invalidPaths, asset.SystemPath)
+			}
+		}
+	}
+	return
 }
 
 func ReloadString(data string) error {
