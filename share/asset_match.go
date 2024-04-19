@@ -19,7 +19,7 @@ import (
 )
 
 var ErrIsChached = fmt.Errorf("asset is cached")
-var ErrUnverifiedAsset = fmt.Errorf("unverfied asset")
+var ErrUnverifiedAsset = fmt.Errorf("unverified asset")
 var _mutexHandleAssetMatch = sync.Mutex{}
 
 func HandleAssetMatch(
