@@ -39,15 +39,14 @@ func HandleAssetMatch(
 	}
 	log.Println("should verify the asset", verify)
 
-	// if there is a checksum, verify that the app is not the same as the internet using the hashes
+	// if there is a checksum, verify that the app is not the same as the one on the repo using the hashes
 	// if there is no checksum then the cache verification will be performed later on the function
 	if verify && app.UseCache && cacheWithChecksum(checksum, app) {
 		return ErrIsChached
 	}
 
 	log.Println("Donwloading asset")
-	client := NewGithubClient(app, nil)
-	rc, lenght, err := downloadableAsset(client, *asset.URL)
+	rc, lenght, err := downloadableAsset(NewGithubClient(app, nil), *asset.URL)
 	if err != nil {
 		return err
 	}
@@ -96,7 +95,7 @@ func HandleAssetMatch(
 	_mutexHandleAssetMatch.Lock()
 	defer _mutexHandleAssetMatch.Unlock()
 	log.Println("Moving app to app.old")
-	if err = os.Rename(app.SystemPath, app.SystemPath+".old"); err != nil {
+	if err = RenameSafe(app.SystemPath, app.SystemPath+".old"); err != nil {
 		return err
 	}
 
@@ -104,19 +103,19 @@ func HandleAssetMatch(
 	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
 		os.Remove(app.SystemPath)
-		os.Rename(app.SystemPath+".old", app.SystemPath)
+		RenameSafe(app.SystemPath+".old", app.SystemPath)
 		return err
 	}
 
 	for _, p := range additionalAssetsTempPath {
-		if err = os.Rename(p.SystemPath, p.SystemPath+".old"); err != nil {
+		if err = RenameSafe(p.SystemPath, p.SystemPath+".old"); err != nil {
 			// log error
 			continue
 		}
 		if err = Copy(p.TempPath, p.SystemPath); err != nil {
 			// Roll back
 			os.Remove(p.SystemPath)
-			os.Rename(p.SystemPath+".old", p.SystemPath)
+			RenameSafe(p.SystemPath+".old", p.SystemPath)
 			return err
 		}
 	}
