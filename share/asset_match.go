@@ -134,21 +134,26 @@ func CreateAdditionalAssets(
 ) ([]additionalAssetPath, error) {
 	result := make([]additionalAssetPath, 0, len(app.AdditionalAssets))
 	for _, a := range app.AdditionalAssets {
-		if index := slices.IndexFunc(release.Assets, func(e *github.ReleaseAsset) bool {
-			return *e.Name == a.Name
-		}); index >= 0 {
-			path, err := HandleAdditionalAsset(app, a, release.Assets[index], release)
-			if err != nil {
-				// error log
-				log.Println("error handling additional asset", a.Name, "error", err.Error())
-				continue
-			}
-			result = append(result, additionalAssetPath{
-				SystemPath: a.SystemPath,
-				TempPath:   path,
-			})
+		index := slices.IndexFunc(
+			release.Assets,
+			func(e *github.ReleaseAsset) bool {
+				return *e.Name == a.Name
+			},
+		)
+		if index < 0 {
+			continue
 		}
 
+		path, err := HandleAdditionalAsset(app, a, release.Assets[index], release)
+		if err != nil {
+			// error log
+			log.Println("error handling additional asset", a.Name, "error", err.Error())
+			continue
+		}
+		result = append(result, additionalAssetPath{
+			SystemPath: a.SystemPath,
+			TempPath:   path,
+		})
 	}
 	return result, nil
 }
