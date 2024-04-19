@@ -159,3 +159,15 @@ func ValidPath(path string) bool {
 
 	return true
 }
+
+func RenameSafe(oldpath string, newpath string) error {
+	_, err := os.Stat(oldpath)
+	if err != nil {
+		f, err := os.Create(oldpath)
+		if err != nil {
+			return err
+		}
+		f.Close()
+	}
+	return os.Rename(oldpath, newpath)
+}
