@@ -113,6 +113,46 @@ func TestDirectChecksum(t *testing.T) {
 	assert.Equal(t, "direct_checksum", string(checksum))
 }
 
+func TestAdditionalAsset(t *testing.T) {
+	client := github.NewClient(nil)
+	release, _, err := client.Repositories.GetRelease(context.Background(), "ross96D", "updater", 148914964)
+	assert.Equal(t, nil, err)
+
+	var main_asset = "main_asset"
+	var additional_asset = "additional_asset"
+	app := configuration.Application{
+		Owner: "ross96D",
+		Repo:  "updater",
+		Host:  "github.com",
+		Checksum: configuration.Checksum{C: configuration.AggregateChecksum{
+			AssetName: "aggregate_checksum.txt",
+			Key:       &main_asset,
+		}},
+		AdditionalAssets: []configuration.AdditionalAsset{
+			{
+				Name:       "additional_asset_test.json",
+				SystemPath: filepath.Join(testSysPath, "additional_asset_test.json"),
+				Checksum: configuration.Checksum{C: configuration.AggregateChecksum{
+					AssetName: "aggregate_checksum.txt",
+					Key:       &additional_asset,
+				}},
+			},
+		},
+		SystemPath: filepath.Join(testSysPath, "main_asset_test.json"),
+		AssetName:  "main_asset_test.json",
+	}
+	config := testConfig()
+	config.Apps = []configuration.Application{app}
+	changeConfig(config)
+
+	index := slices.IndexFunc(release.Assets, func(a *github.ReleaseAsset) bool {
+		return *a.Name == app.AssetName
+	})
+	require.NotEqual(t, -1, index)
+	err = HandleAssetMatch(app, release.Assets[index], release)
+	require.Equal(t, nil, err)
+}
+
 func TestReload(t *testing.T) {
 	Init("config_test.cue")
 	old := Config()
