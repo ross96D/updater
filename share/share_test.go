@@ -26,9 +26,19 @@ func testConfig() configuration.Configuration {
 		panic(err)
 	}
 	testPath := filepath.Join(cwd, testPath)
-	err = os.Mkdir(testPath, 0777)
-	if err != nil {
-		panic(err)
+	if _, err = os.Stat(testPath); err != nil {
+		err = os.Mkdir(testPath, 0777)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	testSysPath := filepath.Join(cwd, testSysPath)
+	if _, err = os.Stat(testSysPath); err != nil {
+		err = os.Mkdir(testSysPath, 0777)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return configuration.Configuration{
 		Port:          65432,
