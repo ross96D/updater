@@ -239,7 +239,7 @@ func TestCreateTempFile(t *testing.T) {
 }
 
 func TestConfigPathValidationLinux(t *testing.T) {
-	if runtime.GOOS != "Linux" {
+	if runtime.GOOS != "linux" {
 		t.SkipNow()
 	}
 	//! TODO check for windows
@@ -262,7 +262,7 @@ func TestConfigPathValidationLinux(t *testing.T) {
 }
 
 func TestConfigPathValidationWindows(t *testing.T) {
-	if runtime.GOOS != "Windows" {
+	if runtime.GOOS != "windows" {
 		t.SkipNow()
 	}
 	//! TODO check for windows
