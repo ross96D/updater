@@ -7,7 +7,6 @@ import (
 
 type Configuration struct {
 	Port          uint16        `json:"port"`
-	Output        string        `json:"output"`
 	UserJwtExpiry Duration      `json:"user_jwt_expiry"`
 	UserSecretKey string        `json:"user_secret_key"`
 	Apps          []Application `json:"apps"`

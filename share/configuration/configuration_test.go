@@ -58,7 +58,6 @@ func TestConfigurationJson(t *testing.T) {
 	configs := []Configuration{
 		{
 			Port:          8932,
-			Output:        "output",
 			UserJwtExpiry: Duration(500),
 			UserSecretKey: "key",
 			Users: []User{
