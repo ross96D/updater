@@ -5,3 +5,5 @@ out/
 config.pkl
 config.cue
 .logs
+
+share/test_*/
