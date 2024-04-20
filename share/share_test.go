@@ -242,7 +242,6 @@ func TestConfigPathValidationLinux(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.SkipNow()
 	}
-	//! TODO check for windows
 	conf := configuration.Configuration{
 		BasePath: "/valid/path",
 		Apps: []configuration.Application{
@@ -265,15 +264,14 @@ func TestConfigPathValidationWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
 	}
-	//! TODO check for windows
 	conf := configuration.Configuration{
-		BasePath: "C:\\\\valid\\path",
+		BasePath: "C:\\valid\\path",
 		Apps: []configuration.Application{
 			{
-				SystemPath: "D:\\\\app\\valid\\path",
+				SystemPath: "D:\\app\\valid\\path",
 				AdditionalAssets: []configuration.AdditionalAsset{
 					{
-						SystemPath: "D:\\\\asset\\valid\\path",
+						SystemPath: "D:\\asset\\valid\\path",
 					},
 				},
 			},

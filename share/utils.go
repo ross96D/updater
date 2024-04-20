@@ -8,11 +8,8 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"runtime"
 	"strconv"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
@@ -135,29 +132,6 @@ func Copy(src string, dst string) error {
 	defer srcFile.Close()
 	_, err = io.Copy(destFile, srcFile)
 	return err
-}
-
-func ValidPath(path string) bool {
-	if !utf8.ValidString(path) {
-		return false
-	}
-
-	var invalidChars string
-
-	switch runtime.GOOS {
-	case "windows":
-		invalidChars = "<>:\"|?*"
-	default:
-		invalidChars = string('\x00')
-	}
-
-	for _, char := range invalidChars {
-		if contains := strings.ContainsRune(path, char); contains {
-			return false
-		}
-	}
-
-	return true
 }
 
 func RenameSafe(oldpath string, newpath string) error {

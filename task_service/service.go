@@ -2,7 +2,11 @@
 
 package taskservice
 
-import "github.com/ross96D/taskmaster"
+import (
+	"log"
+
+	"github.com/ross96D/taskmaster"
+)
 
 type TaskService struct {
 	service taskmaster.TaskService
@@ -31,6 +35,12 @@ func (ts *TaskService) GetRegisteredTasks() (taskmaster.RegisteredTaskCollection
 }
 
 func (ts *TaskService) Stop(path string) error {
+	if path == "" {
+		// TODO log warning
+		log.Println("task path is empty. No op")
+		return nil
+	}
+
 	task, err := ts.service.GetRegisteredTask(path)
 	if err != nil {
 		return err
@@ -67,6 +77,12 @@ func close() {
 }
 
 func Stop(path string) error {
+	if path == "" {
+		// TODO log warning
+		log.Println("task path is empty. No op")
+		return nil
+	}
+
 	ts, err := get()
 	if err != nil {
 		return err
@@ -75,6 +91,12 @@ func Stop(path string) error {
 }
 
 func Start(path string) error {
+	if path == "" {
+		// TODO log warning
+		log.Println("task path is empty. No op")
+		return nil
+	}
+
 	ts, err := get()
 	if err != nil {
 		return err
