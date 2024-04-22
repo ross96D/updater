@@ -102,6 +102,7 @@ func HandleAssetMatch(
 	log.Println("Moving asset to app path")
 	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
+		log.Println("Error: copy %s to %s. err: %s", p.TempPath, p.SystemPath, err.Error())
 		os.Remove(app.SystemPath)
 		RenameSafe(app.SystemPath+".old", app.SystemPath)
 		return err
@@ -110,10 +111,12 @@ func HandleAssetMatch(
 	for _, p := range additionalAssetsTempPath {
 		if err = RenameSafe(p.SystemPath, p.SystemPath+".old"); err != nil {
 			// log error
+			log.Println("Error: RenameSafe %s to %s. err: %s", p.SystemPath, p.SystemPath+".old", err.Error())
 			continue
 		}
 		if err = Copy(p.TempPath, p.SystemPath); err != nil {
 			// Roll back
+			log.Println("Error: copy %s to %s. err: %s", p.TempPath, p.SystemPath, err.Error())
 			os.Remove(p.SystemPath)
 			RenameSafe(p.SystemPath+".old", p.SystemPath)
 			return err
