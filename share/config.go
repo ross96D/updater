@@ -45,7 +45,7 @@ func changeConfig(newConfig configuration.Configuration) (err error) {
 		return
 	}
 	config = newConfig
-	log.Printf("configuration %+v", config)
+	log.Printf("configuration %+v\n", config)
 	return
 }
 
