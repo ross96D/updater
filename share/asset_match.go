@@ -45,7 +45,7 @@ func HandleAssetMatch(
 		return ErrIsChached
 	}
 
-	log.Println("Donwloading asset")
+	log.Println("Donwloading asset", app.AssetName)
 	rc, lenght, err := downloadableAsset(NewGithubClient(app, nil), *asset.URL)
 	if err != nil {
 		return err
@@ -72,21 +72,23 @@ func HandleAssetMatch(
 		log.Println("checking if asset is already installed")
 		// as there is no checksum hash the both, the app file and the downloaded one.
 		if cacheWithFile(tempPath, app) {
-			return ErrIsChached
+			log.Println("do not return, but asset is cached")
+			// return ErrIsChached
 		}
 	}
 
 	additionalAssetsTempPath, err := CreateAdditionalAssets(app, release)
+	log.Printf("additional paths are %d %+v\n", len(additionalAssetsTempPath), additionalAssetsTempPath)
 	if err != nil {
 		log.Println("error downloading assets", err.Error())
 	}
 
-	log.Println("stoping task")
+	log.Println("stoping task", app.TaskSchedPath)
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		return err
 	}
 	defer func() {
-		log.Println("Run the task")
+		log.Println("Run the task", app.TaskSchedPath)
 		if err := taskservice.Start(app.TaskSchedPath); err != nil {
 			log.Println("Error reruning the task", err.Error())
 		}
@@ -94,15 +96,15 @@ func HandleAssetMatch(
 
 	_mutexHandleAssetMatch.Lock()
 	defer _mutexHandleAssetMatch.Unlock()
-	log.Println("Moving app to app.old")
+	log.Println("Moving", app.SystemPath, "to", app.SystemPath+".old")
 	if err = RenameSafe(app.SystemPath, app.SystemPath+".old"); err != nil {
 		return err
 	}
 
-	log.Println("Moving asset to app path")
+	log.Println("Moving", tempPath, "to", app.SystemPath)
 	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
-		log.Println("Error: copy %s to %s. err: %s", tempPath, app.SystemPath, err.Error())
+		log.Printf("Error: copy %s to %s. err: %s\n", tempPath, app.SystemPath, err.Error())
 		os.Remove(app.SystemPath)
 		RenameSafe(app.SystemPath+".old", app.SystemPath)
 		return err
@@ -111,12 +113,12 @@ func HandleAssetMatch(
 	for _, p := range additionalAssetsTempPath {
 		if err = RenameSafe(p.SystemPath, p.SystemPath+".old"); err != nil {
 			// log error
-			log.Println("Error: RenameSafe %s to %s. err: %s", p.SystemPath, p.SystemPath+".old", err.Error())
+			log.Printf("Error: RenameSafe %s to %s. err: %s\n", p.SystemPath, p.SystemPath+".old", err.Error())
 			continue
 		}
 		if err = Copy(p.TempPath, p.SystemPath); err != nil {
 			// Roll back
-			log.Println("Error: copy %s to %s. err: %s", p.TempPath, p.SystemPath, err.Error())
+			log.Printf("Error: copy %s to %s. err: %s\n", p.TempPath, p.SystemPath, err.Error())
 			os.Remove(p.SystemPath)
 			RenameSafe(p.SystemPath+".old", p.SystemPath)
 			return err
@@ -144,8 +146,10 @@ func CreateAdditionalAssets(
 			},
 		)
 		if index < 0 {
+			log.Println(a.Name, "not found")
 			continue
 		}
+		log.Println(a.Name, "was found")
 
 		path, err := HandleAdditionalAsset(app, a, release.Assets[index], release)
 		if err != nil {

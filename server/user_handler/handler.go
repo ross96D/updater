@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share"
@@ -30,8 +31,10 @@ func HandlerUserUpdate(payload []byte) error {
 	var app App
 	err := json.Unmarshal(payload, &app)
 	if err != nil {
+		log.Println("error unmarshaling app from user", err.Error())
 		return err
 	}
+	log.Printf("app from user %+v\n", app)
 	list := share.Config().Apps
 	if app.Index >= len(list) {
 		return errors.New("invalid index")
@@ -40,14 +43,17 @@ func HandlerUserUpdate(payload []byte) error {
 
 	release, _, err := GetReleaseRepository(application)
 	if err != nil {
+		log.Println("GetReleaseRepository from user", err.Error())
 		return err
 	}
 
 	asset, err := GetAsset(application, release)
 	if err != nil {
+		log.Println("GetAsset from user", err.Error())
 		return err
 	}
 
+	log.Printf("user update \napp: %+v\nasset: %+v\nrelease: %+v\n", application, asset, release)
 	return share.HandleAssetMatch(application, asset, release)
 }
 
