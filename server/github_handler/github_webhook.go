@@ -48,7 +48,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		return errors.New("release event from repo not configured")
 	}
 	app := share.Config().Apps[index]
-	release, err := getRelease(eventOwner, eventRepo, *event.Release.ID)
+	release, err := getRelease(app, *event.Release.ID)
 	if err != nil {
 		return err
 	}
@@ -66,9 +66,9 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 	return errors.New("not found asset match")
 }
 
-func getRelease(owner string, repo string, id int64) (*github.RepositoryRelease, error) {
-	client := github.NewClient(nil)
-	resp, _, err := client.Repositories.GetRelease(context.Background(), owner, repo, id)
+func getRelease(app configuration.Application, id int64) (*github.RepositoryRelease, error) {
+	client := share.NewGithubClient(app, nil)
+	resp, _, err := client.Repositories.GetRelease(context.Background(), app.Owner, app.Repo, id)
 	// TODO so, if there is an error and the github response exist.. the github response should be added to the error or logged.
 	return resp, err
 }
