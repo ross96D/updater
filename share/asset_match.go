@@ -102,7 +102,7 @@ func HandleAssetMatch(
 	log.Println("Moving asset to app path")
 	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
-		log.Println("Error: copy %s to %s. err: %s", TempPath, app.SystemPath, err.Error())
+		log.Println("Error: copy %s to %s. err: %s", tempPath, app.SystemPath, err.Error())
 		os.Remove(app.SystemPath)
 		RenameSafe(app.SystemPath+".old", app.SystemPath)
 		return err
