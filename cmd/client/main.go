@@ -30,7 +30,7 @@ var reloadCommand = &cobra.Command{
 }
 
 var updateCommand = &cobra.Command{
-	Use: "reload",
+	Use: "update",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := update(); err != nil {
 			println(err.Error())
