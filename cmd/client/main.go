@@ -9,7 +9,7 @@ import (
 	path_url "net/url"
 	"os"
 
-	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/server/user_handler"
 	"github.com/spf13/cobra"
 )
 
@@ -112,7 +112,7 @@ func update() (err error) {
 	return err
 }
 
-func list() (apps []configuration.Application, err error) {
+func list() (apps []user_handler.App, err error) {
 	if token == "" {
 		token, err = login()
 		if err != nil {
@@ -143,7 +143,7 @@ func list() (apps []configuration.Application, err error) {
 		err = fmt.Errorf("status code %d\n %s", resp.StatusCode, string(b))
 		return
 	}
-	apps = make([]configuration.Application, 0)
+	apps = make([]user_handler.App, 0)
 	err = json.Unmarshal(b, &apps)
 	return
 }
