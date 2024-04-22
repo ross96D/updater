@@ -20,3 +20,12 @@ func TestByPath(t *testing.T) {
 		fmt.Printf("%s\n", r.Path)
 	}
 }
+
+func TestStopAndRun(t *testing.T) {
+	err := Stop("\\test\\simple_server")
+	assert.Equal(t, nil, err)
+
+	err = Start("\\test\\simple_server")
+	assert.Equal(t, nil, err)
+
+}
