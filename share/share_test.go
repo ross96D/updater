@@ -188,7 +188,11 @@ func TestReload(t *testing.T) {
 				TaskSchedPath:       "/is/a/path",
 				SystemPath:          "/is/a/path",
 				Checksum:            configuration.Checksum{C: configuration.NoChecksum{}},
-				UseCache:            true,
+				PostAction: &configuration.Command{
+					Command: "python",
+					Args:    []string{"-f", "-s"},
+				},
+				UseCache: true,
 			},
 		},
 		Users:    []configuration.User{},

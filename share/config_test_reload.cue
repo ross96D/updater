@@ -10,5 +10,9 @@ apps: [
 		asset_name:            "some asset name"
 		task_sched_path:       "/is/a/path"
 		system_path:           "/is/a/path"
+		post_action: {
+			command: "python"
+			args: ["-f", "-s"]
+		}
 	},
 ]

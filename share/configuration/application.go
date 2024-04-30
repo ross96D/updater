@@ -34,6 +34,8 @@ type Application struct {
 
 	AdditionalAssets []AdditionalAsset `json:"additional_assets"`
 
+	PostAction *Command `json:"post_action"`
+
 	UseCache bool `json:"use_cache"`
 }
 
@@ -200,3 +202,8 @@ func (DirectChecksum) _checksum() {}
 type NoChecksum struct{}
 
 func (NoChecksum) _checksum() {}
+
+type Command struct {
+	Command string   `json:"command"`
+	Args    []string `json:"args"`
+}

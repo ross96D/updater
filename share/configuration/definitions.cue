@@ -25,6 +25,9 @@ base_path?: string // path where the temporal files used by the app will place
 
     additional_assets?: [...#AdditionalAsset]
 
+    // use this to set a command to be run after succesfully update 
+    post_action?: #Command
+
     // use cache allow to check against the checksum upstream and if it match the file will not downloaded
     use_cache: bool | *true 
 }
@@ -77,3 +80,8 @@ base_path?: string // path where the temporal files used by the app will place
 
 // No checksum will no perform any checksum operation
 #NoChecksum: {}
+
+#Command: {
+    command!: string
+    args?: [...string]
+}
