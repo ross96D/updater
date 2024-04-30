@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"sync"
@@ -91,6 +92,12 @@ func HandleAssetMatch(
 		log.Println("Run the task", app.TaskSchedPath)
 		if err := taskservice.Start(app.TaskSchedPath); err != nil {
 			log.Println("Error reruning the task", err.Error())
+		}
+		if app.PostAction != nil {
+			go func() {
+				// TODO log the output of the command
+				_, _ = exec.Command(app.PostAction.Command, app.PostAction.Args...).Output()
+			}()
 		}
 	}()
 
