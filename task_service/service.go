@@ -3,9 +3,8 @@
 package taskservice
 
 import (
-	"log"
-
 	"github.com/ross96D/taskmaster"
+	"github.com/rs/zerolog/log"
 )
 
 type TaskService struct {
@@ -36,8 +35,7 @@ func (ts *TaskService) GetRegisteredTasks() (taskmaster.RegisteredTaskCollection
 
 func (ts *TaskService) Stop(path string) error {
 	if path == "" {
-		// TODO log warning
-		log.Println("task path is empty. No op")
+		log.Info().Msg("task path is empty. No op")
 		return nil
 	}
 
@@ -78,8 +76,7 @@ func close() {
 
 func Stop(path string) error {
 	if path == "" {
-		// TODO log warning
-		log.Println("task path is empty. No op")
+		log.Warn().Msg("task path is empty. No op")
 		return nil
 	}
 
@@ -92,8 +89,7 @@ func Stop(path string) error {
 
 func Start(path string) error {
 	if path == "" {
-		// TODO log warning
-		log.Println("task path is empty. No op")
+		log.Warn().Msg("task path is empty. No op")
 		return nil
 	}
 

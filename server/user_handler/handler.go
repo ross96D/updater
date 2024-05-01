@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/rs/zerolog/log"
 )
 
 func GetReleaseRepository(app configuration.Application) (*github.RepositoryRelease, *github.Response, error) {
@@ -31,10 +32,10 @@ func HandlerUserUpdate(payload []byte) error {
 	var app App
 	err := json.Unmarshal(payload, &app)
 	if err != nil {
-		log.Println("error unmarshaling app from user", err.Error())
+		log.Error().Err(fmt.Errorf("unmarshaling app from user %w", err)).Send()
 		return err
 	}
-	log.Printf("app from user %+v\n", app)
+	log.Info().Interface("user app", app).Send()
 	list := share.Config().Apps
 	if app.Index >= len(list) {
 		return errors.New("invalid index")
@@ -43,17 +44,17 @@ func HandlerUserUpdate(payload []byte) error {
 
 	release, _, err := GetReleaseRepository(application)
 	if err != nil {
-		log.Println("GetReleaseRepository from user", err.Error())
+		log.Error().Err(fmt.Errorf("getReleaseRepository from user %w", err)).Send()
 		return err
 	}
 
 	asset, err := GetAsset(application, release)
 	if err != nil {
-		log.Println("GetAsset from user", err.Error())
+		log.Error().Err(fmt.Errorf("getAsset from user %w", err)).Send()
 		return err
 	}
 
-	log.Printf("user update \napp: %+v\nasset: %+v\nrelease: %+v\n", application, asset, release)
+	log.Info().Msg(fmt.Sprintf("user update \napp: %+v\nasset: %+v\nrelease: %+v\n", application, asset, release))
 	return share.HandleAssetMatch(application, asset, release)
 }
 

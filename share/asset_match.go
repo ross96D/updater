@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,6 +16,7 @@ import (
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	taskservice "github.com/ross96D/updater/task_service"
+	"github.com/rs/zerolog/log"
 )
 
 var ErrIsChached = fmt.Errorf("asset is cached")
@@ -38,7 +38,7 @@ func HandleAssetMatch(
 			return err
 		}
 	}
-	log.Println("should verify the asset", verify)
+	log.Info().Msg(fmt.Sprint("should verify the asset:", verify))
 
 	// if there is a checksum, verify that the app is not the same as the one on the repo using the hashes
 	// if there is no checksum then the cache verification will be performed later on the function
@@ -46,72 +46,82 @@ func HandleAssetMatch(
 		return ErrIsChached
 	}
 
-	log.Println("Donwloading asset", app.AssetName)
+	log.Info().Msg("Donwloading asset " + app.AssetName)
 	rc, lenght, err := downloadableAsset(NewGithubClient(app, nil), *asset.URL)
 	if err != nil {
 		return err
 	}
 
 	tempPath := filepath.Join(Config().BasePath, *asset.Name)
-	log.Println("save asset to temporary file in", tempPath)
+	log.Info().Msg("save asset to temporary file in " + tempPath)
 	if tempPath, err = CreateFile(rc, lenght, tempPath); err != nil {
 		return err
 	}
 	// remove temp file
 	defer func() {
-		log.Println("removing temporary file")
+		log.Info().Msg("removing temporary file")
 		os.Remove(tempPath)
 	}()
 
 	if verify {
-		log.Println("verifiying checksum")
+		log.Info().Msg("verifiying checksum")
 		// verifiy that the checksum correspond to the downloaded asset
 		if !verifyChecksum(checksum, tempPath) {
 			return ErrUnverifiedAsset
 		}
 	} else {
-		log.Println("checking if asset is already installed")
+		log.Info().Msg("checking if asset is already installed")
 		// as there is no checksum hash the both, the app file and the downloaded one.
 		if cacheWithFile(tempPath, app) {
-			log.Println("do not return, but asset is cached")
+			log.Info().Msg("do not return, but asset is cached")
 			// return ErrIsChached
 		}
 	}
 
 	additionalAssetsTempPath, err := CreateAdditionalAssets(app, release)
-	log.Printf("additional paths are %d %+v\n", len(additionalAssetsTempPath), additionalAssetsTempPath)
 	if err != nil {
-		log.Println("error downloading assets", err.Error())
+		log.Error().Err(fmt.Errorf("error downloading assets %w", err)).Send()
 	}
+	log.Info().Msg(fmt.Sprintf("additional paths are %d %+v", len(additionalAssetsTempPath), additionalAssetsTempPath))
 
-	log.Println("stoping task", app.TaskSchedPath)
+	log.Info().Msg("stoping task " + app.TaskSchedPath)
 	if err = taskservice.Stop(app.TaskSchedPath); err != nil {
 		return err
 	}
 	defer func() {
-		log.Println("Run the task", app.TaskSchedPath)
+		log.Info().Msg("Run the task " + app.TaskSchedPath)
 		if err := taskservice.Start(app.TaskSchedPath); err != nil {
-			log.Println("Error reruning the task", err.Error())
+			log.Error().Err(fmt.Errorf("reruning the task %w", err)).Send()
 		}
 		if app.PostAction != nil {
 			go func() {
 				// TODO log the output of the command
-				_, _ = exec.Command(app.PostAction.Command, app.PostAction.Args...).Output()
+				log.Info().Msg("running post action " + fmt.Sprint("command", app.PostAction.Command, "Args", app.PostAction.Args))
+				b, err := exec.Command(app.PostAction.Command, app.PostAction.Args...).Output()
+				if err != nil {
+					log.Error().Err(fmt.Errorf(
+						"running post action %s %w",
+						fmt.Sprint("command", app.PostAction.Command, "Args", app.PostAction.Args),
+						err,
+					)).Send()
+				} else {
+					log.Info().Str("command output", string(b))
+				}
 			}()
 		}
 	}()
 
 	_mutexHandleAssetMatch.Lock()
 	defer _mutexHandleAssetMatch.Unlock()
-	log.Println("Moving", app.SystemPath, "to", app.SystemPath+".old")
+	log.Info().Msg("Moving " + app.SystemPath + " to " + app.SystemPath + ".old")
 	if err = RenameSafe(app.SystemPath, app.SystemPath+".old"); err != nil {
 		return err
 	}
 
-	log.Println("Moving", tempPath, "to", app.SystemPath)
+	log.Info().Msg("Moving " + tempPath + " to " + app.SystemPath)
 	if err = Copy(tempPath, app.SystemPath); err != nil {
 		// Roll back
-		log.Printf("Error: copy %s to %s. err: %s\n", tempPath, app.SystemPath, err.Error())
+		log.Error().Err(fmt.Errorf("copy %s to %s %w", tempPath, app.SystemPath, err)).Send()
 		os.Remove(app.SystemPath)
 		RenameSafe(app.SystemPath+".old", app.SystemPath)
 		return err
@@ -120,12 +130,12 @@ func HandleAssetMatch(
 	for _, p := range additionalAssetsTempPath {
 		if err = RenameSafe(p.SystemPath, p.SystemPath+".old"); err != nil {
 			// log error
-			log.Printf("Error: RenameSafe %s to %s. err: %s\n", p.SystemPath, p.SystemPath+".old", err.Error())
+			log.Warn().Err(fmt.Errorf("renameSafe %s to %s %w", p.SystemPath, p.SystemPath+".old", err)).Send()
 			continue
 		}
 		if err = Copy(p.TempPath, p.SystemPath); err != nil {
 			// Roll back
-			log.Printf("Error: copy %s to %s. err: %s\n", p.TempPath, p.SystemPath, err.Error())
+			log.Error().Err(fmt.Errorf("copy %s to %s %w", p.TempPath, p.SystemPath, err)).Send()
 			os.Remove(p.SystemPath)
 			RenameSafe(p.SystemPath+".old", p.SystemPath)
 			return err
@@ -153,15 +163,14 @@ func CreateAdditionalAssets(
 			},
 		)
 		if index < 0 {
-			log.Println(a.Name, "not found")
+			log.Debug().Msg(a.Name + " not found")
 			continue
 		}
-		log.Println(a.Name, "was found")
+		log.Debug().Msg(a.Name + " was found")
 
 		path, err := HandleAdditionalAsset(app, a, release.Assets[index], release)
 		if err != nil {
-			// error log
-			log.Println("error handling additional asset", a.Name, "error", err.Error())
+			log.Warn().Err(fmt.Errorf("handling additional asset %s %w", a.Name, err)).Send()
 			continue
 		}
 		result = append(result, additionalAssetPath{

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"log"
 	"os"
 	"runtime/pprof"
 
 	"github.com/ross96D/updater/cmd"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +29,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.SetOutput(f)
+	defer f.Close()
+	log.Output(f)
 
 	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()

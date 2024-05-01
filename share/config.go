@@ -9,7 +9,6 @@ import (
 	"hash"
 	"hash/crc32"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/rs/zerolog/log"
 )
 
 var config configuration.Configuration
@@ -45,7 +45,7 @@ func changeConfig(newConfig configuration.Configuration) (err error) {
 		return
 	}
 	config = newConfig
-	log.Printf("configuration %+v\n", config)
+	log.Info().Interface("configuration", config).Send()
 	return
 }
 

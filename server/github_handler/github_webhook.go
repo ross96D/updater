@@ -3,12 +3,13 @@ package github_handler
 import (
 	"context"
 	"errors"
-	"log"
+	"fmt"
 	"slices"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/rs/zerolog/log"
 )
 
 func HandleGithubWebhook(payload []byte, eventType string) error {
@@ -20,7 +21,7 @@ func HandleGithubWebhook(payload []byte, eventType string) error {
 	case *github.ReleaseEvent:
 		return handleReleaseEvent(event)
 	default:
-		log.Printf("unhandled event %+v\n", event)
+		log.Warn().Interface("unhandled event", event).Send()
 		return errors.New("unhandled event")
 	}
 }
@@ -29,10 +30,10 @@ func handleReleaseEvent(event *github.ReleaseEvent) error {
 	switch *event.Action {
 	// case "released", "published", "edited", "created":
 	case "published":
-		log.Println("github event action", *event.Action)
+		log.Info().Msg("github event action " + *event.Action)
 		return onPublishEdit(event)
 	default:
-		log.Printf("unhandled action for release event %s\n", *event.Action)
+		log.Warn().Msg("unhandled action for release event " + *event.Action)
 		return errors.New("unhandled action for release event")
 	}
 }
@@ -44,7 +45,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		return eventOwner == e.Owner && eventRepo == e.Repo
 	})
 	if index == -1 {
-		log.Printf("release event from repo github.com/%s/%s not configured", eventOwner, eventRepo)
+		log.Warn().Msg(fmt.Sprintf("release event from repo github.com/%s/%s not configured", eventOwner, eventRepo))
 		return errors.New("release event from repo not configured")
 	}
 	app := share.Config().Apps[index]
@@ -53,7 +54,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		return err
 	}
 	if len(release.Assets) == 0 {
-		log.Println("release with out assets")
+		log.Info().Msg("release with out assets")
 		return errors.New("release with out assets")
 	}
 
@@ -62,7 +63,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 			return share.HandleAssetMatch(app, asset, release)
 		}
 	}
-	log.Printf("asset not found asset to match: %s release assets: %s\n", app.AssetName, share.SingleLineSlice(release.Assets))
+	log.Warn().Msg(fmt.Sprintf("asset not found asset to match: %s release assets: %s\n", app.AssetName, share.SingleLineSlice(release.Assets)))
 	return errors.New("not found asset match")
 }
 

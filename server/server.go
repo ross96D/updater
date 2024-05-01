@@ -2,7 +2,6 @@ package server
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/ross96D/updater/server/github_handler"
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
+	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
@@ -27,7 +27,7 @@ func New() *Server {
 }
 
 func (s *Server) Start() error {
-	log.Println("starting server on " + ":" + strconv.Itoa(int(share.Config().Port)))
+	log.Info().Msg("starting server on " + ":" + strconv.Itoa(int(share.Config().Port)))
 	return http.ListenAndServe(":"+strconv.Itoa(int(share.Config().Port)), s.router)
 }
 
@@ -46,6 +46,7 @@ func (s *Server) setHandlers() {
 func reload(w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
+		log.Error().Err(err).Send()
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -92,7 +93,8 @@ func update(w http.ResponseWriter, r *http.Request) {
 
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "internal error", 200)
+		log.Error().Err(err).Send()
+		http.Error(w, "internal error", 500)
 		return
 	}
 	defer r.Body.Close()
@@ -101,24 +103,24 @@ func update(w http.ResponseWriter, r *http.Request) {
 		eventType := r.Header.Get(github.EventTypeHeader)
 		err = github_handler.HandleGithubWebhook(payload, eventType)
 		if err != nil {
-			log.Println("Err:", err.Error())
-			http.Error(w, "internal error "+err.Error(), 200)
+			log.Error().Err(err).Send()
+			http.Error(w, "internal error", 500)
 			return
 		}
-		log.Println("succesfull handled of github request")
+		log.Info().Msg("succesfull handled of github request")
 
 	case "user":
 		err = user_handler.HandlerUserUpdate(payload)
 		if err != nil {
-			http.Error(w, "internal error "+err.Error(), 200)
+			http.Error(w, "internal error "+err.Error(), 500)
 			return
 		}
 	default:
-		log.Println("unhandled origin")
-		http.Error(w, "internal error", 200)
+		log.Warn().Msg("unhandled origin")
+		http.Error(w, "internal error", 500)
 		return
 	}
-	log.Println("update success")
+	log.Info().Msg("update success")
 	w.WriteHeader(200)
 }
 
