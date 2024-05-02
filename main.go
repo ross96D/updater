@@ -5,6 +5,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/ross96D/updater/cmd"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,8 @@ func main() {
 		panic(err)
 	}
 	defer f.Close()
-	log.Output(f)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMicro
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: f, TimeFormat: "2006-01-02T15:04:05.999999"})
 
 	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()
