@@ -95,18 +95,7 @@ func HandleAssetMatch(
 		}
 		if app.PostAction != nil {
 			go func() {
-				// TODO log the output of the command
-				log.Info().Msg("running post action " + fmt.Sprint("command", app.PostAction.Command, "Args", app.PostAction.Args))
-				b, err := exec.Command(app.PostAction.Command, app.PostAction.Args...).Output()
-				if err != nil {
-					log.Error().Err(fmt.Errorf(
-						"running post action %s %w",
-						fmt.Sprint("command", app.PostAction.Command, "Args", app.PostAction.Args),
-						err,
-					)).Send()
-				} else {
-					log.Info().Str("command output", string(b))
-				}
+				runPostAction(app)
 			}()
 		}
 	}()
@@ -316,4 +305,22 @@ func cacheWithFile(path string, app configuration.Application) (isCached bool) {
 	}
 
 	return slices.Equal(hashApp, hashFileDownload)
+}
+
+func runPostAction(app configuration.Application) error {
+	// TODO log the output of the command
+	cmd := exec.Command(app.PostAction.Command, app.PostAction.Args...)
+	log.Info().Msg("running post action " + cmd.String())
+	b, err := cmd.Output()
+	if err != nil {
+		log.Error().Err(fmt.Errorf(
+			"running post action %s %w",
+			cmd.String(),
+			err,
+		)).Send()
+		return err
+	} else {
+		log.Info().Str("command output", string(b))
+	}
+	return nil
 }

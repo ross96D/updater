@@ -285,3 +285,14 @@ func TestConfigPathValidationWindows(t *testing.T) {
 	err := configPathValidation(conf)
 	assert.Equal(t, []string{}, err)
 }
+
+func TestPostActionCommand(t *testing.T) {
+	app := configuration.Application{
+		PostAction: &configuration.Command{
+			Command: "echo",
+			Args:    []string{"-n", "test"},
+		},
+	}
+	err := runPostAction(app)
+	require.Equal(t, nil, err)
+}
