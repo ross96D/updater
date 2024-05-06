@@ -56,8 +56,10 @@ func configPathValidation(config configuration.Configuration) (invalidPaths []st
 		invalidPaths = append(invalidPaths, config.BasePath)
 	}
 	for _, app := range config.Apps {
-		if isCorrect = ValidPath(app.SystemPath); !isCorrect {
-			invalidPaths = append(invalidPaths, app.SystemPath)
+		for _, taskAsset := range app.TaskAssets {
+			if isCorrect = ValidPath(taskAsset.SystemPath); !isCorrect {
+				invalidPaths = append(invalidPaths, taskAsset.SystemPath)
+			}
 		}
 		for _, asset := range app.AdditionalAssets {
 			if isCorrect = ValidPath(asset.SystemPath); !isCorrect {
@@ -90,16 +92,44 @@ func Config() configuration.Configuration {
 	return config
 }
 
-func GetChecksum(app configuration.Application, checksum configuration.Checksum, release *github.RepositoryRelease) (result []byte, err error) {
-	switch chsm := checksum.C.(type) {
+type IGetChecksum interface {
+	GetChecksum() (result []byte, err error)
+}
+
+type getChecksum struct {
+	client    *github.Client
+	repo      configuration.IRepo
+	checksum  configuration.Checksum
+	assetName configuration.Asset
+	release   *github.RepositoryRelease
+}
+
+func NewGetChecksum(
+	client *github.Client,
+	repo configuration.IRepo,
+	checksum configuration.Checksum,
+	assetName configuration.Asset,
+	release *github.RepositoryRelease,
+) IGetChecksum {
+	return getChecksum{
+		client:    client,
+		repo:      repo,
+		checksum:  checksum,
+		assetName: assetName,
+		release:   release,
+	}
+}
+
+func (c getChecksum) GetChecksum() (result []byte, err error) {
+	switch chsm := c.checksum.C.(type) {
 	case configuration.DirectChecksum:
-		return directChecksum(chsm, app, release)
+		return c.directChecksum(chsm)
 
 	case configuration.AggregateChecksum:
-		return aggregateChecksum(chsm, app, release)
+		return c.aggregateChecksum(chsm)
 
 	case configuration.CustomChecksum:
-		return customChecksum(chsm, app.GithubAuthToken)
+		return c.customChecksum(chsm)
 
 	case configuration.NoChecksum:
 		return nil, ErrNoChecksum
@@ -109,9 +139,7 @@ func GetChecksum(app configuration.Application, checksum configuration.Checksum,
 	}
 }
 
-func getAsset(app configuration.Application, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
-	client := NewGithubClient(app, nil)
-
+func getAsset(client *github.Client, irepo configuration.IRepo, release *github.RepositoryRelease, assetName string) (rc io.ReadCloser, err error) {
 	var checksumAsset *github.ReleaseAsset
 	for _, asset := range release.Assets {
 		if *asset.Name == assetName {
@@ -123,20 +151,15 @@ func getAsset(app configuration.Application, release *github.RepositoryRelease, 
 		err = errors.New("checksum asset not found")
 		return
 	}
-
-	rc, _, err = client.Repositories.DownloadReleaseAsset(context.TODO(), app.Owner, app.Repo, *checksumAsset.ID, http.DefaultClient)
+	_, owner, repo := irepo.GetRepo()
+	rc, _, err = client.Repositories.DownloadReleaseAsset(context.TODO(), owner, repo, *checksumAsset.ID, http.DefaultClient)
 	return
 }
 
 // the direct checksum search for the DirectChecksum.AssetName on the release, and if is found then
 // use the content of the file as the checksum
-func directChecksum(
-	chsm configuration.DirectChecksum,
-	app configuration.Application,
-	release *github.RepositoryRelease,
-) (result []byte, err error) {
-
-	rc, err := getAsset(app, release, chsm.AssetName)
+func (c getChecksum) directChecksum(chsm configuration.DirectChecksum) (result []byte, err error) {
+	rc, err := getAsset(c.client, c.repo, c.release, chsm.AssetName)
 	if err != nil {
 		return
 	}
@@ -157,12 +180,9 @@ func directChecksum(
 // <hexadecimal encoded hash><blank space><key1>
 //
 // <hexadecimal encoded hash><blank space><key2>
-func aggregateChecksum(
-	chsm configuration.AggregateChecksum,
-	app configuration.Application,
-	release *github.RepositoryRelease,
-) (result []byte, err error) {
-	rc, err := getAsset(app, release, chsm.AssetName)
+func (c getChecksum) aggregateChecksum(chsm configuration.AggregateChecksum) (result []byte, err error) {
+	rc, err := getAsset(c.client, c.repo, c.release, chsm.AssetName)
+
 	if err != nil {
 		return
 	}
@@ -170,7 +190,7 @@ func aggregateChecksum(
 
 	var key string
 	if chsm.Key == nil {
-		key = app.AssetName
+		key = c.assetName.GetAsset()
 	} else {
 		key = *chsm.Key
 	}
@@ -204,7 +224,7 @@ func aggregateChecksum(
 // The script recieves the github token as an enviroment variable named "__UPDATER_GTIHUB_TOKEN"
 //
 // The script should output the hash value on the stdout as a hexadecimal encoded string.
-func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (result []byte, err error) {
+func (c getChecksum) customChecksum(chsm configuration.CustomChecksum) (result []byte, err error) {
 	var cmd *exec.Cmd
 	if chsm.Args != nil {
 		cmd = exec.Command(chsm.Command, chsm.Args...)
@@ -212,7 +232,7 @@ func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (
 		cmd = exec.Command(chsm.Command)
 	}
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "__UPDATER_GTIHUB_TOKEN="+githubAuthToken)
+	cmd.Env = append(cmd.Env, "__UPDATER_GTIHUB_TOKEN="+chsm.Token)
 	result, err = cmd.Output()
 	if err != nil {
 		err = fmt.Errorf("custom checksum %w", err)
@@ -225,6 +245,6 @@ func customChecksum(chsm configuration.CustomChecksum, githubAuthToken string) (
 	return
 }
 
-func NewFileHash() hash.Hash {
+func NewHasher() hash.Hash {
 	return crc32.NewIEEE()
 }

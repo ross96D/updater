@@ -58,13 +58,7 @@ func onPublishEdit(event *github.ReleaseEvent) error {
 		return errors.New("release with out assets")
 	}
 
-	for _, asset := range release.Assets {
-		if app.AssetName == *asset.Name {
-			return share.HandleAssetMatch(app, asset, release)
-		}
-	}
-	log.Warn().Msg(fmt.Sprintf("asset not found asset to match: %s release assets: %s\n", app.AssetName, share.SingleLineSlice(release.Assets)))
-	return errors.New("not found asset match")
+	return share.UpdateApp(app, release)
 }
 
 func getRelease(app configuration.Application, id int64) (*github.RepositoryRelease, error) {

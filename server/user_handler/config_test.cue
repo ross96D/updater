@@ -7,12 +7,18 @@ apps: [
 		repo:                  "updater"
 		github_webhook_secret: "-"
 		github_auth_token:     "-"
-		asset_name:            "-"
-		task_sched_path:       "-"
-		system_path:           "-"
-		checksum: {
-			direct_asset_name: "-"
-		}
+
+		task_assets: [
+			{
+				name:            "-"
+				task_sched_path: "-"
+				system_path:     "-"
+				checksum: {
+					direct_asset_name: "-"
+				}
+			},
+		]
+
 		additional_assets: [
 			{
 				name:        "asset1"
@@ -35,11 +41,16 @@ apps: [
 		repo:                  "updater2"
 		github_webhook_secret: "-"
 		github_auth_token:     "-"
-		asset_name:            "--"
-		task_sched_path:       "-"
-		system_path:           "-"
-		checksum: {
-			direct_asset_name: "-"
-		}
+
+		task_assets: [
+			{
+				name:            "--"
+				task_sched_path: "-"
+				system_path:     "-"
+				checksum: {
+					direct_asset_name: "-"
+				}
+			},
+		]
 	},
 ]

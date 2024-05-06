@@ -18,10 +18,14 @@ func TestApplicationJson(t *testing.T) {
 			Host:                "github.com",
 			GithubWebhookSecret: "secret",
 			GithubAuthToken:     "token",
-			AssetName:           "asset",
-			TaskSchedPath:       "task_path",
-			SystemPath:          "sys_path",
-			Checksum:            Checksum{C: DirectChecksum{AssetName: "asset"}},
+			TaskAssets: []TaskAsset{
+				{
+					Name:          "asset",
+					TaskSchedPath: "task_path",
+					SystemPath:    "sys_path",
+					Checksum:      Checksum{C: DirectChecksum{AssetName: "asset"}},
+				},
+			},
 			AdditionalAssets: []AdditionalAsset{
 				{
 					Name:       "add_asset",
@@ -78,10 +82,14 @@ func TestConfigurationJson(t *testing.T) {
 					Host:                "github.com",
 					GithubWebhookSecret: "secret",
 					GithubAuthToken:     "token",
-					AssetName:           "asset",
-					TaskSchedPath:       "task_path",
-					SystemPath:          "sys_path",
-					Checksum:            Checksum{C: DirectChecksum{AssetName: "asset"}},
+					TaskAssets: []TaskAsset{
+						{
+							Name:          "asset",
+							TaskSchedPath: "task_path",
+							SystemPath:    "sys_path",
+							Checksum:      Checksum{C: DirectChecksum{AssetName: "asset"}},
+						},
+					},
 					AdditionalAssets: []AdditionalAsset{
 						{
 							Name:       "add_asset",

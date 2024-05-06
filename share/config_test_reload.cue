@@ -7,9 +7,15 @@ apps: [
 		repo:                  "updater"
 		github_webhook_secret: "sign"
 		github_auth_token:     "auth"
-		asset_name:            "some asset name"
-		task_sched_path:       "/is/a/path"
-		system_path:           "/is/a/path"
+
+		task_assets: [
+			{
+				name:            "some asset name"
+				task_sched_path: "/is/a/path"
+				system_path:     "/is/a/path"
+			},
+		]
+
 		post_action: {
 			command: "python"
 			args: ["-f", "-s"]

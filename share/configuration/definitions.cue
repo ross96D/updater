@@ -7,6 +7,12 @@ users:            [...#User] // list of user allowed to interface with the updat
 apps: [...#Application] // list of the apps that the updater will update
 base_path?: string // path where the temporal files used by the app will place
 
+// user credentials, represent a user that will be allowed to interact with the updater
+#User: {
+    name!: string
+    password!: string
+}
+
 // The application represent a repo to recieve updates.
 // For now also represent a asset that have a task path
 #Application: {
@@ -16,12 +22,7 @@ base_path?: string // path where the temporal files used by the app will place
     github_webhook_secret!: string
     github_auth_token?: string
     
-    asset_name!: string
-    task_sched_path!: string
-    system_path!: string
-
-    // if not set will have the value NoChecksum
-    checksum: #DirectChecksum | #AggregateChecksum | #CustomChecksum | *#NoChecksum
+    task_assets?: [...#TaskAsset]
 
     additional_assets?: [...#AdditionalAsset]
 
@@ -32,10 +33,14 @@ base_path?: string // path where the temporal files used by the app will place
     use_cache: bool | *true 
 }
 
-// user credentials, represent a user that will be allowed to interact with the updater
-#User: {
+#TaskAsset: {
     name!: string
-    password!: string
+    task_sched_path!: string
+    system_path!: string
+    // if not set will have the value NoChecksum
+    checksum: #DirectChecksum | #AggregateChecksum | #CustomChecksum | *#NoChecksum
+    // if the extension is a zip or gzip and this is set to true, the asset will be decompressed
+    unzip: bool | *true
 }
 
 // The additional asset is used to add files that are on the repo but are not asociated with a task
@@ -44,6 +49,8 @@ base_path?: string // path where the temporal files used by the app will place
     name: string
     system_path: string
     checksum: #DirectChecksum | #AggregateChecksum | #CustomChecksum | *#NoChecksum
+    // if the extension is a zip or gzip and this is set to true, the asset will be decompressed
+    unzip: bool | *true
 }
 
 // the direct checksum search for the direct_asset_name on the repo release, and if is found then
@@ -74,6 +81,7 @@ base_path?: string // path where the temporal files used by the app will place
 // The script should output the hash value on the stdout as a hexadecimal encoded string.
 #CustomChecksum: {
     type: null | *"CustomChecksum" 
+    token: string
     command!: string
     args?: [...string]
 }

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"testing"
 	"time"
 
@@ -51,8 +50,10 @@ func TestCustomChecksum(t *testing.T) {
 	command := configuration.CustomChecksum{
 		Command: "python3",
 		Args:    []string{"custom_checksum.py"},
+		Token:   "git_token",
 	}
-	checksum, err := customChecksum(command, "git_token")
+
+	checksum, err := getChecksum{}.customChecksum(command)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "custom_checksum git_token", string(checksum))
 }
@@ -62,35 +63,51 @@ func TestAggregateChecksum(t *testing.T) {
 	release, _, err := client.Repositories.GetRelease(context.Background(), "ross96D", "updater", 148914964)
 	assert.Equal(t, nil, err)
 
+	app := configuration.Application{
+		Owner: "ross96D",
+		Repo:  "updater",
+		TaskAssets: []configuration.TaskAsset{
+			{
+				Name: "valid_key",
+			},
+		},
+	}
+
+	key := "valid_key"
 	// test getting the key from the asset name
-	checksum, err := aggregateChecksum(
+	checksum, err := getChecksum{
+		client:    NewGithubClient(app, nil),
+		release:   release,
+		repo:      app,
+		assetName: app.TaskAssets[0],
+	}.aggregateChecksum(
 		configuration.AggregateChecksum{
 			AssetName: "aggregate_checksum.txt",
 		},
-		configuration.Application{
-			Owner:     "ross96D",
-			Repo:      "updater",
-			AssetName: "valid_key",
-		},
-		release,
 	)
-	assert.Equal(t, nil, err)
+	require.Equal(t, nil, err)
 	assert.Equal(t, "aggregate_checksum", string(checksum))
 
 	// test with a direct key name
-	key := "valid_key"
-	checksum, err = aggregateChecksum(
+	key = "valid_key"
+	app = configuration.Application{
+		Owner: "ross96D",
+		Repo:  "updater",
+	}
+
+	gchsm := getChecksum{
+		repo:    app,
+		client:  NewGithubClient(app, nil),
+		release: release,
+	}
+
+	checksum, err = gchsm.aggregateChecksum(
 		configuration.AggregateChecksum{
 			AssetName: "aggregate_checksum.txt",
 			Key:       &key,
 		},
-		configuration.Application{
-			Owner: "ross96D",
-			Repo:  "updater",
-		},
-		release,
 	)
-	assert.Equal(t, nil, err)
+	require.Equal(t, nil, err)
 	assert.Equal(t, "aggregate_checksum", string(checksum))
 
 }
@@ -100,14 +117,16 @@ func TestDirectChecksum(t *testing.T) {
 	release, _, err := client.Repositories.GetRelease(context.Background(), "ross96D", "updater", 148914964)
 	assert.Equal(t, nil, err)
 
-	checksum, err := directChecksum(
-		configuration.DirectChecksum{AssetName: "direct_checksum.txt"},
-		configuration.Application{
-			Owner: "ross96D",
-			Repo:  "updater",
-		},
-		release,
-	)
+	app := configuration.Application{
+		Owner: "ross96D",
+		Repo:  "updater",
+	}
+
+	checksum, err := getChecksum{
+		repo:    app,
+		release: release,
+		client:  NewGithubClient(app, nil),
+	}.directChecksum(configuration.DirectChecksum{AssetName: "direct_checksum.txt"})
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "direct_checksum", string(checksum))
@@ -124,10 +143,16 @@ func TestAdditionalAsset(t *testing.T) {
 		Owner: "ross96D",
 		Repo:  "updater",
 		Host:  "github.com",
-		Checksum: configuration.Checksum{C: configuration.AggregateChecksum{
-			AssetName: "aggregate_checksum.txt",
-			Key:       &main_asset,
-		}},
+		TaskAssets: []configuration.TaskAsset{
+			{
+				Checksum: configuration.Checksum{C: configuration.AggregateChecksum{
+					AssetName: "aggregate_checksum.txt",
+					Key:       &main_asset,
+				}},
+				SystemPath: filepath.Join(testSysPath, "main_asset_test.json"),
+				Name:       "main_asset_test.json",
+			},
+		},
 		AdditionalAssets: []configuration.AdditionalAsset{
 			{
 				Name:       "additional_asset_test.json",
@@ -138,18 +163,12 @@ func TestAdditionalAsset(t *testing.T) {
 				}},
 			},
 		},
-		SystemPath: filepath.Join(testSysPath, "main_asset_test.json"),
-		AssetName:  "main_asset_test.json",
 	}
 	config := testConfig()
 	config.Apps = []configuration.Application{app}
 	changeConfig(config)
 
-	index := slices.IndexFunc(release.Assets, func(a *github.ReleaseAsset) bool {
-		return *a.Name == app.AssetName
-	})
-	require.NotEqual(t, -1, index)
-	err = HandleAssetMatch(app, release.Assets[index], release)
+	err = UpdateApp(app, release)
 	require.Equal(t, nil, err)
 }
 
@@ -165,13 +184,13 @@ func TestReload(t *testing.T) {
 		Users:         []configuration.User{},
 		BasePath:      defaultPath,
 	}
-	assert.Equal(t, expected, old)
+	require.Equal(t, expected, old)
 
 	err := Reload("config_test_reload.cue")
-	assert.Equal(t, nil, err)
+	require.Equal(t, nil, err)
 	reloaded := Config()
 
-	assert.NotEqual(t, old, reloaded)
+	require.NotEqual(t, old, reloaded)
 
 	expected = configuration.Configuration{
 		Port:          1234,
@@ -184,10 +203,15 @@ func TestReload(t *testing.T) {
 				Host:                "github.com",
 				GithubWebhookSecret: "sign",
 				GithubAuthToken:     "auth",
-				AssetName:           "some asset name",
-				TaskSchedPath:       "/is/a/path",
-				SystemPath:          "/is/a/path",
-				Checksum:            configuration.Checksum{C: configuration.NoChecksum{}},
+				TaskAssets: []configuration.TaskAsset{
+					{
+						Name:          "some asset name",
+						TaskSchedPath: "/is/a/path",
+						SystemPath:    "/is/a/path",
+						Checksum:      configuration.Checksum{C: configuration.NoChecksum{}},
+						Unzip:         true,
+					},
+				},
 				PostAction: &configuration.Command{
 					Command: "python",
 					Args:    []string{"-f", "-s"},
@@ -198,7 +222,7 @@ func TestReload(t *testing.T) {
 		Users:    []configuration.User{},
 		BasePath: defaultPath,
 	}
-	assert.Equal(t, expected, reloaded)
+	require.Equal(t, expected, reloaded)
 }
 
 func TestSingleLineSlice(t *testing.T) {
@@ -250,7 +274,11 @@ func TestConfigPathValidationLinux(t *testing.T) {
 		BasePath: "/valid/path",
 		Apps: []configuration.Application{
 			{
-				SystemPath: "/app/valid/path",
+				TaskAssets: []configuration.TaskAsset{
+					{
+						SystemPath: "/app/valid/path",
+					},
+				},
 				AdditionalAssets: []configuration.AdditionalAsset{
 					{
 						SystemPath: "/asset/valid/path",
@@ -272,7 +300,11 @@ func TestConfigPathValidationWindows(t *testing.T) {
 		BasePath: "C:\\valid\\path",
 		Apps: []configuration.Application{
 			{
-				SystemPath: "D:\\app\\valid\\path",
+				TaskAssets: []configuration.TaskAsset{
+					{
+						SystemPath: "D:\\app\\valid\\path",
+					},
+				},
 				AdditionalAssets: []configuration.AdditionalAsset{
 					{
 						SystemPath: "D:\\asset\\valid\\path",
@@ -293,6 +325,9 @@ func TestPostActionCommand(t *testing.T) {
 			Args:    []string{"-n", "test"},
 		},
 	}
-	err := runPostAction(app)
+
+	err := appUpdater{
+		app: app,
+	}.RunPostAction()
 	require.Equal(t, nil, err)
 }

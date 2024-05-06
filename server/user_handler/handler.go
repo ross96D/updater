@@ -18,16 +18,6 @@ func GetReleaseRepository(app configuration.Application) (*github.RepositoryRele
 	return client.Repositories.GetLatestRelease(context.TODO(), app.Owner, app.Repo)
 }
 
-func GetAsset(app configuration.Application, release *github.RepositoryRelease) (*github.ReleaseAsset, error) {
-
-	for _, asset := range release.Assets {
-		if app.AssetName == *asset.Name {
-			return asset, nil
-		}
-	}
-	return nil, errors.New("no asset found")
-}
-
 func HandlerUserUpdate(payload []byte) error {
 	var app App
 	err := json.Unmarshal(payload, &app)
@@ -48,14 +38,7 @@ func HandlerUserUpdate(payload []byte) error {
 		return err
 	}
 
-	asset, err := GetAsset(application, release)
-	if err != nil {
-		log.Error().Err(fmt.Errorf("getAsset from user %w", err)).Send()
-		return err
-	}
-
-	log.Info().Msg(fmt.Sprintf("user update \napp: %+v\nasset: %+v\nrelease: %+v\n", application, asset, release))
-	return share.HandleAssetMatch(application, asset, release)
+	return share.UpdateApp(application, release)
 }
 
 type App struct {

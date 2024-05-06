@@ -31,11 +31,15 @@ func TestHandleUserAppsList(t *testing.T) {
 				Repo:                "updater",
 				GithubWebhookSecret: "-",
 				GithubAuthToken:     "-",
-				AssetName:           "-",
-				TaskSchedPath:       "-",
-				SystemPath:          "-",
-
-				Checksum: configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
+				TaskAssets: []configuration.TaskAsset{
+					{
+						Name:          "-",
+						TaskSchedPath: "-",
+						SystemPath:    "-",
+						Checksum:      configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
+						Unzip:         true,
+					},
+				},
 				AdditionalAssets: []configuration.AdditionalAsset{
 					{
 						Name:       "asset1",
@@ -45,6 +49,7 @@ func TestHandleUserAppsList(t *testing.T) {
 								AssetName: "-",
 							},
 						},
+						Unzip: true,
 					},
 					{
 						Name:       "asset1",
@@ -54,6 +59,7 @@ func TestHandleUserAppsList(t *testing.T) {
 								AssetName: "-",
 							},
 						},
+						Unzip: true,
 					},
 				},
 				UseCache: true,
@@ -67,11 +73,16 @@ func TestHandleUserAppsList(t *testing.T) {
 				Repo:                "updater2",
 				GithubWebhookSecret: "-",
 				GithubAuthToken:     "-",
-				AssetName:           "--",
-				TaskSchedPath:       "-",
-				SystemPath:          "-",
-				Checksum:            configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
-				UseCache:            true,
+				TaskAssets: []configuration.TaskAsset{
+					{
+						Name:          "--",
+						TaskSchedPath: "-",
+						SystemPath:    "-",
+						Checksum:      configuration.Checksum{C: configuration.DirectChecksum{AssetName: "-"}},
+						Unzip:         true,
+					},
+				},
+				UseCache: true,
 			},
 		},
 	}
