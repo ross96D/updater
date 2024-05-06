@@ -3,7 +3,6 @@ package share
 import (
 	"bytes"
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -139,6 +138,10 @@ func TestAdditionalAsset(t *testing.T) {
 
 	var main_asset = "main_asset"
 	var additional_asset = "additional_asset"
+
+	taskSystemPath := filepath.Join(testSysPath, "main_asset_test.json")
+	additionalAssetPath := filepath.Join(testSysPath, "additional_asset_test.json")
+
 	app := configuration.Application{
 		Owner: "ross96D",
 		Repo:  "updater",
@@ -149,27 +152,42 @@ func TestAdditionalAsset(t *testing.T) {
 					AssetName: "aggregate_checksum.txt",
 					Key:       &main_asset,
 				}},
-				SystemPath: filepath.Join(testSysPath, "main_asset_test.json"),
+				SystemPath: taskSystemPath,
 				Name:       "main_asset_test.json",
 			},
 		},
 		AdditionalAssets: []configuration.AdditionalAsset{
 			{
 				Name:       "additional_asset_test.json",
-				SystemPath: filepath.Join(testSysPath, "additional_asset_test.json"),
+				SystemPath: additionalAssetPath,
 				Checksum: configuration.Checksum{C: configuration.AggregateChecksum{
 					AssetName: "aggregate_checksum.txt",
 					Key:       &additional_asset,
 				}},
 			},
 		},
+		UseCache: true,
 	}
+
+	tm := time.Now()
+
 	config := testConfig()
 	config.Apps = []configuration.Application{app}
 	changeConfig(config)
 
 	err = UpdateApp(app, release)
-	require.Equal(t, nil, err)
+	require.True(t, err == nil, "%w", err)
+
+	info, err := os.Stat(taskSystemPath)
+	require.True(t, err == nil, "%w", err)
+
+	require.True(t, info.ModTime().After(tm))
+
+	info, err = os.Stat(additionalAssetPath)
+	require.True(t, err == nil, "%w", err)
+
+	require.True(t, info.ModTime().After(tm))
+
 }
 
 func TestReload(t *testing.T) {
@@ -245,27 +263,6 @@ func TestSingleLineSlice(t *testing.T) {
 	assert.Equal(t, "[{name:name1 number:1}, {name:name2 number:2}]", result)
 }
 
-func TestCreateTempFile(t *testing.T) {
-	data := "hello world"
-	buff := bytes.NewBuffer([]byte(data))
-	path, err := CreateFile(io.NopCloser(buff), int64(len(data)), "testfile")
-	assert.Equal(t, nil, err)
-
-	f, err := os.Open(path)
-	assert.Equal(t, nil, err)
-	t.Cleanup(func() {
-		f.Close()
-		err = os.Remove(path)
-		if err != nil {
-			panic(err)
-		}
-	})
-
-	bytes, err := io.ReadAll(f)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, data, string(bytes))
-}
-
 func TestConfigPathValidationLinux(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.SkipNow()
@@ -330,4 +327,21 @@ func TestPostActionCommand(t *testing.T) {
 		app: app,
 	}.RunPostAction()
 	require.Equal(t, nil, err)
+}
+
+type _testChecksumVerifier struct{}
+
+func (_testChecksumVerifier) GetChecksum() (result []byte, err error) {
+	h := NewHasher()
+	h.Write([]byte("my_text"))
+
+	return h.Sum(nil), nil
+}
+
+func TestChecksumVerifier(t *testing.T) {
+	v, err := checksumVerifier(_testChecksumVerifier{})
+	require.Equal(t, nil, err)
+
+	buff := bytes.NewBuffer([]byte("my_text"))
+	require.True(t, v(buff))
 }

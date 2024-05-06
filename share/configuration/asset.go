@@ -4,6 +4,7 @@ type Asset interface {
 	GetAsset() string
 	GetChecksum() Checksum
 	GetUnzip() bool
+	GetSystemPath() string
 }
 
 type AdditionalAsset struct {
@@ -25,6 +26,10 @@ func (a AdditionalAsset) GetUnzip() bool {
 	return a.Unzip
 }
 
+func (a AdditionalAsset) GetSystemPath() string {
+	return a.SystemPath
+}
+
 type TaskAsset struct {
 	Name          string   `json:"name"`
 	SystemPath    string   `json:"system_path"`
@@ -43,4 +48,8 @@ func (a TaskAsset) GetChecksum() Checksum {
 
 func (a TaskAsset) GetUnzip() bool {
 	return a.Unzip
+}
+
+func (a TaskAsset) GetSystemPath() string {
+	return a.SystemPath
 }

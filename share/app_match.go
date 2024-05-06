@@ -2,6 +2,7 @@ package share
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,13 +18,13 @@ import (
 func UpdateApp(app configuration.Application, release *github.RepositoryRelease) error {
 	u := newAppUpdater(app, release)
 	// TODO append errors
-	u.UpdateAdditionalAssets()
+	err := u.UpdateAdditionalAssets()
 	// TODO append errors
-	u.UpdateTaskAssets()
+	err2 := u.UpdateTaskAssets()
 	// TODO append errors
-	u.RunPostAction()
+	err3 := u.RunPostAction()
 	u.CleanUp()
-	return nil
+	return errors.Join(err, err2, err3)
 }
 
 type appUpdater struct {
@@ -31,6 +32,13 @@ type appUpdater struct {
 	release *github.RepositoryRelease
 
 	cleanupFuncs []func()
+}
+
+func (u *appUpdater) addCleanUpFn(fn func()) {
+	if u.cleanupFuncs == nil {
+		u.cleanupFuncs = make([]func(), 0)
+	}
+	u.cleanupFuncs = append(u.cleanupFuncs, fn)
 }
 
 func (u appUpdater) seek(asset configuration.Asset) *github.ReleaseAsset {
@@ -50,63 +58,35 @@ func newAppUpdater(app configuration.Application, release *github.RepositoryRele
 }
 
 func (u *appUpdater) UpdateTaskAssets() error {
+	var errs []error = make([]error, 0)
 	for _, v := range u.app.TaskAssets {
 		if err := u.updateTask(v); err != nil {
-			// TODO append error
+			errs = append(errs, err)
 			continue
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
-func (u *appUpdater) updateAsset(v configuration.Asset) (downloadTempPath string, err error) {
-	releaseAsset := u.seek(v)
-	if releaseAsset == nil {
-		err = fmt.Errorf("no match for asset %s", v.GetAsset())
-		return
-	}
-
-	var verif verifier = func(io.Reader) bool { return true }
-
-	if u.app.UseCache {
-		verif, err = checksumVerifier(*u, v)
+func (u *appUpdater) UpdateAdditionalAssets() error {
+	var errs []error = make([]error, 0)
+	for _, v := range u.app.AdditionalAssets {
+		fnCopy, err := u.updateAsset(v)
 		if err != nil {
-			return
+			errs = append(errs, err)
+			continue
+		}
+		if err = fnCopy(); err != nil {
+			errs = append(errs, err)
+			continue
 		}
 	}
-	rc, lenght, err := downloadableAsset(NewGithubClient(u.app, nil), *releaseAsset.URL)
-	if err != nil {
-		return
-	}
-
-	downloadTempPath = filepath.Join(Config().BasePath, *releaseAsset.Name)
-	log.Info().Msg("save asset to temporary file in " + downloadTempPath)
-	if downloadTempPath, err = CreateFile(rc, lenght, downloadTempPath); err != nil {
-		return
-	}
-
-	u.cleanupFuncs = append(u.cleanupFuncs, func() {
-		log.Info().Msgf("removing temporary file %s", downloadTempPath)
-		os.Remove(downloadTempPath)
-	})
-
-	f, err := os.Open(downloadTempPath)
-	if err != nil {
-		return
-	}
-	if verif(f) {
-		f.Close()
-		err = ErrUnverifiedAsset
-		return
-	}
-	f.Close()
-
-	return
+	return errors.Join(errs...)
 }
 
 func (u *appUpdater) updateTask(v configuration.TaskAsset) (err error) {
-	var downloadTempPath string
-	if downloadTempPath, err = u.updateAsset(v); err != nil {
+	var fnCopy func() error
+	if fnCopy, err = u.updateAsset(v); err != nil {
 		return
 	}
 
@@ -121,29 +101,66 @@ func (u *appUpdater) updateTask(v configuration.TaskAsset) (err error) {
 		}
 	}()
 
-	if err = RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
+	return fnCopy()
+}
+
+func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err error), err error) {
+	releaseAsset := u.seek(v)
+	if releaseAsset == nil {
+		err = fmt.Errorf("no match for asset %s", v.GetAsset())
 		return
 	}
 
-	if err = Copy(downloadTempPath, v.SystemPath); err != nil {
-		os.Remove(v.SystemPath)
-		log.Warn().Msgf("roll back rename %s to %s", v.SystemPath+".old", v.SystemPath)
-		RenameSafe(v.SystemPath+".old", v.SystemPath)
+	var verif verifier = func(io.Reader) bool { return true }
+
+	if u.app.UseCache {
+		verif, err = checksumVerifier(NewGetChecksum(NewGithubClient(u.app, nil), u.app, v.GetChecksum(), v, u.release))
+		if err != nil {
+			return
+		}
+	}
+	rc, lenght, err := downloadableAsset(NewGithubClient(u.app, nil), *releaseAsset.URL)
+	if err != nil {
+		return
+	}
+
+	downloadTempPath := filepath.Join(Config().BasePath, *releaseAsset.Name)
+	log.Info().Msg("save asset to temporary file in " + downloadTempPath)
+	if downloadTempPath, err = CreateFile(rc, lenght, downloadTempPath); err != nil {
+		return
+	}
+
+	u.addCleanUpFn(func() {
+		log.Info().Msgf("removing temporary file %s", downloadTempPath)
+		os.Remove(downloadTempPath)
+	})
+
+	f, err := os.Open(downloadTempPath)
+	if err != nil {
+		return
+	}
+	if !verif(f) {
+		f.Close()
+		log.Warn().Msgf("asset %s could not be verified", v.GetAsset())
+		err = ErrUnverifiedAsset
+		return
+	}
+	f.Close()
+
+	fnCopy = func() (err error) {
+		if err = RenameSafe(v.GetSystemPath(), v.GetSystemPath()+".old"); err != nil {
+			return
+		}
+		if err = Copy(downloadTempPath, v.GetSystemPath()); err != nil {
+			os.Remove(v.GetSystemPath())
+			log.Warn().Msgf("roll back rename %s to %s", v.GetSystemPath()+".old", v.GetSystemPath())
+			RenameSafe(v.GetSystemPath()+".old", v.GetSystemPath())
+			return nil
+		}
 		return nil
 	}
 
-	// TODO unzip
 	return
-}
-
-func (u appUpdater) UpdateAdditionalAssets() error {
-	for _, v := range u.app.AdditionalAssets {
-		if _, err := u.updateAsset(v); err != nil {
-			// TODO append error
-			continue
-		}
-	}
-	return nil
 }
 
 func (u appUpdater) RunPostAction() error {
@@ -168,8 +185,7 @@ func (u appUpdater) RunPostAction() error {
 
 type verifier func(io.Reader) bool
 
-func checksumVerifier(u appUpdater, v configuration.Asset) (verifier, error) {
-	gchsm := NewGetChecksum(NewGithubClient(u.app, nil), u.app, v.GetChecksum(), v, u.release)
+func checksumVerifier(gchsm IGetChecksum) (verifier, error) {
 	checksum, err := gchsm.GetChecksum()
 	if err != nil && err != ErrNoChecksum {
 		return nil, err
