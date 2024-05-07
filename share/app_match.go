@@ -154,7 +154,7 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 		if err = Copy(downloadTempPath, v.GetSystemPath()); err != nil {
 			os.Remove(v.GetSystemPath())
 			log.Warn().Msgf("roll back rename %s to %s", v.GetSystemPath()+".old", v.GetSystemPath())
-			RenameSafe(v.GetSystemPath()+".old", v.GetSystemPath())
+			_ = RenameSafe(v.GetSystemPath()+".old", v.GetSystemPath())
 			return nil
 		}
 		return nil
@@ -179,7 +179,7 @@ func (u appUpdater) RunPostAction() error {
 		)).Send()
 		return err
 	}
-	log.Info().Str("command output", string(b))
+	log.Info().Str("command output", string(b)).Send()
 	return nil
 }
 

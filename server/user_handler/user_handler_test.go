@@ -8,6 +8,7 @@ import (
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHandleUserAppsList(t *testing.T) {
@@ -17,10 +18,11 @@ func TestHandleUserAppsList(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	b := buff.Bytes()
-	assert.Equal(t, nil, err)
+	require.True(t, err == nil, "%w", err)
 
 	var apps []App
-	json.Unmarshal(b, &apps)
+	err = json.Unmarshal(b, &apps)
+	require.True(t, err == nil, "%w", err)
 
 	expected := []App{
 		{

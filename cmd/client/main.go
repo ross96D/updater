@@ -49,8 +49,15 @@ func init() {
 	rootCommand.PersistentFlags().StringVarP(&user, "user", "u", "", "user name")
 	// TODO maybe this is needed to be read from an env variable or a config file, but for now as this is for testing mainly.. just who cares
 	rootCommand.PersistentFlags().StringVarP(&pass, "password", "p", "", "user password")
-	rootCommand.MarkPersistentFlagRequired("user")
-	rootCommand.MarkPersistentFlagRequired("password")
+
+	err := rootCommand.MarkPersistentFlagRequired("user")
+	if err != nil {
+		panic(err)
+	}
+	err = rootCommand.MarkPersistentFlagRequired("password")
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -135,7 +142,7 @@ func list() (apps []user_handler.App, err error) {
 	if err != nil {
 		return
 	}
-	b, err := io.ReadAll(resp.Body)
+	b, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode > 400 {
 		if b == nil {
 			b = []byte("")

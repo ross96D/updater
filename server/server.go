@@ -85,7 +85,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
-	w.Write(token)
+	_, _ = w.Write(token)
 }
 
 func update(w http.ResponseWriter, r *http.Request) {

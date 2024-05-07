@@ -84,8 +84,7 @@ func Reload(path string) error {
 		return err
 	}
 
-	changeConfig(newConfig)
-	return nil
+	return changeConfig(newConfig)
 }
 
 func Config() configuration.Configuration {

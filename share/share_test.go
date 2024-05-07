@@ -88,7 +88,6 @@ func TestAggregateChecksum(t *testing.T) {
 	assert.Equal(t, "aggregate_checksum", string(checksum))
 
 	// test with a direct key name
-	key = "valid_key"
 	app = configuration.Application{
 		Owner: "ross96D",
 		Repo:  "updater",
@@ -173,7 +172,8 @@ func TestAdditionalAsset(t *testing.T) {
 
 	config := testConfig()
 	config.Apps = []configuration.Application{app}
-	changeConfig(config)
+	err = changeConfig(config)
+	require.True(t, err == nil, "%w", err)
 
 	err = UpdateApp(app, release)
 	require.True(t, err == nil, "%w", err)
