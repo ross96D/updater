@@ -1,38 +1,22 @@
 package share
 
 import (
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 )
-
-func VerifyWithChecksum(checksum []byte, rc io.ReadCloser, hasher hash.Hash) (resp bool, err error) {
-	defer rc.Close()
-
-	if _, err = io.Copy(hasher, rc); err != nil {
-		return false, err
-	}
-
-	hashed := hasher.Sum(nil)
-	if len(hashed) != len(checksum) {
-		return false, nil
-	}
-	for i := 0; i < len(checksum); i++ {
-		if hashed[i] != checksum[i] {
-			return false, nil
-		}
-	}
-	return true, nil
-}
 
 func CreateFile(rc io.ReadCloser, length int64, path string) (resultPath string, err error) {
 	defer rc.Close()
@@ -144,4 +128,78 @@ func RenameSafe(oldpath string, newpath string) error {
 		f.Close()
 	}
 	return os.Rename(oldpath, newpath)
+}
+
+func Unzip(path string) error {
+	switch {
+	case strings.HasSuffix(path, ".zip"):
+		return unzip(path)
+	case strings.HasSuffix(path, ".gz"), strings.HasSuffix(path, ".gzip"):
+		return gzipDecompress(path)
+	default:
+		return nil
+	}
+}
+
+func unzip(path string) error {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		err = unzipFile(f, filepath.Dir(path))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func unzipFile(file *zip.File, dir string) error {
+	rc, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	path := filepath.Join(dir, file.Name)
+	if file.FileInfo().IsDir() {
+		_ = os.MkdirAll(path, file.Mode())
+		return nil
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, rc)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func gzipDecompress(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+
+	dst, err := os.Create(filepath.Join(filepath.Dir(path), gr.Name))
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, gr)
+	return err
 }

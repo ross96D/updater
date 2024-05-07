@@ -3,9 +3,11 @@ package share
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -344,4 +346,52 @@ func TestChecksumVerifier(t *testing.T) {
 
 	buff := bytes.NewBuffer([]byte("my_text"))
 	require.True(t, v(buff))
+}
+
+func TestUnzip(t *testing.T) {
+	t.Run("zip ext", func(t *testing.T) {
+		err := Unzip(filepath.Join("unzip_test", "compressed_test.zip"))
+		require.True(t, err == nil, err)
+
+		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
+
+		t.Cleanup(func() {
+			f.Close()
+			os.Remove(filepath.Join("unzip_test", "compressed_test"))
+		})
+
+		require.True(t, err == nil, err)
+		b, err := io.ReadAll(f)
+		require.True(t, err == nil, err)
+
+		builder := strings.Builder{}
+		for i := 0; i < 50; i++ {
+			builder.WriteString("compressed test file with zip\n")
+		}
+
+		require.Equal(t, string(b), builder.String())
+	})
+
+	t.Run("gz ext", func(t *testing.T) {
+		err := Unzip(filepath.Join("unzip_test", "compressed_test.gz"))
+		require.True(t, err == nil, err)
+
+		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
+
+		t.Cleanup(func() {
+			f.Close()
+			os.Remove(filepath.Join("unzip_test", "compressed_test"))
+		})
+
+		require.True(t, err == nil, err)
+		b, err := io.ReadAll(f)
+		require.True(t, err == nil, err)
+
+		builder := strings.Builder{}
+		for i := 0; i < 50; i++ {
+			builder.WriteString("compressed test file with zip\n")
+		}
+
+		require.Equal(t, string(b), builder.String())
+	})
 }

@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v60/github"
-	"github.com/ross96D/updater/share/configuration"
 )
 
 var ErrIsChached = fmt.Errorf("asset is cached")
@@ -58,41 +57,37 @@ func getHeaders(client *github.Client, url string) (lenght int64, err error) {
 	return
 }
 
-func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached bool) {
-	panic("Unimplemented")
+// func cacheWithChecksum(checksum []byte, app configuration.Application) (isCached bool) {
+// _mutexHandleAssetMatch.Lock()
+// defer _mutexHandleAssetMatch.Unlock()
 
-	// _mutexHandleAssetMatch.Lock()
-	// defer _mutexHandleAssetMatch.Unlock()
+// file, err := os.Open(app.SystemPath)
+// if err != nil {
+// 	return
+// }
+// defer file.Close()
 
-	// file, err := os.Open(app.SystemPath)
-	// if err != nil {
-	// 	return
-	// }
-	// defer file.Close()
+// hash, err := hashFile(app.SystemPath, NewHasher())
+// if err != nil {
+// 	return
+// }
 
-	// hash, err := hashFile(app.SystemPath, NewHasher())
-	// if err != nil {
-	// 	return
-	// }
+// return slices.Equal(hash, checksum)
+// }
 
-	// return slices.Equal(hash, checksum)
-}
+// func cacheWithFile(path string, app configuration.Application) (isCached bool) {
+// _mutexHandleAssetMatch.Lock()
+// defer _mutexHandleAssetMatch.Unlock()
 
-func cacheWithFile(path string, app configuration.Application) (isCached bool) {
-	panic("Unimplemented")
+// hashFileDownload, err := hashFile(path, NewHasher())
+// if err != nil {
+// 	return
+// }
 
-	// _mutexHandleAssetMatch.Lock()
-	// defer _mutexHandleAssetMatch.Unlock()
+// hashApp, err := hashFile(app.SystemPath, NewHasher())
+// if err != nil {
+// 	return
+// }
 
-	// hashFileDownload, err := hashFile(path, NewHasher())
-	// if err != nil {
-	// 	return
-	// }
-
-	// hashApp, err := hashFile(app.SystemPath, NewHasher())
-	// if err != nil {
-	// 	return
-	// }
-
-	// return slices.Equal(hashApp, hashFileDownload)
-}
+// return slices.Equal(hashApp, hashFileDownload)
+// }

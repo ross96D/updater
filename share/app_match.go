@@ -17,11 +17,8 @@ import (
 
 func UpdateApp(app configuration.Application, release *github.RepositoryRelease) error {
 	u := newAppUpdater(app, release)
-	// TODO append errors
 	err := u.UpdateAdditionalAssets()
-	// TODO append errors
 	err2 := u.UpdateTaskAssets()
-	// TODO append errors
 	err3 := u.RunPostAction()
 	u.CleanUp()
 	return errors.Join(err, err2, err3)
@@ -157,6 +154,12 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 			_ = RenameSafe(v.GetSystemPath()+".old", v.GetSystemPath())
 			return nil
 		}
+		if v.GetUnzip() {
+			if err = Unzip(v.GetSystemPath()); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 
