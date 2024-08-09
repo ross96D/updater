@@ -7,9 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/server/auth"
-	"github.com/ross96D/updater/server/github_handler"
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
 	"github.com/rs/zerolog/log"
@@ -33,6 +31,7 @@ func (s *Server) Start() error {
 
 func (s *Server) setHandlers() {
 	s.router.Use(middleware.Recoverer)
+	// TODO change to zerologger
 	s.router.Use(middleware.DefaultLogger)
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
@@ -92,6 +91,7 @@ func update(w http.ResponseWriter, r *http.Request) {
 	origin := r.Context().Value(auth.UserTypeKey)
 
 	payload, err := io.ReadAll(r.Body)
+	_ = payload
 	if err != nil {
 		log.Error().Err(err).Send()
 		http.Error(w, "internal error", 500)
@@ -99,22 +99,10 @@ func update(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	switch origin {
-	case "github":
-		eventType := r.Header.Get(github.EventTypeHeader)
-		err = github_handler.HandleGithubWebhook(payload, eventType)
-		if err != nil {
-			log.Error().Err(err).Send()
-			http.Error(w, "internal error", 500)
-			return
-		}
-		log.Info().Msg("succesfull handled of github request")
-
 	case "user":
-		err = user_handler.HandlerUserUpdate(payload)
-		if err != nil {
-			http.Error(w, "internal error "+err.Error(), 500)
-			return
-		}
+		log.Warn().Msg("update from user not currently supported")
+		http.Error(w, "update from user not currently supported", 400)
+		return
 	default:
 		log.Warn().Msg("unhandled origin")
 		http.Error(w, "internal error", 500)
@@ -137,4 +125,14 @@ func list(w http.ResponseWriter, r *http.Request) {
 		// maybe this is not necesary? this would panic or error or something like that
 		http.Error(w, err.Error(), 500)
 	}
+}
+
+func upload(w http.ResponseWriter, r *http.Request) {
+	origin := r.Context().Value(auth.UserTypeKey).(string)
+	if origin != "github" {
+		http.Error(w, "invalid origin "+origin, 403)
+	}
+
+	log.Info().Msg("upload update success")
+	w.WriteHeader(200)
 }

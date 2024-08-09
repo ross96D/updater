@@ -1,22 +1,27 @@
 package share
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 
-	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share/configuration"
 	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/rs/zerolog/log"
 )
 
-func UpdateApp(app configuration.Application, release *github.RepositoryRelease) error {
-	u := newAppUpdater(app, release)
+type Data interface {
+	Get(name string) io.Reader
+}
+
+type NoData struct{}
+
+func (NoData) Get(name string) io.Reader { return nil }
+
+func Update(app configuration.Application, data Data) error {
+	u := NewAppUpdater(app, data)
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
 	err3 := u.RunPostAction()
@@ -24,9 +29,20 @@ func UpdateApp(app configuration.Application, release *github.RepositoryRelease)
 	return errors.Join(err, err2, err3)
 }
 
+type state int
+
+const (
+	correct = iota
+	failed
+)
+
 type appUpdater struct {
-	app     configuration.Application
-	release *github.RepositoryRelease
+	app  configuration.Application
+	data Data
+
+	// how do i know if i am on a failed state?
+	// if update aditional assets fail is a failed state?
+	state state
 
 	cleanupFuncs []func()
 }
@@ -38,36 +54,44 @@ func (u *appUpdater) addCleanUpFn(fn func()) {
 	u.cleanupFuncs = append(u.cleanupFuncs, fn)
 }
 
-func (u appUpdater) seek(asset configuration.Asset) *github.ReleaseAsset {
-	for _, githubAsset := range u.release.Assets {
-		if *githubAsset.Name == asset.GetAsset() {
-			return githubAsset
-		}
-	}
-	return nil
+func (u appUpdater) seek(asset configuration.Asset) io.Reader {
+	return u.data.Get(asset.Name)
 }
 
-func newAppUpdater(app configuration.Application, release *github.RepositoryRelease) *appUpdater {
+func NewAppUpdater(app configuration.Application, data Data) *appUpdater {
 	return &appUpdater{
-		app:     app,
-		release: release,
+		app:   app,
+		data:  data,
+		state: correct,
 	}
 }
 
 func (u *appUpdater) UpdateTaskAssets() error {
 	var errs []error = make([]error, 0)
-	for _, v := range u.app.TaskAssets {
+
+	for _, v := range u.app.Assets {
+		if v.TaskSchedPath == "" {
+			continue
+		}
+
 		if err := u.updateTask(v); err != nil {
 			errs = append(errs, err)
 			continue
 		}
 	}
-	return errors.Join(errs...)
+	err := errors.Join(errs...)
+	if err != nil {
+		u.state = failed
+	}
+	return err
 }
 
 func (u *appUpdater) UpdateAdditionalAssets() error {
 	var errs []error = make([]error, 0)
-	for _, v := range u.app.AdditionalAssets {
+	for _, v := range u.app.Assets {
+		if v.TaskSchedPath != "" {
+			continue
+		}
 		fnCopy, err := u.updateAsset(v)
 		if err != nil {
 			errs = append(errs, err)
@@ -81,13 +105,13 @@ func (u *appUpdater) UpdateAdditionalAssets() error {
 	return errors.Join(errs...)
 }
 
-func (u *appUpdater) updateTask(v configuration.TaskAsset) (err error) {
+func (u *appUpdater) updateTask(v configuration.Asset) (err error) {
 	var fnCopy func() error
 	if fnCopy, err = u.updateAsset(v); err != nil {
 		return
 	}
 
-	// TODO this needs a mutex
+	// TODO this needs a mutex?
 	if err = taskservice.Stop(v.TaskSchedPath); err != nil {
 		return
 	}
@@ -102,60 +126,25 @@ func (u *appUpdater) updateTask(v configuration.TaskAsset) (err error) {
 }
 
 func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err error), err error) {
-	releaseAsset := u.seek(v)
-	if releaseAsset == nil {
-		err = fmt.Errorf("no match for asset %s", v.GetAsset())
+	assetData := u.seek(v)
+	if assetData == nil {
+		err = fmt.Errorf("no match for asset %s", v.Name)
 		return
 	}
-
-	var verif verifier = func(io.Reader) bool { return true }
-
-	if u.app.UseCache {
-		verif, err = checksumVerifier(NewGetChecksum(NewGithubClient(u.app, nil), u.app, v.GetChecksum(), v, u.release))
-		if err != nil {
-			return
-		}
-	}
-	rc, lenght, err := downloadableAsset(NewGithubClient(u.app, nil), *releaseAsset.URL)
-	if err != nil {
-		return
-	}
-
-	downloadTempPath := filepath.Join(Config().BasePath, *releaseAsset.Name)
-	log.Info().Msg("save asset to temporary file in " + downloadTempPath)
-	if downloadTempPath, err = CreateFile(rc, lenght, downloadTempPath); err != nil {
-		return
-	}
-
-	u.addCleanUpFn(func() {
-		log.Info().Msgf("removing temporary file %s", downloadTempPath)
-		os.Remove(downloadTempPath)
-	})
-
-	f, err := os.Open(downloadTempPath)
-	if err != nil {
-		return
-	}
-	if !verif(f) {
-		f.Close()
-		log.Warn().Msgf("asset %s could not be verified", v.GetAsset())
-		err = ErrUnverifiedAsset
-		return
-	}
-	f.Close()
 
 	fnCopy = func() (err error) {
-		if err = RenameSafe(v.GetSystemPath(), v.GetSystemPath()+".old"); err != nil {
+		if err = RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
 			return
 		}
-		if err = Copy(downloadTempPath, v.GetSystemPath()); err != nil {
-			os.Remove(v.GetSystemPath())
-			log.Warn().Msgf("roll back rename %s to %s", v.GetSystemPath()+".old", v.GetSystemPath())
-			_ = RenameSafe(v.GetSystemPath()+".old", v.GetSystemPath())
+
+		if err = CopyFromReader(assetData, v.SystemPath); err != nil {
+			os.Remove(v.SystemPath)
+			log.Debug().Msgf("roll back rename %s to %s", v.SystemPath+".old", v.SystemPath)
+			_ = RenameSafe(v.SystemPath+".old", v.SystemPath)
 			return nil
 		}
-		if v.GetUnzip() {
-			if err = Unzip(v.GetSystemPath()); err != nil {
+		if v.Unzip {
+			if err = Unzip(v.SystemPath); err != nil {
 				return err
 			}
 		}
@@ -167,52 +156,25 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 }
 
 func (u appUpdater) RunPostAction() error {
-	if u.app.PostAction == nil {
+	if u.app.PostAction == nil || u.state == failed {
 		return nil
 	}
 	cmd := exec.Command(u.app.PostAction.Command, u.app.PostAction.Args...)
 	log.Info().Msg("running post action " + cmd.String())
 	b, err := cmd.Output()
 	if err != nil {
-		log.Error().Err(fmt.Errorf(
-			"running post action %s with output %s. Error: %w",
-			cmd.String(),
-			string(b),
-			err,
-		)).Send()
+		log.Error().Err(
+			fmt.Errorf(
+				"running post action %s with output %s. Error: %w",
+				cmd.String(),
+				string(b),
+				err,
+			),
+		).Send()
 		return err
 	}
 	log.Info().Str("command output", string(b)).Send()
 	return nil
-}
-
-type verifier func(io.Reader) bool
-
-func checksumVerifier(gchsm IGetChecksum) (verifier, error) {
-	checksum, err := gchsm.GetChecksum()
-	if err != nil && err != ErrNoChecksum {
-		return nil, err
-	}
-
-	var verif verifier = func(r io.Reader) bool {
-		if r == nil {
-			// TODO add context
-			log.Error().Err(fmt.Errorf("nil reader on verifier")).Send()
-			return false
-		}
-
-		h := NewHasher()
-		_, err := io.Copy(h, r)
-		if err != nil {
-			// TODO add context
-			log.Error().Err(fmt.Errorf("error hashing %w", err)).Send()
-			return false
-		}
-		hashed := h.Sum(nil)
-		return bytes.Equal(hashed, checksum)
-	}
-
-	return verif, nil
 }
 
 func (u appUpdater) CleanUp() {

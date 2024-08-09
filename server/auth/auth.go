@@ -3,9 +3,6 @@ package auth
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"io"
 	"net/http"
@@ -19,7 +16,6 @@ import (
 const UserAuthHeader = "Authorization"
 const GithubAuthHeader = "X-Hub-Signature-256"
 
-var errInvalidGithubToken = errors.New("invalid github authorization header")
 var errInvalidUserToken = errors.New("invalid user authorization header")
 var errNoAuthHeader = errors.New("authorization header is missing")
 
@@ -69,14 +65,15 @@ func AuthMiddelware(next http.Handler) http.Handler {
 				http.Error(w, "internal server error\n"+err.Error(), 500)
 				return
 			}
+			_ = b
 
-			if err = __github_auth__([]byte(rawToken), b); err == nil {
-				// add something to identify which github `workflow?` called
-				ctx := context.WithValue(r.Context(), UserTypeKey, "github")
-				r = r.WithContext(ctx)
-				next.ServeHTTP(w, r)
-				return
-			}
+			// if err = __github_auth__([]byte(rawToken), b); err == nil {
+			// 	// add something to identify which github `workflow?` called
+			// 	ctx := context.WithValue(r.Context(), UserTypeKey, "github")
+			// 	r = r.WithContext(ctx)
+			// 	next.ServeHTTP(w, r)
+			// 	return
+			// }
 		}
 
 		rawToken = r.Header.Get(UserAuthHeader)
@@ -90,60 +87,6 @@ func AuthMiddelware(next http.Handler) http.Handler {
 
 		authFailed(w, err)
 	})
-}
-
-func parseGithubSignature(token []byte) (hmac []byte, signature []byte, err error) {
-	i := 0
-	for ; i < len(token); i++ {
-		if token[i] == '=' {
-			break
-		}
-	}
-	if i == len(token) {
-		err = errInvalidGithubToken
-		return
-	}
-	hmac, signature = token[:i], token[i+1:]
-	return
-}
-
-func checkGithubSignature(alg string, excpected []byte, payload []byte, key []byte) (err error) {
-	// TODO maybe make a switch to handle differents hmac
-	_ = alg
-
-	if len(payload) == 0 {
-		return errors.New("invalid: empty body")
-	}
-
-	h := hmac.New(sha256.New, key)
-	h.Write(payload)
-	hashed := h.Sum(nil)
-
-	dst := make([]byte, 2*len(hashed))
-	hex.Encode(dst, hashed)
-
-	if !hmac.Equal(dst, excpected) {
-		err = errors.New("signatures didn't match")
-	}
-	return
-}
-
-func __github_auth__(token []byte, body []byte) error {
-	if len(token) == 0 {
-		return errNoAuthHeader
-	}
-	hmac, signature, err := parseGithubSignature(token)
-	if err != nil {
-		return err
-	}
-	for _, app := range share.Config().Apps {
-		err = checkGithubSignature(string(hmac), signature, body, []byte(app.GithubWebhookSecret))
-		if err == nil {
-			return nil
-		}
-	}
-	// TODO should this be like this.. returning the last error even if there has been other errors before?
-	return err
 }
 
 func parseUserToken(rawToken []byte) (token []byte, err error) {

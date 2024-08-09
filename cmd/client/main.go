@@ -75,9 +75,7 @@ func update() (err error) {
 		err = fmt.Errorf("no apps listed")
 		return
 	}
-	for i, app := range apps {
-		fmt.Printf("%d - %s\n", i, app.Host+"/"+app.Owner+"/"+app.Repo)
-	}
+
 	var num int
 	_, err = fmt.Scan(&num)
 	if err != nil {
