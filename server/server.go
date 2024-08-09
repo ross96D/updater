@@ -2,6 +2,7 @@ package server
 
 import (
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
@@ -35,7 +36,7 @@ func (s *Server) setHandlers() {
 	s.router.Use(middleware.DefaultLogger)
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
-		r.Post("/update", update)
+		r.Post("/update", upload)
 		r.Get("/list", list)
 		r.Post("/reload", reload)
 	})
@@ -129,10 +130,53 @@ func list(w http.ResponseWriter, r *http.Request) {
 
 func upload(w http.ResponseWriter, r *http.Request) {
 	origin := r.Context().Value(auth.UserTypeKey).(string)
-	if origin != "github" {
-		http.Error(w, "invalid origin "+origin, 403)
+	_ = origin
+
+	app, err := share.Config().FindApp("PUT TOKEN")
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	data, err := ParseForm(r)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	err = share.Update(app, data)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	log.Info().Msg("upload update success")
 	w.WriteHeader(200)
+}
+
+type Data struct {
+	form *multipart.Form
+}
+
+func (d Data) Get(name string) io.Reader {
+	headers, ok := d.form.File[name]
+	if !ok || len(headers) == 0 {
+		return nil
+	}
+	header := headers[0]
+
+	r, err := header.Open()
+	if err != nil {
+		return nil
+	}
+	return r
+}
+
+func ParseForm(r *http.Request) (share.Data, error) {
+	err := r.ParseMultipartForm(10 << 20) // store 10 MB in memory
+	if err != nil {
+		return nil, err
+	}
+
+	return Data{form: r.MultipartForm}, nil
 }
