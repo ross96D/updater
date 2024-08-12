@@ -25,14 +25,6 @@ func (ts *TaskService) Disconnect() {
 	ts.service.Disconnect()
 }
 
-func (ts *TaskService) GetRunningTasks() (taskmaster.RunningTaskCollection, error) {
-	return ts.service.GetRunningTasks()
-}
-
-func (ts *TaskService) GetRegisteredTasks() (taskmaster.RegisteredTaskCollection, error) {
-	return ts.service.GetRegisteredTasks()
-}
-
 func (ts *TaskService) Stop(path string) error {
 	if path == "" {
 		log.Info().Msg("task path is empty. No op")
