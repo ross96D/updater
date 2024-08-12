@@ -11,6 +11,7 @@ import (
 	"github.com/ross96D/updater/server/auth"
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
+	"github.com/ross96D/updater/share/configuration"
 	"github.com/rs/zerolog/log"
 )
 
@@ -89,7 +90,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 func list(w http.ResponseWriter, r *http.Request) {
-	origin := r.Context().Value(auth.UserTypeKey)
+	origin := r.Context().Value(auth.TypeKey)
 	if origin != "user" {
 		http.Error(w, "", 400)
 		return
@@ -104,13 +105,12 @@ func list(w http.ResponseWriter, r *http.Request) {
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-
-	app, err := share.Config().FindApp(token)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
+	if r.Context().Value(auth.TypeKey) != "webhook" {
+		http.Error(w, "unsupported: "+r.Context().Value(auth.TypeKey).(string), 500)
 		return
 	}
+
+	app := r.Context().Value(auth.AppValueKey).(configuration.Application)
 
 	data, err := ParseForm(r)
 	if err != nil {

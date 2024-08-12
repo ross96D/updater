@@ -1,10 +1,8 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"time"
 
@@ -13,76 +11,44 @@ import (
 	"github.com/ross96D/updater/share"
 )
 
-const UserAuthHeader = "Authorization"
+const AuthHeader = "Authorization"
 const GithubAuthHeader = "X-Hub-Signature-256"
 
 var errInvalidUserToken = errors.New("invalid user authorization header")
+var ErrInvalidToken = errors.New("invalid authorization header")
 var errNoAuthHeader = errors.New("authorization header is missing")
 
-func readBody(ctx context.Context, body io.ReadCloser) (io.ReadCloser, []byte, error) {
-	defer body.Close()
-	nbody := io.LimitReader(body, 30*1024*1024)
+type typeKey string
 
-	var b []byte
-	var err error
+var TypeKey typeKey = "origin"
 
-	done := make(chan bool)
-	go func() {
-		b, err = io.ReadAll(nbody)
-		done <- true
-	}()
+type appValueKey string
 
-	select {
-	case <-ctx.Done():
-		if ctx.Err() != nil {
-			err = ctx.Err()
-		} else {
-			err = errors.New("closed context before reading response")
-		}
-	case <-done:
-	}
-
-	if err != nil {
-		return nil, nil, err
-	}
-	rc := io.NopCloser(bytes.NewBuffer(b))
-	return rc, b, nil
-}
-
-type userTypeKey string
-
-var UserTypeKey userTypeKey = "origin"
+var AppValueKey appValueKey = "app_value_key"
 
 func AuthMiddelware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
-		rawToken := r.Header.Get(GithubAuthHeader)
 
-		if rawToken != "" {
-			var b []byte
-			r.Body, b, err = readBody(r.Context(), r.Body)
-			if err != nil {
-				http.Error(w, "internal server error\n"+err.Error(), 500)
-				return
-			}
-			_ = b
-
-			// if err = __github_auth__([]byte(rawToken), b); err == nil {
-			// 	// add something to identify which github `workflow?` called
-			// 	ctx := context.WithValue(r.Context(), UserTypeKey, "github")
-			// 	r = r.WithContext(ctx)
-			// 	next.ServeHTTP(w, r)
-			// 	return
-			// }
-		}
-
-		rawToken = r.Header.Get(UserAuthHeader)
+		rawToken := r.Header.Get(AuthHeader)
 		if err = __user_auth__([]byte(rawToken)); err == nil {
 			// add something to identify which user called
-			ctx := context.WithValue(r.Context(), UserTypeKey, "user")
+			ctx := context.WithValue(r.Context(), TypeKey, "user")
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 			return
+		}
+
+		if err == errInvalidUserToken {
+			if app, err := share.Config().FindApp(rawToken); err == nil {
+				ctx := context.WithValue(r.Context(), TypeKey, "webhook")
+				ctx = context.WithValue(ctx, AppValueKey, app)
+				r = r.WithContext(ctx)
+
+				next.ServeHTTP(w, r)
+				return
+			}
+			err = ErrInvalidToken
 		}
 
 		authFailed(w, err)
