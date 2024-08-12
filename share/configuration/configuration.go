@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -12,6 +13,15 @@ type Configuration struct {
 	Apps          []Application `json:"apps"`
 	Users         []User        `json:"users"`
 	BasePath      string        `json:"base_path"`
+}
+
+func (c Configuration) FindApp(token string) (Application, error) {
+	for _, app := range c.Apps {
+		if app.AuthToken == token {
+			return app, nil
+		}
+	}
+	return Application{}, errors.New("application not found")
 }
 
 type Duration time.Duration

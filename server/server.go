@@ -88,31 +88,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(token)
 }
 
-func update(w http.ResponseWriter, r *http.Request) {
-	origin := r.Context().Value(auth.UserTypeKey)
-
-	payload, err := io.ReadAll(r.Body)
-	_ = payload
-	if err != nil {
-		log.Error().Err(err).Send()
-		http.Error(w, "internal error", 500)
-		return
-	}
-	defer r.Body.Close()
-	switch origin {
-	case "user":
-		log.Warn().Msg("update from user not currently supported")
-		http.Error(w, "update from user not currently supported", 400)
-		return
-	default:
-		log.Warn().Msg("unhandled origin")
-		http.Error(w, "internal error", 500)
-		return
-	}
-	log.Info().Msg("update success")
-	w.WriteHeader(200)
-}
-
 func list(w http.ResponseWriter, r *http.Request) {
 	origin := r.Context().Value(auth.UserTypeKey)
 	if origin != "user" {
@@ -129,10 +104,9 @@ func list(w http.ResponseWriter, r *http.Request) {
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	origin := r.Context().Value(auth.UserTypeKey).(string)
-	_ = origin
+	token := r.Header.Get("Authorization")
 
-	app, err := share.Config().FindApp("PUT TOKEN")
+	app, err := share.Config().FindApp(token)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
