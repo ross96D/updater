@@ -25,7 +25,7 @@ base_path?: string // path where the temporal files used by the app will place
 #Asset: {
     // the name of the form field
     name!: string
-    task_sched_path?: string
+    service?: string
     system_path!: string
 
     // if this is set to true, the asset will be decompressed

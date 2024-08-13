@@ -7,9 +7,9 @@ apps: [
 
 		assets: [
 			{
-				name:            "-"
-				task_sched_path: "-"
-				system_path:     "-"
+				name:        "-"
+				service:     "-"
+				system_path: "-"
 			},
 			{
 				name:        "asset1"
@@ -26,9 +26,9 @@ apps: [
 
 		assets: [
 			{
-				name:            "--"
-				task_sched_path: "-"
-				system_path:     "-"
+				name:        "--"
+				service:     "-"
+				system_path: "-"
 			},
 		]
 	},

@@ -7,9 +7,9 @@ apps: [
 
 		assets: [
 			{
-				name:            "some asset name"
-				task_sched_path: "/is/a/path"
-				system_path:     "/is/a/path"
+				name:        "some asset name"
+				service:     "/is/a/path"
+				system_path: "/is/a/path"
 			},
 		]
 
