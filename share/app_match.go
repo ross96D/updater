@@ -108,12 +108,12 @@ func (u *appUpdater) UpdateAdditionalAssets() error {
 func (u *appUpdater) updateTask(v configuration.Asset) (err error) {
 	var fnCopy func() error
 	if fnCopy, err = u.updateAsset(v); err != nil {
-		return
+		return fmt.Errorf("updateTask updateAsset() %w", err)
 	}
 
 	// TODO this needs a mutex?
 	if err = taskservice.Stop(v.TaskSchedPath); err != nil {
-		return
+		return fmt.Errorf("updateTask Stop() %w", err)
 	}
 
 	defer func() {
