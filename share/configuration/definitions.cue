@@ -28,8 +28,8 @@ base_path?: string // path where the temporal files used by the app will place
     task_sched_path?: string
     system_path!: string
 
-    // if the extension is a zip or gzip and this is set to true, the asset will be decompressed
-    unzip: bool | *true
+    // if this is set to true, the asset will be decompressed
+    unzip: bool | *false
 }
 
 #Command: {
