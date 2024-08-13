@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"cuelang.org/go/cue/cuecontext"
 
@@ -109,7 +110,7 @@ func LoadString(userConfig string) (c Configuration, err error) {
 }
 
 func init() {
-	cd, err := os.UserCacheDir()
+	cd, err := getCacheDir()
 	if err != nil {
 		panic(err)
 	}
@@ -121,4 +122,13 @@ func init() {
 
 	definitionPath = filepath.Join(cacheDir, "definition.cue")
 	configPath = filepath.Join(cacheDir, "config.cue")
+}
+
+func getCacheDir() (string, error) {
+	dir, err := os.UserCacheDir()
+	// when user is root cannot use UserCacheDir so falling back to /var/cache/
+	if err != nil && runtime.GOOS == `linux` {
+		return "/var/cache", nil
+	}
+	return dir, err
 }
