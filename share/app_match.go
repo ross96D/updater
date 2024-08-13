@@ -25,7 +25,7 @@ func Update(app configuration.Application, data Data) error {
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
 	err3 := u.RunPostAction()
-	u.CleanUp()
+	// u.CleanUp()
 	return errors.Join(err, err2, err3)
 }
 
@@ -44,15 +44,15 @@ type appUpdater struct {
 	// if update aditional assets fail is a failed state?
 	state state
 
-	cleanupFuncs []func()
+	// cleanupFuncs []func()
 }
 
-func (u *appUpdater) addCleanUpFn(fn func()) {
-	if u.cleanupFuncs == nil {
-		u.cleanupFuncs = make([]func(), 0)
-	}
-	u.cleanupFuncs = append(u.cleanupFuncs, fn)
-}
+// func (u *appUpdater) addCleanUpFn(fn func()) {
+// 	if u.cleanupFuncs == nil {
+// 		u.cleanupFuncs = make([]func(), 0)
+// 	}
+// 	u.cleanupFuncs = append(u.cleanupFuncs, fn)
+// }
 
 func (u appUpdater) seek(asset configuration.Asset) io.Reader {
 	return u.data.Get(asset.Name)
@@ -177,8 +177,8 @@ func (u appUpdater) RunPostAction() error {
 	return nil
 }
 
-func (u appUpdater) CleanUp() {
-	for _, f := range u.cleanupFuncs {
-		f()
-	}
-}
+// func (u appUpdater) CleanUp() {
+// 	for _, f := range u.cleanupFuncs {
+// 		f()
+// 	}
+// }
