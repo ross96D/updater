@@ -1,7 +1,9 @@
 package share_test
 
 import (
+	"bytes"
 	"io"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,33 +17,48 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testPath = "test_path"
+// const testPath = "test_path"
 const testSysPath = "test_sys_path"
 
-func testConfig() configuration.Configuration {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	testPath := filepath.Join(cwd, testPath)
-	if _, err = os.Stat(testPath); err != nil {
-		err = os.Mkdir(testPath, 0777)
-		if err != nil {
-			panic(err)
+type TestData map[string]io.Reader
+
+func (t TestData) Get(name string) io.Reader {
+	return t[name]
+}
+
+// TODO add tests
+func TestUpdateApp(t *testing.T) {
+	createRandomData := func(size uint) io.Reader {
+		buff := make([]byte, 0, size)
+		for i := 0; i < int(size); i++ {
+			buff = append(buff, byte(rand.UintN(256)))
 		}
+		return bytes.NewBuffer(buff)
 	}
 
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
 	testSysPath := filepath.Join(cwd, testSysPath)
-	if _, err = os.Stat(testSysPath); err != nil {
-		err = os.Mkdir(testSysPath, 0777)
-		if err != nil {
-			panic(err)
-		}
+	// removeAllFiles(testSysPath)
+
+	app := configuration.Application{
+		Assets: []configuration.Asset{
+			{
+				Name:       "asset1",
+				SystemPath: filepath.Join(testSysPath, "asset1"),
+			},
+		},
 	}
-	return configuration.Configuration{
-		Port:          65432,
-		UserJwtExpiry: configuration.Duration(0),
-		BasePath:      testPath,
+
+	data := make(map[string]io.Reader)
+	data["asset1"] = createRandomData(500)
+
+	err = share.Update(app, TestData(data))
+	require.NoError(t, err)
+
+	for k, v := range app.Assets {
+		_, err := os.Stat(v.SystemPath)
+		require.NoError(t, err, "%s", k)
 	}
 }
 
@@ -197,3 +214,30 @@ func TestUnzip(t *testing.T) {
 		require.Equal(t, string(b), builder.String())
 	})
 }
+
+// func testConfig() configuration.Configuration {
+// 	cwd, err := os.Getwd()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	testPath := filepath.Join(cwd, testPath)
+// 	if _, err = os.Stat(testPath); err != nil {
+// 		err = os.Mkdir(testPath, 0777)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 	}
+
+// 	testSysPath := filepath.Join(cwd, testSysPath)
+// 	if _, err = os.Stat(testSysPath); err != nil {
+// 		err = os.Mkdir(testSysPath, 0777)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 	}
+// 	return configuration.Configuration{
+// 		Port:          65432,
+// 		UserJwtExpiry: configuration.Duration(0),
+// 		BasePath:      testPath,
+// 	}
+// }
