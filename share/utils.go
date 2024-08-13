@@ -1,6 +1,7 @@
 package share
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 func CreateFile(rc io.ReadCloser, length int64, path string) (resultPath string, err error) {
@@ -70,10 +73,13 @@ func RenameSafe(oldpath string, newpath string) error {
 func Unzip(path string) error {
 	switch {
 	case strings.HasSuffix(path, ".zip"):
+		log.Debug().Msg("zip extension found for " + path)
 		return unzip(path)
 	case strings.HasSuffix(path, ".gz"), strings.HasSuffix(path, ".gzip"):
+		log.Debug().Msg("gz/gzip extension found for " + path)
 		return gzipDecompress(path)
 	default:
+		log.Debug().Msg("no unzip extension found for " + path)
 		return nil
 	}
 }
@@ -81,14 +87,14 @@ func Unzip(path string) error {
 func unzip(path string) error {
 	r, err := zip.OpenReader(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("unzip OpenReader(%s) %w", path, err)
 	}
 	defer r.Close()
 
 	for _, f := range r.File {
 		err = unzipFile(f, filepath.Dir(path))
 		if err != nil {
-			return err
+			return fmt.Errorf("unzip %w", err)
 		}
 	}
 	return nil
@@ -97,7 +103,7 @@ func unzip(path string) error {
 func unzipFile(file *zip.File, dir string) error {
 	rc, err := file.Open()
 	if err != nil {
-		return err
+		return fmt.Errorf("unzipFile Open() %w", err)
 	}
 	defer rc.Close()
 
@@ -108,13 +114,13 @@ func unzipFile(file *zip.File, dir string) error {
 	}
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 	if err != nil {
-		return err
+		return fmt.Errorf("unzipFile OpenFile(%s) %w", path, err)
 	}
 	defer f.Close()
 
 	_, err = io.Copy(f, rc)
 	if err != nil {
-		return err
+		return fmt.Errorf("unzipFile Copy() %w", err)
 	}
 	return nil
 }
@@ -122,21 +128,56 @@ func unzipFile(file *zip.File, dir string) error {
 func gzipDecompress(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("gzipDecompress open path %s %w", path, err)
 	}
 	defer f.Close()
-	gr, err := gzip.NewReader(f)
+	stream, err := gzip.NewReader(f)
 	if err != nil {
 		return err
 	}
-	defer gr.Close()
+	defer stream.Close()
 
-	dst, err := os.Create(filepath.Join(filepath.Dir(path), gr.Name))
-	if err != nil {
-		return err
+	tr := tar.NewReader(stream)
+
+	if err = untar(tr, filepath.Dir(path)); err != nil {
+		err = fmt.Errorf("gzipDecompress %w", err)
 	}
-	defer dst.Close()
 
-	_, err = io.Copy(dst, gr)
 	return err
+}
+
+func untar(tr *tar.Reader, path string) error {
+	for {
+		header, err := tr.Next()
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return fmt.Errorf("untar tr.Next() failed %w", err)
+		}
+
+		entryPath := filepath.Join(path, header.Name)
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.Mkdir(entryPath, 0755); err != nil {
+				return fmt.Errorf("untar Mkdir(%s) failed %w", entryPath, err)
+			}
+		case tar.TypeReg:
+			outFile, err := os.Create(header.Name)
+			if err != nil {
+				return fmt.Errorf("untar Create(%s) failed %w", entryPath, err)
+			}
+			if _, err := io.Copy(outFile, tr); err != nil {
+				return fmt.Errorf("untar Copy() failed %w", err)
+			}
+			outFile.Close()
+
+		default:
+			return fmt.Errorf("untar uknown type: %d in %s", header.Typeflag, header.Name)
+		}
+	}
+	return nil
 }
