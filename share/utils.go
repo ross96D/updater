@@ -162,6 +162,13 @@ func untar(tr *tar.Reader, path string) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
+			if _, err := os.Stat(entryPath); err == nil { // if directory exists
+				err := os.RemoveAll(entryPath)
+				if err != nil {
+					return fmt.Errorf("untar remove dir %s failed %w", entryPath, err)
+				}
+			}
+
 			if err := os.Mkdir(entryPath, 0755); err != nil {
 				return fmt.Errorf("untar Mkdir(%s) failed %w", entryPath, err)
 			}
