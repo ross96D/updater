@@ -105,22 +105,37 @@ func list(w http.ResponseWriter, r *http.Request) {
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	if r.Context().Value(auth.TypeKey) != "webhook" {
+	switch r.Context().Value(auth.TypeKey) {
+	case "webhook":
+		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
+
+		data, err := ParseForm(r)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		err = share.Update(app, data)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	case "user":
+		payload, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Error().Err(err).Send()
+			http.Error(w, "internal error", 500)
+			return
+		}
+		defer r.Body.Close()
+
+		err = user_handler.HandlerUserUpdate(payload)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	default:
 		http.Error(w, "unsupported: "+r.Context().Value(auth.TypeKey).(string), 500)
-		return
-	}
-
-	app := r.Context().Value(auth.AppValueKey).(configuration.Application)
-
-	data, err := ParseForm(r)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	err = share.Update(app, data)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
 		return
 	}
 
