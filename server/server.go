@@ -132,7 +132,7 @@ type Data struct {
 	form *multipart.Form
 }
 
-func (d Data) Get(name string) io.Reader {
+func (d Data) Get(name string) io.ReadCloser {
 	headers, ok := d.form.File[name]
 	if !ok || len(headers) == 0 {
 		return nil

@@ -13,12 +13,12 @@ import (
 )
 
 type Data interface {
-	Get(name string) io.Reader
+	Get(name string) io.ReadCloser
 }
 
 type NoData struct{}
 
-func (NoData) Get(name string) io.Reader { return nil }
+func (NoData) Get(name string) io.ReadCloser { return nil }
 
 func Update(app configuration.Application, data Data) error {
 	u := NewAppUpdater(app, data)
@@ -54,7 +54,7 @@ type appUpdater struct {
 // 	u.cleanupFuncs = append(u.cleanupFuncs, fn)
 // }
 
-func (u appUpdater) seek(asset configuration.Asset) io.Reader {
+func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 	return u.data.Get(asset.Name)
 }
 
@@ -133,6 +133,7 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 	}
 
 	fnCopy = func() (err error) {
+		defer assetData.Close()
 		if err = RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
 			return
 		}

@@ -22,8 +22,8 @@ const testSysPath = "test_sys_path"
 
 type TestData map[string]io.Reader
 
-func (t TestData) Get(name string) io.Reader {
-	return t[name]
+func (t TestData) Get(name string) io.ReadCloser {
+	return io.NopCloser(t[name])
 }
 
 // TODO add tests
