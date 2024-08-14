@@ -76,6 +76,10 @@ func update() (err error) {
 		return
 	}
 
+	for i, app := range apps {
+		fmt.Printf("%d - %s\n", i, "github.com/"+app.GithubRelease.Owner+"/"+app.GithubRelease.Repo)
+	}
+
 	var num int
 	_, err = fmt.Scan(&num)
 	if err != nil {
