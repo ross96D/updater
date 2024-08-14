@@ -16,10 +16,19 @@ base_path?: string // path where the temporal files used by the app will place
 #Application: {
     auth_token?: string
 
-    assets?: [...#Asset]
+    assets!: [...#Asset]
 
     // use this to set a command to be run after succesfully update 
     post_action?: #Command
+
+    github_release?: #GithubRelease
+}
+
+#GithubRelease: {
+    token?: string
+    repo!: string
+    owner!: string
+    assets!: [...#Asset]
 }
 
 #Asset: {
