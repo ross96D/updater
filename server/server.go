@@ -33,7 +33,7 @@ func (s *Server) Start() error {
 
 func (s *Server) setHandlers() {
 	s.router.Use(middleware.Recoverer)
-	// TODO change to zerologger
+	// TODO change to zerologger and improve the log
 	s.router.Use(middleware.DefaultLogger)
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
