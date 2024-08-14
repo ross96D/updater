@@ -28,7 +28,6 @@ base_path?: string // path where the temporal files used by the app will place
     token?: string
     repo!: string
     owner!: string
-    assets!: [...#Asset]
 }
 
 #Asset: {

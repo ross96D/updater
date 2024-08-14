@@ -22,6 +22,7 @@ func (NoData) Get(name string) io.ReadCloser { return nil }
 
 func Update(app configuration.Application, data Data) error {
 	u := NewAppUpdater(app, data)
+	// TODO log on additional asset fail but do not return 500
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
 	err3 := u.RunPostAction()

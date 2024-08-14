@@ -15,10 +15,9 @@ type Application struct {
 }
 
 type GithubRelease struct {
-	Token  string  `json:"token"`
-	Repo   string  `json:"repo"`
-	Owner  string  `json:"owner"`
-	Assets []Asset `json:"assets"`
+	Token string `json:"token"`
+	Repo  string `json:"repo"`
+	Owner string `json:"owner"`
 }
 
 type Command struct {
