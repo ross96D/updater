@@ -169,13 +169,13 @@ func untar(tr *tar.Reader, path string) error {
 				}
 			}
 
-			if err := os.Mkdir(entryPath, 0755); err != nil {
+			if err := os.MkdirAll(entryPath, 0755); err != nil {
 				return fmt.Errorf("untar Mkdir(%s) failed %w", entryPath, err)
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(header.Name)
+			outFile, err := createSafe(entryPath)
 			if err != nil {
-				return fmt.Errorf("untar Create(%s) failed %w", entryPath, err)
+				return fmt.Errorf("untar createSafe(%s) failed %w", entryPath, err)
 			}
 			if _, err := io.Copy(outFile, tr); err != nil {
 				return fmt.Errorf("untar Copy() failed %w", err)
@@ -187,4 +187,15 @@ func untar(tr *tar.Reader, path string) error {
 		}
 	}
 	return nil
+}
+
+func createSafe(path string) (*os.File, error) {
+	if _, err := os.Stat(filepath.Dir(path)); err != nil { // if directory does not exists
+		log.Debug().Err(err).Msg(filepath.Dir(path) + " is missing")
+		err = os.MkdirAll(filepath.Dir(path), 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return os.Create(path)
 }
