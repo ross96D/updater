@@ -19,7 +19,11 @@ type GithubReleaseData struct {
 	release *github.RepositoryRelease
 }
 
-func NewGithubReleaseData(app configuration.Application) (GithubReleaseData, error) {
+func NewGithubReleaseData(app configuration.Application) (share.Data, error) {
+	if app.GithubRelease == nil {
+		return nil, errors.New("no github repo configured")
+	}
+
 	client := github.NewClient(nil)
 	if app.GithubRelease.Token != "" {
 		client = client.WithAuthToken(app.GithubRelease.Token)
@@ -27,7 +31,7 @@ func NewGithubReleaseData(app configuration.Application) (GithubReleaseData, err
 
 	release, _, err := client.Repositories.GetLatestRelease(context.TODO(), app.GithubRelease.Owner, app.GithubRelease.Repo)
 	if err != nil {
-		return GithubReleaseData{}, fmt.Errorf("NewGithubReleaseData GetLatestRelease() %w", err)
+		return nil, fmt.Errorf("NewGithubReleaseData GetLatestRelease() %w", err)
 	}
 
 	return GithubReleaseData{client: client, release: release}, nil
