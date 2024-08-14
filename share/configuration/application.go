@@ -10,6 +10,15 @@ type Application struct {
 	Assets []Asset `json:"assets"`
 
 	PostAction *Command `json:"post_action"`
+
+	GithubRelease *GithubRelease `json:"github_release"`
+}
+
+type GithubRelease struct {
+	Token  string  `json:"token"`
+	Repo   string  `json:"repo"`
+	Owner  string  `json:"owner"`
+	Assets []Asset `json:"assets"`
 }
 
 type Command struct {

@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	cuelang.org/go v0.8.0
 	github.com/go-chi/chi/v5 v5.0.12
+	github.com/google/go-github/v60 v60.0.0
 	github.com/lestrrat-go/jwx/v2 v2.0.21
 	github.com/ross96D/taskmaster v0.0.1
 	github.com/rs/zerolog v1.32.0
@@ -21,6 +22,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
