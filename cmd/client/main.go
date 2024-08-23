@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ var baseUrl string
 var user string
 var pass string
 var token string
+var insecure bool
 
 var rootCommand = &cobra.Command{
 	Use: "updcl",
@@ -49,6 +51,7 @@ func init() {
 	rootCommand.PersistentFlags().StringVarP(&user, "user", "u", "", "user name")
 	// TODO maybe this is needed to be read from an env variable or a config file, but for now as this is for testing mainly.. just who cares
 	rootCommand.PersistentFlags().StringVarP(&pass, "password", "p", "", "user password")
+	rootCommand.PersistentFlags().BoolVarP(&insecure, "insecure", "i", false, "trust tls certificate")
 
 	err := rootCommand.MarkPersistentFlagRequired("user")
 	if err != nil {
@@ -77,6 +80,9 @@ func update() (err error) {
 	}
 
 	for i, app := range apps {
+		if app.GithubRelease == nil {
+			continue
+		}
 		fmt.Printf("%d - %s\n", i, "github.com/"+app.GithubRelease.Owner+"/"+app.GithubRelease.Repo)
 	}
 
@@ -107,7 +113,7 @@ func update() (err error) {
 		return fmt.Errorf("new request %w", err)
 	}
 	request.Header.Add("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := HttpClient().Do(request)
 	if err != nil {
 		return fmt.Errorf("doing request %w", err)
 	}
@@ -139,7 +145,7 @@ func list() (apps []user_handler.App, err error) {
 		return
 	}
 	request.Header.Add("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := HttpClient().Do(request)
 
 	if err != nil {
 		return
@@ -174,7 +180,7 @@ func reload() (err error) {
 		return err
 	}
 	request.Header.Add("Authorization", "Bearer "+token)
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := HttpClient().Do(request)
 	if err != nil {
 		return err
 	}
@@ -195,7 +201,7 @@ func login() (string, error) {
 		return "", err
 	}
 	request.SetBasicAuth(user, pass)
-	resp, err := http.DefaultClient.Do(request)
+	resp, err := HttpClient().Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -206,4 +212,14 @@ func login() (string, error) {
 		return "", err
 	}
 	return string(b), err
+}
+
+func HttpClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: insecure,
+			},
+		},
+	}
 }
