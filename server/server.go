@@ -16,11 +16,15 @@ import (
 )
 
 type Server struct {
-	router *chi.Mux
+	router   *chi.Mux
+	keyPath  string
+	certPath string
 }
 
-func New() *Server {
+func New(keyPath, certPath string) *Server {
 	s := new(Server)
+	s.certPath = certPath
+	s.keyPath = keyPath
 	s.router = chi.NewMux()
 	s.setHandlers()
 	return s
@@ -28,7 +32,12 @@ func New() *Server {
 
 func (s *Server) Start() error {
 	log.Info().Msg("starting server on " + ":" + strconv.Itoa(int(share.Config().Port)))
-	return http.ListenAndServe(":"+strconv.Itoa(int(share.Config().Port)), s.router)
+	portStr := ":" + strconv.Itoa(int(share.Config().Port))
+	if s.certPath != "" && s.keyPath != "" {
+		return http.ListenAndServeTLS(portStr, s.certPath, s.keyPath, s.router)
+	} else {
+		return http.ListenAndServe(portStr, s.router)
+	}
 }
 
 func (s *Server) setHandlers() {
