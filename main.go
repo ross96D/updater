@@ -26,13 +26,8 @@ func main() {
 		}
 	}
 
-	f, err := os.Create(".log")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMicro
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: f, TimeFormat: "2006-01-02T15:04:05.999999"})
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-01-02T15:04:05.999999"})
 
 	cobra.EnableTraverseRunHooks = true
 	cmd.Execute()

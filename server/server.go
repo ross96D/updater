@@ -67,7 +67,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 func login(w http.ResponseWriter, r *http.Request) {
 	name, pass, ok := r.BasicAuth()
 	if !ok {
-		http.Error(w, "", http.StatusUnauthorized)
+		http.Error(w, "No basic auth", http.StatusUnauthorized)
 		return
 	}
 	valid := false
@@ -78,7 +78,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !valid {
-		http.Error(w, "", http.StatusUnauthorized)
+		http.Error(w, "invalid authentication", http.StatusUnauthorized)
 		return
 	}
 	token, err := auth.NewUserToken(name)

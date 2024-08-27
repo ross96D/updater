@@ -72,7 +72,7 @@ func main() {
 func update() (err error) {
 	apps, err := list()
 	if err != nil {
-		return err
+		return
 	}
 	if len(apps) == 0 {
 		err = fmt.Errorf("no apps listed")
@@ -208,7 +208,7 @@ func login() (string, error) {
 
 	b, err := io.ReadAll(resp.Body)
 	if resp.StatusCode > 400 {
-		err = fmt.Errorf("%w %s", err, string(b))
+		err = fmt.Errorf("login status code %d %s", resp.StatusCode, string(b))
 		return "", err
 	}
 	return string(b), err
