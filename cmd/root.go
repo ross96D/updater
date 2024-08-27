@@ -10,6 +10,8 @@ import (
 )
 
 var configurationPath string
+var keyPath string
+var certPath string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -19,7 +21,7 @@ var rootCmd = &cobra.Command{
 		share.Init(configurationPath)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := server.New().Start(); err != nil {
+		if err := server.New(keyPath, certPath).Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err.Error())
 			os.Exit(1)
 		}
@@ -38,4 +40,6 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVarP(&configurationPath, "config", "c", "config.cue", "set the path to the configuration file")
 	rootCmd.PersistentFlags().Bool("profile", false, "profile the cpu of the process and creates a file with the content")
+	rootCmd.PersistentFlags().StringVar(&certPath, "cert", "", "tls certificate path")
+	rootCmd.PersistentFlags().StringVar(&keyPath, "key", "", "tls key path")
 }
