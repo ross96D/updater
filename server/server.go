@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -12,6 +14,7 @@ import (
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/upgrade"
 	"github.com/rs/zerolog/log"
 )
 
@@ -49,8 +52,29 @@ func (s *Server) setHandlers() {
 		r.Post("/update", upload)
 		r.Get("/list", list)
 		r.Post("/reload", reload)
+		r.Post("/upgrade", upgradeUpdater)
 	})
 	s.router.Post("/login", login)
+}
+
+func upgradeUpdater(w http.ResponseWriter, r *http.Request) {
+	if r.Context().Value(auth.TypeKey) != "user" {
+		http.Error(w, "", 403)
+		return
+	}
+	err := upgrade.Upgrade()
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+	_, err = w.Write([]byte("success. quiting process"))
+	if err != nil {
+		log.Warn().Err(fmt.Errorf("upgradeUpdater %w", err)).Send()
+	}
+	err = http.NewResponseController(w).Flush()
+	if err != nil {
+		log.Warn().Err(fmt.Errorf("upgradeUpdater %w", err)).Msg("flushing response")
+	}
+	os.Exit(1)
 }
 
 func reload(w http.ResponseWriter, r *http.Request) {

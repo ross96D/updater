@@ -6,11 +6,13 @@ require (
 	cuelang.org/go v0.8.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/go-github/v60 v60.0.0
+	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb
 	github.com/lestrrat-go/jwx/v2 v2.0.21
 	github.com/ross96D/taskmaster v0.0.1
 	github.com/rs/zerolog v1.32.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
+	golang.org/x/sys v0.18.0
 )
 
 require (
@@ -45,7 +47,6 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
