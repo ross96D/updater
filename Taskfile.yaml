@@ -23,3 +23,6 @@ tasks:
   run:
     - task: build
     - ./out/bin/updater
+
+  upver:
+    - python upver.py
