@@ -1,4 +1,4 @@
-package share
+package utils
 
 import (
 	"archive/tar"

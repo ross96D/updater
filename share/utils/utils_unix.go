@@ -1,6 +1,6 @@
 //go:build !windows
 
-package share
+package utils
 
 import (
 	"strings"

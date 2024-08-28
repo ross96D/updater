@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/utils"
 	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/rs/zerolog/log"
 )
@@ -135,18 +136,18 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 
 	fnCopy = func() (err error) {
 		defer assetData.Close()
-		if err = RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
+		if err = utils.RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
 			return
 		}
 
-		if err = CopyFromReader(assetData, v.SystemPath); err != nil {
+		if err = utils.CopyFromReader(assetData, v.SystemPath); err != nil {
 			os.Remove(v.SystemPath)
 			log.Debug().Msgf("roll back rename %s to %s", v.SystemPath+".old", v.SystemPath)
-			_ = RenameSafe(v.SystemPath+".old", v.SystemPath)
+			_ = utils.RenameSafe(v.SystemPath+".old", v.SystemPath)
 			return nil
 		}
 		if v.Unzip {
-			if err = Unzip(v.SystemPath); err != nil {
+			if err = utils.Unzip(v.SystemPath); err != nil {
 				return err
 			}
 		}

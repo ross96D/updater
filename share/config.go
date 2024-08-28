@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -42,12 +43,12 @@ func changeConfig(newConfig configuration.Configuration) (err error) {
 func ConfigPathValidation(config configuration.Configuration) (invalidPaths []string) {
 	var isCorrect bool
 	invalidPaths = make([]string, 0)
-	if isCorrect = ValidPath(config.BasePath); !isCorrect {
+	if isCorrect = utils.ValidPath(config.BasePath); !isCorrect {
 		invalidPaths = append(invalidPaths, config.BasePath)
 	}
 	for _, app := range config.Apps {
 		for _, asset := range app.Assets {
-			if isCorrect = ValidPath(asset.SystemPath); !isCorrect {
+			if isCorrect = utils.ValidPath(asset.SystemPath); !isCorrect {
 				invalidPaths = append(invalidPaths, asset.SystemPath)
 			}
 		}

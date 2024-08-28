@@ -13,6 +13,7 @@ import (
 
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -169,7 +170,7 @@ func TestPostActionCommand(t *testing.T) {
 
 func TestUnzip(t *testing.T) {
 	t.Run("zip ext", func(t *testing.T) {
-		err := share.Unzip(filepath.Join("unzip_test", "compressed_test.zip"))
+		err := utils.Unzip(filepath.Join("unzip_test", "compressed_test.zip"))
 		require.True(t, err == nil, err)
 
 		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
@@ -192,7 +193,7 @@ func TestUnzip(t *testing.T) {
 	})
 
 	t.Run("gz ext", func(t *testing.T) {
-		err := share.Unzip(filepath.Join("unzip_test", "compressed_test.gz"))
+		err := utils.Unzip(filepath.Join("unzip_test", "compressed_test.gz"))
 		require.True(t, err == nil, err)
 
 		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
