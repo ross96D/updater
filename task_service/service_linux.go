@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build linux
 
 package taskservice
 
@@ -7,8 +7,7 @@ import (
 	"os/exec"
 )
 
-type TaskService struct {
-}
+type TaskService struct{}
 
 func New() (*TaskService, error) {
 	return &TaskService{}, nil
@@ -48,4 +47,8 @@ func Start(name string) error {
 		return err
 	}
 	return ts.Run(name)
+}
+
+func RestartWithZombieChild() {
+
 }
