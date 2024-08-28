@@ -16,16 +16,14 @@ class Version:
         return f"v{self.major}.{self.minor}.{self.patch}"
 
     def __eq__(self, other: object) -> bool:  # type: ignore
-        print(other)
         if other is Version:
-            assert False
-            return False
-        other = cast(Version, other)
-        return (
-            self.major == other.major
-            and self.minor == other.minor
-            and self.patch == other.patch
-        )
+            other = cast(Version, other)
+            return (
+                self.major == other.major
+                and self.minor == other.minor
+                and self.patch == other.patch
+            )
+        return False
 
     def __lt__(self, other: "Version") -> bool:
         if self.major < other.major:
@@ -64,10 +62,10 @@ class Version:
 
 
 def up_version(v: Version):
-    with open("./shared/version", "w") as f:
+    with open("./share/version", "w") as f:
         f.write(v.__str__())
 
-    p = subprocess.run(["git", "add", "shared/version"], check=True)
+    p = subprocess.run(["git", "add", "share/version"], check=True)
     assert p.returncode == 0
     p = subprocess.run(["git", "commit", "-m", f"bump version to {v}"], check=True)
     assert p.returncode == 0
