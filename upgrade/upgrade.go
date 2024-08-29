@@ -22,6 +22,8 @@ const (
 	repo  = "updater"
 )
 
+var ErrUpToDate = errors.New("already up to date")
+
 func Upgrade() error {
 	tempBinPath := ""
 
@@ -42,7 +44,7 @@ func Upgrade() error {
 		return err
 	}
 	if !isLatest {
-		return errors.New("already up to date")
+		return ErrUpToDate
 	}
 
 	downloadableAsset, checksumAsset, err := obtainAssets(release)

@@ -63,8 +63,13 @@ func upgradeUpdater(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := upgrade.Upgrade()
+	if err == upgrade.ErrUpToDate {
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
 	if err != nil {
 		http.Error(w, err.Error(), 500)
+		return
 	}
 	_, err = w.Write([]byte("success. quiting process"))
 	if err != nil {
