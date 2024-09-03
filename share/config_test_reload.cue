@@ -13,7 +13,7 @@ apps: [
 			},
 		]
 
-		post_action: {
+		cmd: {
 			command: "python"
 			args: ["-f", "-s"]
 		}

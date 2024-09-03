@@ -19,7 +19,7 @@ base_path?: string // path where the temporal files used by the app will place
     assets!: [...#Asset]
 
     // use this to set a command to be run after succesfully update 
-    post_action?: #Command
+    cmd?: #Command
 
     github_release?: #GithubRelease
 }
@@ -38,6 +38,7 @@ base_path?: string // path where the temporal files used by the app will place
 
     // if this is set to true, the asset will be decompressed
     unzip: bool | *false
+    cmd?: #Command
 }
 
 #Command: {

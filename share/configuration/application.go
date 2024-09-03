@@ -9,7 +9,7 @@ type Application struct {
 
 	Assets []Asset `json:"assets"`
 
-	PostAction *Command `json:"post_action"`
+	Command *Command `json:"cmd"`
 
 	GithubRelease *GithubRelease `json:"github_release"`
 }

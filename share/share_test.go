@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -95,10 +96,9 @@ func TestReload(t *testing.T) {
 						Name:          "some asset name",
 						TaskSchedPath: "/is/a/path",
 						SystemPath:    "/is/a/path",
-						Unzip:         true,
 					},
 				},
-				PostAction: &configuration.Command{
+				Command: &configuration.Command{
 					Command: "python",
 					Args:    []string{"-f", "-s"},
 				},
@@ -157,7 +157,7 @@ func TestConfigPathValidationWindows(t *testing.T) {
 
 func TestPostActionCommand(t *testing.T) {
 	app := configuration.Application{
-		PostAction: &configuration.Command{
+		Command: &configuration.Command{
 			Command: "echo",
 			Args:    []string{"-n", "test"},
 		},
@@ -165,15 +165,16 @@ func TestPostActionCommand(t *testing.T) {
 
 	err := share.NewAppUpdater(app, share.NoData{}).RunPostAction()
 
-	require.Equal(t, nil, err)
+	require.NoError(t, err)
 }
 
 func TestUnzip(t *testing.T) {
 	t.Run("zip ext", func(t *testing.T) {
 		err := utils.Unzip(filepath.Join("unzip_test", "compressed_test.zip"))
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 
 		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
+		require.NoError(t, err)
 
 		t.Cleanup(func() {
 			f.Close()
@@ -203,16 +204,16 @@ func TestUnzip(t *testing.T) {
 			os.Remove(filepath.Join("unzip_test", "compressed_test"))
 		})
 
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 		b, err := io.ReadAll(f)
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 
 		builder := strings.Builder{}
 		for i := 0; i < 50; i++ {
-			builder.WriteString("compressed test file with zip\n")
+			builder.WriteString(strconv.Itoa(i+1) + " compressed test file with zip\n")
 		}
 
-		require.Equal(t, string(b), builder.String())
+		require.Equal(t, builder.String(), string(b), "lines from actual %d", strings.Count(string(b), "\n"))
 	})
 }
 

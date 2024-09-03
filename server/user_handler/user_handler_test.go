@@ -8,6 +8,7 @@ import (
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,17 +35,14 @@ func TestHandleUserAppsList(t *testing.T) {
 						Name:          "-",
 						TaskSchedPath: "-",
 						SystemPath:    "-",
-						Unzip:         true,
 					},
 					{
 						Name:       "asset1",
 						SystemPath: "path1",
-						Unzip:      true,
 					},
 					{
 						Name:       "asset1",
 						SystemPath: "path1",
-						Unzip:      true,
 					},
 				},
 			},
@@ -58,14 +56,13 @@ func TestHandleUserAppsList(t *testing.T) {
 						Name:          "--",
 						TaskSchedPath: "-",
 						SystemPath:    "-",
-						Unzip:         true,
 					},
 				},
 			},
 		},
 	}
 
-	require.Equal(t, len(expected), len(apps))
+	assert.Equal(t, len(expected), len(apps))
 	for i, a := range apps {
 		require.Equal(t, expected[i], a)
 	}

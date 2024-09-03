@@ -159,10 +159,10 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 }
 
 func (u appUpdater) RunPostAction() error {
-	if u.app.PostAction == nil || u.state == failed {
+	if u.app.Command == nil || u.state == failed {
 		return nil
 	}
-	cmd := exec.Command(u.app.PostAction.Command, u.app.PostAction.Args...)
+	cmd := exec.Command(u.app.Command.Command, u.app.Command.Args...)
 	log.Info().Msg("running post action " + cmd.String())
 	b, err := cmd.Output()
 	if err != nil {
