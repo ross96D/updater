@@ -45,16 +45,7 @@ type appUpdater struct {
 	// how do i know if i am on a failed state?
 	// if update aditional assets fail is a failed state?
 	state state
-
-	// cleanupFuncs []func()
 }
-
-// func (u *appUpdater) addCleanUpFn(fn func()) {
-// 	if u.cleanupFuncs == nil {
-// 		u.cleanupFuncs = make([]func(), 0)
-// 	}
-// 	u.cleanupFuncs = append(u.cleanupFuncs, fn)
-// }
 
 func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 	return u.data.Get(asset.Name)
@@ -152,6 +143,15 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 			}
 		}
 
+		if v.Command != nil {
+			cmd := exec.Command(v.Command.Command, v.Command.Args...)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("%s cmd: %s %s %w", v.Name, cmd.String(), string(output), err)
+			}
+			log.Debug().Msgf("%s cmd: %s %s", v.Name, cmd.String(), string(output))
+		}
+
 		return nil
 	}
 
@@ -163,25 +163,11 @@ func (u appUpdater) RunPostAction() error {
 		return nil
 	}
 	cmd := exec.Command(u.app.Command.Command, u.app.Command.Args...)
-	log.Info().Msg("running post action " + cmd.String())
-	b, err := cmd.Output()
+	log.Debug().Msg("running post action " + cmd.String())
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Error().Err(
-			fmt.Errorf(
-				"running post action %s with output %s. Error: %w",
-				cmd.String(),
-				string(b),
-				err,
-			),
-		).Send()
-		return err
+		return fmt.Errorf("postaction cmd: %s %s %w", cmd.String(), string(output), err)
 	}
-	log.Info().Str("command output", string(b)).Send()
+	log.Debug().Msgf("postaction cmd: %s %s", cmd.String(), string(output))
 	return nil
 }
-
-// func (u appUpdater) CleanUp() {
-// 	for _, f := range u.cleanupFuncs {
-// 		f()
-// 	}
-// }
