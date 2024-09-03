@@ -4,11 +4,14 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -71,17 +74,16 @@ func RenameSafe(oldpath string, newpath string) error {
 }
 
 func Unzip(path string) error {
-	switch {
-	case strings.HasSuffix(path, ".zip"):
-		log.Debug().Msg("zip extension found for " + path)
+	if checkZip(path) {
 		return unzip(path)
-	case strings.HasSuffix(path, ".gz"), strings.HasSuffix(path, ".gzip"):
-		log.Debug().Msg("gz/gzip extension found for " + path)
-		return gzipDecompress(path)
-	default:
-		log.Debug().Msg("no unzip extension found for " + path)
-		return nil
 	}
+	if checkTar(path) {
+		return untarPath(path)
+	}
+	if checkGzip(path) {
+		return gzipDecompress(path)
+	}
+	return errors.New("could not handle decompression")
 }
 
 func unzip(path string) error {
@@ -98,6 +100,16 @@ func unzip(path string) error {
 		}
 	}
 	return nil
+}
+
+func untarPath(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	tr := tar.NewReader(f)
+	return untar(tr, filepath.Dir(path))
 }
 
 func unzipFile(file *zip.File, dir string) error {
@@ -133,17 +145,85 @@ func gzipDecompress(path string) error {
 	defer f.Close()
 	stream, err := gzip.NewReader(f)
 	if err != nil {
-		return err
+		return fmt.Errorf("gzipDecompress %w", err)
 	}
 	defer stream.Close()
 
-	tr := tar.NewReader(stream)
+	buff, ok := checkTarFromStream(stream)
 
-	if err = untar(tr, filepath.Dir(path)); err != nil {
-		err = fmt.Errorf("gzipDecompress %w", err)
+	if ok {
+		tr := tar.NewReader(buff)
+
+		if err = untar(tr, filepath.Dir(path)); err != nil {
+			return fmt.Errorf("gzipDecompress %w", err)
+		}
+		return nil
+	}
+	ext := filepath.Ext(path)
+	var name string
+	if ext != "" {
+		name, _ = strings.CutSuffix(path, ext)
+	} else {
+		name = path + ".decompressed"
+	}
+	file, err := os.Create(name)
+	if err != nil {
+		return fmt.Errorf("gzipDecompress os.Open(%s) %w", name, err)
+	}
+	defer file.Close()
+	_, err = io.Copy(file, buff)
+	if err != nil {
+		return fmt.Errorf("gzipDecompress io.Copy to %s %w", name, err)
 	}
 
 	return err
+}
+
+func checkGzip(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	_, err = gzip.NewReader(f)
+	f.Close()
+	return err == nil
+}
+
+func checkTar(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	r := tar.NewReader(f)
+	_, err = r.Next()
+	f.Close()
+	return err == nil
+}
+
+func checkTarFromStream(reader io.Reader) (bufferd io.Reader, ok bool) {
+	buf := new(StreamBuffer)
+	r := io.TeeReader(reader, buf)
+	tr := tar.NewReader(r)
+	_, err := tr.Next()
+	wait := atomic.Bool{}
+	wait.Store(true)
+	go func() {
+		wait.Store(false)
+		_, _ = io.Copy(io.Discard, r)
+	}()
+	for wait.Load() {
+		runtime.Gosched()
+	}
+	return buf, err == nil
+}
+
+func checkZip(path string) bool {
+	f, err := zip.OpenReader(path)
+	if err != nil {
+		return false
+	}
+	f.Close()
+	return true
 }
 
 func untar(tr *tar.Reader, path string) error {
