@@ -145,6 +145,9 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 
 		if v.Command != nil {
 			cmd := exec.Command(v.Command.Command, v.Command.Args...)
+			if v.Command.Path != "" {
+				cmd.Dir = v.Command.Path
+			}
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("%s cmd: %s %s %w", v.Name, cmd.String(), string(output), err)
@@ -163,6 +166,9 @@ func (u appUpdater) RunPostAction() error {
 		return nil
 	}
 	cmd := exec.Command(u.app.Command.Command, u.app.Command.Args...)
+	if u.app.Command.Path != "" {
+		cmd.Dir = u.app.Command.Path
+	}
 	log.Debug().Msg("running post action " + cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {

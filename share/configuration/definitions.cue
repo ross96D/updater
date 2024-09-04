@@ -44,4 +44,5 @@ base_path?: string // path where the temporal files used by the app will place
 #Command: {
     command!: string
     args?: [...string]
+    path? string
 }

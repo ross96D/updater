@@ -23,4 +23,5 @@ type GithubRelease struct {
 type Command struct {
 	Command string   `json:"command"`
 	Args    []string `json:"args"`
+	Path    string   `json:"path"`
 }
