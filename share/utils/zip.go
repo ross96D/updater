@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"sync/atomic"
+
+	"github.com/rs/zerolog/log"
 )
 
 func Unzip(path string) error {
@@ -172,6 +174,8 @@ func untar(tr *tar.Reader, path string) error {
 	for {
 		header, err := tr.Next()
 
+		log.Debug().Str("type", strFromType(header.Typeflag)).Str("name", header.Name).Msgf("filename for %s", path)
+
 		if err == io.EOF {
 			break
 		}
@@ -209,4 +213,21 @@ func untar(tr *tar.Reader, path string) error {
 		}
 	}
 	return nil
+}
+
+func strFromType(typeflag byte) string {
+	switch typeflag {
+	case tar.TypeDir:
+		return "dir"
+	case tar.TypeReg:
+		return "regular file"
+	case tar.TypeChar:
+		return "char"
+	case tar.TypeLink:
+		return "link"
+	case tar.TypeSymlink:
+		return "symlink"
+	default:
+		return "unknown"
+	}
 }
