@@ -265,6 +265,16 @@ func TestUnzip(t *testing.T) {
 		assert.Equal(t, "tar.gz.1\n", string(b1))
 		assert.Equal(t, "tar.gz.2\n", string(b2))
 	})
+
+	t.Run("gzipDecompress untar Copy() failed unexpected EOF", func(t *testing.T) {
+		err := utils.Unzip(filepath.Join("unzip_test", "package.tar.gz"))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			os.Remove(filepath.Join("unzip_test", "package-lock.json"))
+			os.Remove(filepath.Join("unzip_test", "package.json"))
+		})
+	})
 }
 
 // func testConfig() configuration.Configuration {
