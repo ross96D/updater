@@ -174,11 +174,13 @@ func untar(tr *tar.Reader, path string) error {
 	for {
 		header, err := tr.Next()
 
-		log.Debug().Str("type", strFromType(header.Typeflag)).Str("name", header.Name).Msgf("filename for %s", path)
-
 		if err == io.EOF {
 			break
 		}
+
+		log.Debug().Str("type", strFromType(header.Typeflag)).
+			Str("name", header.Name).
+			Msgf("filename for %s", path)
 
 		if err != nil {
 			return fmt.Errorf("untar tr.Next() failed %w", err)
