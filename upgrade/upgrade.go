@@ -20,18 +20,19 @@ import (
 const (
 	owner = "ross96D"
 	repo  = "updater"
+	bin   = repo
 )
 
 var ErrUpToDate = errors.New("already up to date")
 
 func Upgrade() error {
-	tempBinPath := ""
+	tempBinPath := filepath.Join(os.TempDir(), bin)
 
 	ghclient := github.NewClient(nil)
 
 	release, respLatestRelase, err := ghclient.Repositories.GetLatestRelease(context.Background(), owner, repo)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade GetLatestRelease %w", err)
 	}
 	defer respLatestRelase.Body.Close()
 	if respLatestRelase.StatusCode >= 400 {
@@ -41,7 +42,7 @@ func Upgrade() error {
 
 	isLatest, err := isLatest(release.GetTagName())
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade isLatest(%s) %w", release.GetTagName(), err)
 	}
 	if !isLatest {
 		return ErrUpToDate
@@ -49,39 +50,39 @@ func Upgrade() error {
 
 	downloadableAsset, checksumAsset, err := obtainAssets(release)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade obtainAssets %w", err)
 	}
 
 	rc, _, err := downloadAsset(ghclient, *downloadableAsset.URL)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade downloadAsset %s %w", *downloadableAsset.URL, err)
 	}
 	defer rc.Close()
 
 	checksum, err := getChecksum(context.Background(), ghclient, checksumAsset, *downloadableAsset.Name)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade getChecksum %w", err)
 	}
 	hashCheck, err := hex.DecodeString(checksum)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade hex.DecodeString(checksum) %w", err)
 	}
 
 	// create the temporary binary file
 	f, err := os.Create(tempBinPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade os.Create(%s) %w", tempBinPath, err)
 	}
 
 	_, err = io.Copy(f, rc)
 	f.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade %w", err)
 	}
 
 	hash, err := calculateHash(tempBinPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade %w", err)
 	}
 
 	// compare hashes
@@ -96,35 +97,35 @@ func Upgrade() error {
 
 	execPath, err := executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade %w", err)
 	}
 
 	err = move(tempBinPath, execPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade %w", err)
 	}
 
 	err = addExecutePerm(execPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("Upgrade %w", err)
 	}
 
 	return nil
 }
 
-func calculateHash(path string) (hash []byte, err error) {
+func calculateHash(path string) ([]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("calculateHash %w", err)
 	}
 	defer f.Close()
 
 	hasher := sha256.New()
 	if _, err = io.Copy(hasher, f); err != nil {
-		return
+		return nil, fmt.Errorf("calculateHash %w", err)
 	}
-	hash = hasher.Sum(nil)
-	return
+	hash := hasher.Sum(nil)
+	return hash, nil
 }
 
 func isLatest(version string) (bool, error) {
@@ -149,7 +150,7 @@ func addExecutePerm(path string) error {
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("addExecutePerm %w", err)
 	}
 
 	perm := info.Mode().Perm()
