@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
 )
 
 // smallBufferSize is an initial allocation minimal capacity.
@@ -21,6 +22,7 @@ type StreamBuffer struct {
 	buf []byte     // contents are the bytes buf[off : len(buf)]
 	off int        // read at &buf[off], write at &buf[len(buf)]
 	mut sync.Mutex // makes the StreamBuffer thread secure
+	End atomic.Bool
 }
 
 // ErrTooLarge is passed to panic if memory cannot be allocated to store data in a buffer.
@@ -141,10 +143,13 @@ func (b *StreamBuffer) Read(p []byte) (n int, err error) {
 	if b.empty() {
 		// Buffer is empty, reset to recover space.
 		b.Reset()
-		if len(p) == 0 {
-			return 0, nil
+		// if len(p) == 0 {
+		// 	return 0, nil
+		// }
+		if b.End.Load() {
+			return 0, io.EOF
 		}
-		return 0, io.EOF
+		return 0, nil
 	}
 	n = copy(p, b.buf[b.off:])
 	b.off += n

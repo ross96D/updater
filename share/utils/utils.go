@@ -210,6 +210,7 @@ func checkTarFromStream(reader io.Reader) (bufferd io.Reader, ok bool) {
 	go func() {
 		wait.Store(false)
 		_, _ = io.Copy(io.Discard, r)
+		buf.End.Store(true)
 	}()
 	for wait.Load() {
 		runtime.Gosched()
