@@ -93,9 +93,9 @@ func TestReload(t *testing.T) {
 				AuthToken: "auth",
 				Assets: []configuration.Asset{
 					{
-						Name:          "some asset name",
-						TaskSchedPath: "/is/a/path",
-						SystemPath:    "/is/a/path",
+						Name:        "some asset name",
+						ServicePath: "/is/a/path",
+						SystemPath:  "/is/a/path",
 					},
 				},
 				Command: &configuration.Command{

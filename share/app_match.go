@@ -63,7 +63,7 @@ func (u *appUpdater) UpdateTaskAssets() error {
 	var errs []error = make([]error, 0)
 
 	for _, v := range u.app.Assets {
-		if v.TaskSchedPath == "" {
+		if v.ServicePath == "" {
 			continue
 		}
 
@@ -82,7 +82,7 @@ func (u *appUpdater) UpdateTaskAssets() error {
 func (u *appUpdater) UpdateAdditionalAssets() error {
 	var errs []error = make([]error, 0)
 	for _, v := range u.app.Assets {
-		if v.TaskSchedPath != "" {
+		if v.ServicePath != "" {
 			continue
 		}
 		fnCopy, err := u.updateAsset(v)
@@ -105,13 +105,13 @@ func (u *appUpdater) updateTask(v configuration.Asset) (err error) {
 	}
 
 	// TODO this needs a mutex?
-	if err = taskservice.Stop(v.TaskSchedPath); err != nil {
+	if err = taskservice.Stop(v.ServicePath); err != nil {
 		return fmt.Errorf("updateTask Stop() %w", err)
 	}
 
 	defer func() {
-		if err := taskservice.Start(v.TaskSchedPath); err != nil {
-			log.Error().Err(fmt.Errorf("reruning the task %s %w", v.TaskSchedPath, err)).Send()
+		if err := taskservice.Start(v.ServicePath); err != nil {
+			log.Error().Err(fmt.Errorf("reruning the task %s %w", v.ServicePath, err)).Send()
 		}
 	}()
 
