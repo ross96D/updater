@@ -190,7 +190,7 @@ func untar(tr *tar.Reader, path string) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if _, err := os.Stat(entryPath); err == nil { // if directory exists
+			if _, err := os.Stat(entryPath); err == nil && entryPath != path { // if directory exists and is not parent directory
 				err := os.RemoveAll(entryPath)
 				if err != nil {
 					return fmt.Errorf("untar remove dir %s failed %w", entryPath, err)
