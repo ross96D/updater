@@ -41,7 +41,6 @@ func TestUpdateApp(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 	testSysPath := filepath.Join(cwd, testSysPath)
-	// removeAllFiles(testSysPath)
 
 	app := configuration.Application{
 		Assets: []configuration.Asset{
@@ -276,30 +275,3 @@ func TestUnzip(t *testing.T) {
 		})
 	})
 }
-
-// func testConfig() configuration.Configuration {
-// 	cwd, err := os.Getwd()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	testPath := filepath.Join(cwd, testPath)
-// 	if _, err = os.Stat(testPath); err != nil {
-// 		err = os.Mkdir(testPath, 0777)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-
-// 	testSysPath := filepath.Join(cwd, testSysPath)
-// 	if _, err = os.Stat(testSysPath); err != nil {
-// 		err = os.Mkdir(testSysPath, 0777)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-// 	return configuration.Configuration{
-// 		Port:          65432,
-// 		UserJwtExpiry: configuration.Duration(0),
-// 		BasePath:      testPath,
-// 	}
-// }
