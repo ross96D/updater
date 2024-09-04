@@ -29,6 +29,11 @@ apps: [
 				name:        "--"
 				service:     "-"
 				system_path: "-"
+				cmd: {
+					command: "cmd"
+					args: ["arg1", "arg2"]
+					path: "some/path"
+				}
 			},
 		]
 	},

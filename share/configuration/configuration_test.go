@@ -58,6 +58,10 @@ func TestConfigurationJson(t *testing.T) {
 							Name:          "asset",
 							TaskSchedPath: "task_path",
 							SystemPath:    "sys_path",
+							Command: &configuration.Command{
+								Command: "cmd",
+								Path:    "some/path",
+							},
 						},
 					},
 				},

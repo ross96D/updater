@@ -56,6 +56,11 @@ func TestHandleUserAppsList(t *testing.T) {
 						Name:          "--",
 						TaskSchedPath: "-",
 						SystemPath:    "-",
+						Command: &configuration.Command{
+							Command: "cmd",
+							Args:    []string{"arg1", "arg2"},
+							Path:    "some/path",
+						},
 					},
 				},
 			},
