@@ -181,9 +181,9 @@ func TestUnzip(t *testing.T) {
 			os.Remove(filepath.Join("unzip_test", "compressed_test"))
 		})
 
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 		b, err := io.ReadAll(f)
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 
 		builder := strings.Builder{}
 		for i := 0; i < 50; i++ {
@@ -195,16 +195,16 @@ func TestUnzip(t *testing.T) {
 
 	t.Run("gz ext", func(t *testing.T) {
 		err := utils.Unzip(filepath.Join("unzip_test", "compressed_test.gz"))
-		require.True(t, err == nil, err)
+		require.NoError(t, err)
 
 		f, err := os.Open(filepath.Join("unzip_test", "compressed_test"))
+		require.NoError(t, err)
 
 		t.Cleanup(func() {
 			f.Close()
 			os.Remove(filepath.Join("unzip_test", "compressed_test"))
 		})
 
-		require.NoError(t, err)
 		b, err := io.ReadAll(f)
 		require.NoError(t, err)
 
@@ -214,6 +214,56 @@ func TestUnzip(t *testing.T) {
 		}
 
 		require.Equal(t, builder.String(), string(b), "lines from actual %d", strings.Count(string(b), "\n"))
+	})
+
+	t.Run("tar ext", func(t *testing.T) {
+		err := utils.Unzip(filepath.Join("unzip_test", "test.tar"))
+		require.NoError(t, err)
+
+		f1, err := os.Open(filepath.Join("unzip_test", "tar.1"))
+		require.NoError(t, err)
+		f2, err := os.Open(filepath.Join("unzip_test", "tar.2"))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			f1.Close()
+			f2.Close()
+			os.Remove(filepath.Join("unzip_test", "tar.1"))
+			os.Remove(filepath.Join("unzip_test", "tar.2"))
+		})
+
+		b1, err := io.ReadAll(f1)
+		require.NoError(t, err)
+		b2, err := io.ReadAll(f2)
+		require.NoError(t, err)
+
+		assert.Equal(t, "tar.gz.1\n", string(b1))
+		assert.Equal(t, "tar.gz.2\n", string(b2))
+	})
+
+	t.Run("tar gz ext", func(t *testing.T) {
+		err := utils.Unzip(filepath.Join("unzip_test", "test.tar.gz"))
+		require.NoError(t, err)
+
+		f1, err := os.Open(filepath.Join("unzip_test", "tar.gz.1"))
+		require.NoError(t, err)
+		f2, err := os.Open(filepath.Join("unzip_test", "tar.gz.2"))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			f1.Close()
+			f2.Close()
+			os.Remove(filepath.Join("unzip_test", "tar.gz.1"))
+			os.Remove(filepath.Join("unzip_test", "tar.gz.2"))
+		})
+
+		b1, err := io.ReadAll(f1)
+		require.NoError(t, err)
+		b2, err := io.ReadAll(f2)
+		require.NoError(t, err)
+
+		assert.Equal(t, "tar.gz.1\n", string(b1))
+		assert.Equal(t, "tar.gz.2\n", string(b2))
 	})
 }
 
