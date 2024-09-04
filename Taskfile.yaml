@@ -1,6 +1,9 @@
 version: 3
 
 tasks:
+  build-cli:
+    cmd: go build -o ./out/bin/client ./cmd/client/main.go
+
   build:
     vars:
       TASK_NAME:
