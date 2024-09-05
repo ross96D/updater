@@ -7,3 +7,5 @@ config.cue
 .logs
 
 share/test_*/
+
+debug.log
