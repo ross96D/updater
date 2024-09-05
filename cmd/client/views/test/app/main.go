@@ -1,45 +1,94 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/views"
+	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share/configuration"
 )
 
 func main() {
-	app := configuration.Application{
-		AuthToken: "token",
-		Assets: []configuration.Asset{
-			{
-				Name:        "Asset1",
-				SystemPath:  "path/to",
-				ServicePath: "service",
-				Unzip:       true,
-				Command: &configuration.Command{
-					Command: "npm",
-					Args:    []string{"install", "--omit-dev"},
-					Path:    "/pat/to/working/directory",
+	servers := []models.Server{
+		{
+			Name: "server1",
+			IP:   "190.168.0.1",
+			Apps: []user_handler.App{
+				{
+					Index: 1,
+					Application: configuration.Application{
+						AuthToken: "token",
+						Assets: []configuration.Asset{
+							{
+								Name:        "asset1",
+								ServicePath: "service1",
+							},
+							{
+								Name:        "asset2",
+								ServicePath: "service2",
+							},
+						},
+					},
+				},
+				{
+					Index: 2,
+					Application: configuration.Application{
+						AuthToken: "token",
+						Assets: []configuration.Asset{
+							{
+								Name:        "asset1",
+								ServicePath: "service1",
+							},
+							{
+								Name:        "asset2",
+								ServicePath: "service2",
+							},
+						},
+					},
 				},
 			},
-			{
-				Name:        "Asset2",
-				SystemPath:  "path/to",
-				ServicePath: "service",
-				Unzip:       true,
-				Command: &configuration.Command{
-					Command: "npm",
-					Args:    []string{"install", "--omit-dev"},
-					Path:    "/pat/to/working/directory",
+		},
+		{
+			Name: "server2",
+			IP:   "190.68.0.2",
+			Apps: []user_handler.App{
+				{
+					Index: 1,
+					Application: configuration.Application{
+						AuthToken: "token",
+						Assets: []configuration.Asset{
+							{
+								Name:        "asset1",
+								ServicePath: "service1",
+							},
+							{
+								Name:        "asset2",
+								ServicePath: "service2",
+							},
+						},
+					},
+				},
+				{
+					Index: 2,
+					Application: configuration.Application{
+						AuthToken: "token",
+						Assets: []configuration.Asset{
+							{
+								Name:        "asset1",
+								ServicePath: "service1",
+							},
+							{
+								Name:        "asset2",
+								ServicePath: "service2",
+							},
+						},
+					},
 				},
 			},
 		},
 	}
-
-	if _, err := tea.NewProgram(views.AppView{App: app}).Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
+	m := views.NewApp(servers)
+	if _, err := tea.NewProgram(m).Run(); err != nil {
+		panic(err)
 	}
 }

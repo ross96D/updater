@@ -1,82 +1,35 @@
 package views
 
 import (
-	"strconv"
-	"strings"
-
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/models"
 )
 
-type appViewInitialize struct{}
-
-type AppView struct {
-	App      configuration.Application
-	viewPort *viewport.Model
+type app struct {
+	servers   []models.Server
+	navigator *components.Navigator
+	initCmd   tea.Cmd
 }
 
-func (av AppView) Init() tea.Cmd {
-	return tea.Sequence(tea.WindowSize(), func() tea.Msg { return appViewInitialize{} })
+func NewApp(servers []models.Server) tea.Model {
+	nav := new(components.Navigator)
+	_, cmd := nav.Push(HomeView{Servers: servers})
+	return &app{
+		navigator: nav,
+		servers:   servers,
+		initCmd:   cmd,
+	}
 }
 
-func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if av.viewPort == nil {
-		v := viewport.New(0, 0)
-		av.viewPort = &v
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case tea.KeyCtrlC.String(), "q":
-			return av, tea.Quit
-		}
-
-	case appViewInitialize:
-		av.viewPort.SetContent(av.content())
-
-	case tea.WindowSizeMsg:
-		av.viewPort.Height = msg.Height - 2
-		av.viewPort.Width = msg.Width
-	}
-
-	v, cmd := av.viewPort.Update(msg)
-	av.viewPort = &v
-
-	return av, cmd
+func (model *app) Init() tea.Cmd {
+	return model.initCmd
 }
 
-func (av AppView) View() string {
-	if av.viewPort == nil {
-		return ""
-	}
-
-	return lipgloss.JoinVertical(lipgloss.Top,
-		"TODO: app name is missing",
-		av.viewPort.View(),
-		"Press u to update the application",
-	)
+func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return model, model.navigator.Update(msg)
 }
 
-func (av AppView) content() string {
-	builder := strings.Builder{}
-
-	l := len("system path: ")
-
-	keyStyle := lipgloss.NewStyle().Width(l)
-
-	const ident = "\t"
-
-	for _, asset := range av.App.Assets {
-		builder.WriteString(asset.Name + "\n")
-		builder.WriteString(ident + keyStyle.Render("service: ") + "\t" + asset.ServicePath + "\n")
-		builder.WriteString(ident + keyStyle.Render("system path: ") + "\t" + asset.SystemPath + "\n")
-		builder.WriteString(ident + keyStyle.Render("unzip: ") + "\t" + strconv.FormatBool(asset.Unzip) + "\n")
-		if asset.Command != nil {
-			builder.WriteString(ident + keyStyle.Render("command: ") + "\t" + asset.Command.String() + "\n")
-		}
-	}
-	return builder.String()
+func (model *app) View() string {
+	return model.navigator.View()
 }

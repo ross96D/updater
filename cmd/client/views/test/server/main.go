@@ -30,10 +30,38 @@ func main() {
 					},
 				},
 			},
+			{
+				Index: 2,
+				Application: configuration.Application{
+					AuthToken: "token",
+					Assets: []configuration.Asset{
+						{
+							Name:        "Asset1",
+							SystemPath:  "path/to",
+							ServicePath: "service",
+							Unzip:       true,
+						},
+					},
+				},
+			},
+			{
+				Index: 3,
+				Application: configuration.Application{
+					AuthToken: "token",
+					Assets: []configuration.Asset{
+						{
+							Name:        "Asset1",
+							SystemPath:  "path/to",
+							ServicePath: "service",
+							Unzip:       true,
+						},
+					},
+				},
+			},
 		},
 	}
 
-	var model tea.Model = views.NewServerView(server)
+	var model tea.Model = views.ServerView{Server: server}
 	if _, err := tea.NewProgram(model).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

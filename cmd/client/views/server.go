@@ -1,84 +1,87 @@
 package views
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 
-	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/models"
-	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/server/user_handler"
 )
 
+type serverViewInitialize struct{}
+
+type serverViewSelectItem struct{}
+
+var serverViewInitializeMsg = func() tea.Msg { return serverViewInitialize{} }
+
+var serverViewSelectItemMsg = func() tea.Msg { return serverViewSelectItem{} }
+
 type ServerView struct {
-	Server models.Server
-	left   viewport.Model
-	rigth  viewport.Model
-}
-
-func NewServerView(server models.Server) ServerView {
-	left := viewport.New(30, 5)
-	rigth := viewport.New(30, 5)
-
-	sv := ServerView{
-		Server: server,
-		left:   left,
-		rigth:  rigth,
-	}
-	sv.left.SetContent(lipgloss.NewStyle().Width(30).Align(lipgloss.Center).Render(server.Name))
-	sv.rigth.SetContent(sv.renderApps())
-	return sv
+	Server      models.Server
+	list        components.List[*user_handler.App]
+	initialized bool
 }
 
 func (ServerView) Init() tea.Cmd {
-	return nil
+	return serverViewInitializeMsg
 }
 
 func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlC {
+		switch msg.String() {
+		case tea.KeyCtrlC.String(), "q":
 			return sv, tea.Quit
 		}
+	case serverViewInitialize:
+		sv.init()
+		return sv, tea.WindowSize()
+
+	case serverViewSelectItem:
+		item, err := sv.list.Selected()
+		if err != nil {
+			panic(err)
+		}
+		return sv, components.NavigatorPush(AppView{App: *item.Value})
+	}
+	if !sv.initialized {
+		return sv, Repeat(msg)
 	}
 
-	var cmdLeft tea.Cmd
-	var cmdRigth tea.Cmd
-	sv.left, cmdLeft = sv.left.Update(msg)
-	sv.rigth, cmdRigth = sv.rigth.Update(msg)
-
-	return sv, tea.Batch(cmdLeft, cmdRigth)
+	m, cmd := sv.list.Update(msg)
+	sv.list = m.(components.List[*user_handler.App])
+	return sv, cmd
 }
 
 func (sv ServerView) View() string {
-	return lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Render(lipgloss.JoinHorizontal(lipgloss.Center, sv.left.View(), sv.rigth.View()))
+	return sv.list.View()
 }
 
-func (sv ServerView) renderApps() string {
-	builder := strings.Builder{}
-	builder.WriteString("IP: " + sv.Server.IP + "\n")
-	builder.WriteString("apps:\n")
+func (sv *ServerView) init() {
+	length := len(sv.Server.Apps)
+	items := make([]components.Item[*user_handler.App], 0, length)
 
-	ident := "\t"
-
-	for _, app := range sv.Server.Apps {
-		builder.WriteString(ident)
-		builder.WriteString(fmt.Sprintf("Index %d %s", app.Index, app.AuthToken))
-		builder.WriteRune('\n')
-		builder.WriteString(ident)
-		builder.WriteString("assets:")
-		builder.WriteRune('\n')
-		for _, asset := range app.Assets {
-			builder.WriteString(ident + ident)
-			builder.WriteString(renderAsset(asset))
-			builder.WriteRune('\n')
-		}
-
+	for i := 0; i < length; i++ {
+		items = append(items, components.Item[*user_handler.App]{
+			Message: strconv.Itoa(sv.Server.Apps[i].Index) + " TODO missing name",
+			Value:   &sv.Server.Apps[i],
+		})
 	}
-	return builder.String()
-}
+	title := sv.Server.Name + " IP: " + sv.Server.IP
+	listModel := components.NewList(items, title, &components.DelegatesKeyMap{
+		Select: components.KeyMap{
+			Key: key.NewBinding(
+				key.WithKeys("enter"),
+				key.WithHelp("enter", "select the file to donwload"),
+			),
+			Action: func() tea.Cmd {
+				return serverViewSelectItemMsg
+			},
+		},
+	})
 
-func renderAsset(asset configuration.Asset) string {
-	return asset.Name
+	sv.list = listModel
+	sv.initialized = true
 }
