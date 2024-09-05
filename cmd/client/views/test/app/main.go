@@ -24,6 +24,17 @@ func main() {
 					Path:    "/pat/to/working/directory",
 				},
 			},
+			{
+				Name:        "Asset2",
+				SystemPath:  "path/to",
+				ServicePath: "service",
+				Unzip:       true,
+				Command: &configuration.Command{
+					Command: "npm",
+					Args:    []string{"install", "--omit-dev"},
+					Path:    "/pat/to/working/directory",
+				},
+			},
 		},
 	}
 

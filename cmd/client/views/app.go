@@ -40,7 +40,7 @@ func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		av.viewPort.SetContent(av.content())
 
 	case tea.WindowSizeMsg:
-		av.viewPort.Height = msg.Height
+		av.viewPort.Height = msg.Height - 1
 		av.viewPort.Width = msg.Width
 	}
 
@@ -66,13 +66,15 @@ func (av AppView) content() string {
 
 	keyStyle := lipgloss.NewStyle().Width(l)
 
+	const ident = "\t"
+
 	for _, asset := range av.App.Assets {
 		builder.WriteString(asset.Name + "\n")
-		builder.WriteString(keyStyle.Render("service: ") + "\t" + asset.ServicePath + "\n")
-		builder.WriteString(keyStyle.Render("system path: ") + "\t" + asset.SystemPath + "\n")
-		builder.WriteString(keyStyle.Render("unzip: ") + "\t" + strconv.FormatBool(asset.Unzip) + "\n")
+		builder.WriteString(ident + keyStyle.Render("service: ") + "\t" + asset.ServicePath + "\n")
+		builder.WriteString(ident + keyStyle.Render("system path: ") + "\t" + asset.SystemPath + "\n")
+		builder.WriteString(ident + keyStyle.Render("unzip: ") + "\t" + strconv.FormatBool(asset.Unzip) + "\n")
 		if asset.Command != nil {
-			builder.WriteString(keyStyle.Render("command: ") + "\t" + asset.Command.String() + "\n")
+			builder.WriteString(ident + keyStyle.Render("command: ") + "\t" + asset.Command.String() + "\n")
 		}
 	}
 	return builder.String()
