@@ -9,3 +9,4 @@ config.cue
 share/test_*/
 
 debug.log
+.vscode/launch.json
