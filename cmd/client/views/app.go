@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ross96D/updater/cmd/client/fpew"
 	"github.com/ross96D/updater/share/configuration"
 )
 
@@ -36,15 +35,17 @@ func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case appViewInitialize:
-		fpew.Dump("initializing")
 		av.viewPort.SetContent(av.content())
 
 	case tea.WindowSizeMsg:
-		av.viewPort.Height = msg.Height - 1
+		av.viewPort.Height = msg.Height - 2
 		av.viewPort.Width = msg.Width
 	}
 
-	return av, nil
+	v, cmd := av.viewPort.Update(msg)
+	av.viewPort = &v
+
+	return av, cmd
 }
 
 func (av AppView) View() string {
