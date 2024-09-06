@@ -1,6 +1,6 @@
 module github.com/ross96D/updater
 
-go 1.22.0
+go 1.23.0
 
 require (
 	cuelang.org/go v0.8.0
@@ -10,6 +10,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/google/go-github/v60 v60.0.0
+	github.com/google/uuid v1.2.0
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb
 	github.com/lestrrat-go/jwx/v2 v2.0.21
 	github.com/ross96D/taskmaster v0.0.1
@@ -33,7 +34,6 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect

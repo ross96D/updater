@@ -154,8 +154,6 @@ func (m List[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model, cmd := m.list.Update(msg)
 		m.list = model
 		h, v := appStyle.GetFrameSize()
-		println(h, v)
-		println(msg.Width-h, msg.Height-v)
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 		return m, cmd
 

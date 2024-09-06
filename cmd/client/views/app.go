@@ -7,6 +7,7 @@ import (
 )
 
 type app struct {
+	// TODO change []models.Server to a global and easy to access state
 	servers   []models.Server
 	navigator *components.Navigator
 	initCmd   tea.Cmd
@@ -14,7 +15,7 @@ type app struct {
 
 func NewApp(servers []models.Server) tea.Model {
 	nav := new(components.Navigator)
-	_, cmd := nav.Push(HomeView{Servers: servers})
+	_, cmd := nav.Push(HomeView{Servers: &servers})
 	return &app{
 		navigator: nav,
 		servers:   servers,
@@ -27,6 +28,10 @@ func (model *app) Init() tea.Cmd {
 }
 
 func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg, ok := msg.(InsertServerMsg); ok {
+		model.servers = append(model.servers, models.Server(msg))
+		return model, nil
+	}
 	return model, model.navigator.Update(msg)
 }
 

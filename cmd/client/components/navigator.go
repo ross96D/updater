@@ -50,7 +50,7 @@ func (s *stack) Pop() tea.Model {
 	l := len(s.list)
 	s.list = s.list[:l-1]
 
-	return s.list[l-1]
+	return s.list[l-2]
 }
 
 type navigatorPush tea.Model
@@ -62,10 +62,8 @@ func NavigatorPush(m tea.Model) tea.Cmd {
 	}
 }
 
-func NavigatorPop() tea.Cmd {
-	return func() tea.Msg {
-		return navigatorPop{}
-	}
+func NavigatorPop() tea.Msg {
+	return navigatorPop{}
 }
 
 type Navigator struct {

@@ -1,6 +1,8 @@
 package views
 
 import (
+	"net/url"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
@@ -16,7 +18,7 @@ var homeViewInitializeMsg = func() tea.Msg { return homeViewInitialize{} }
 var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
 
 type HomeView struct {
-	Servers     []models.Server
+	Servers     *[]models.Server
 	list        components.List[*models.Server]
 	initialized bool
 }
@@ -31,6 +33,8 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case tea.KeyCtrlC.String(), "q":
 			return hv, tea.Quit
+		case "a":
+			return hv, components.NavigatorPush(NewServerFormView())
 		}
 	case homeViewInitialize:
 		hv.init()
@@ -57,13 +61,13 @@ func (hv HomeView) View() string {
 }
 
 func (hv *HomeView) init() {
-	length := len(hv.Servers)
+	length := len(*hv.Servers)
 	items := make([]components.Item[*models.Server], 0, length)
 
 	for i := 0; i < length; i++ {
-		server := &hv.Servers[i]
+		server := &(*hv.Servers)[i]
 		items = append(items, components.Item[*models.Server]{
-			Message: server.Name + " " + server.IP,
+			Message: server.ServerName + " " + (*url.URL)(server.Url).String(),
 			Value:   server,
 		})
 	}

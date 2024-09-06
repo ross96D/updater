@@ -1,6 +1,9 @@
 version: 3
 
 tasks:
+  pwd:
+    cmd: pwd
+
   build-cli:
     cmd: go build -o ./out/bin/client ./cmd/client/main.go
 
@@ -8,7 +11,9 @@ tasks:
     vars:
       TASK_NAME:
         sh: task get_name
-    cmd: go build -o ./out/bin/{{.TASK_NAME}} main.go
+      PWD:
+        sh: task pwd
+    cmd: go build  -o ./out/bin/{{.TASK_NAME}} main.go
 
   get_name_windows:
     platforms:

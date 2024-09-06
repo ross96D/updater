@@ -1,6 +1,7 @@
 package views
 
 import (
+	"net/url"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -69,7 +70,7 @@ func (sv *ServerView) init() {
 			Value:   &sv.Server.Apps[i],
 		})
 	}
-	title := sv.Server.Name + " IP: " + sv.Server.IP
+	title := sv.Server.ServerName + " IP: " + (*url.URL)(sv.Server.Url).String()
 	listModel := components.NewList(items, title, &components.DelegatesKeyMap{
 		Select: components.KeyMap{
 			Key: key.NewBinding(

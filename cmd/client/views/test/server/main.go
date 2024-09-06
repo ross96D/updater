@@ -13,8 +13,8 @@ import (
 
 func main() {
 	server := models.Server{
-		Name: "Server1",
-		IP:   "192.168.0.1",
+		ServerName: "Server1",
+		Url:        models.UnsafeNewURL("192.168.0.1"),
 		Apps: []user_handler.App{
 			{
 				Index: 1,

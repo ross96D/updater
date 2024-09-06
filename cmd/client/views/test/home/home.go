@@ -10,8 +10,8 @@ import (
 func main() {
 	servers := []models.Server{
 		{
-			Name: "server1",
-			IP:   "190.168.0.1",
+			ServerName: "server1",
+			Url:        models.UnsafeNewURL("190.168.0.1"),
 			Apps: []user_handler.App{
 				{
 					Index: 1,
@@ -22,8 +22,8 @@ func main() {
 			},
 		},
 		{
-			Name: "server2",
-			IP:   "190.68.0.2",
+			ServerName: "server2",
+			Url:        models.UnsafeNewURL("190.68.0.2"),
 			Apps: []user_handler.App{
 				{
 					Index: 1,
@@ -34,7 +34,7 @@ func main() {
 			},
 		},
 	}
-	if _, err := tea.NewProgram(views.HomeView{Servers: servers}).Run(); err != nil {
+	if _, err := tea.NewProgram(views.HomeView{Servers: &servers}).Run(); err != nil {
 		panic(err)
 	}
 }
