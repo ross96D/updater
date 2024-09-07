@@ -34,7 +34,7 @@ func main() {
 			},
 		},
 	}
-	if _, err := tea.NewProgram(views.HomeView{Servers: &servers}).Run(); err != nil {
+	if _, err := tea.NewProgram(views.HomeView{Servers: models.NewState(servers)}).Run(); err != nil {
 		panic(err)
 	}
 }

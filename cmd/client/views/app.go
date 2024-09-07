@@ -8,17 +8,18 @@ import (
 
 type app struct {
 	// TODO change []models.Server to a global and easy to access state
-	servers   []models.Server
+	state     *models.GlobalState
 	navigator *components.Navigator
 	initCmd   tea.Cmd
 }
 
 func NewApp(servers []models.Server) tea.Model {
 	nav := new(components.Navigator)
-	_, cmd := nav.Push(HomeView{Servers: &servers})
+	state := models.NewState(servers)
+	_, cmd := nav.Push(HomeView{Servers: state})
 	return &app{
 		navigator: nav,
-		servers:   servers,
+		state:     state,
 		initCmd:   cmd,
 	}
 }
@@ -29,8 +30,8 @@ func (model *app) Init() tea.Cmd {
 
 func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if msg, ok := msg.(InsertServerMsg); ok {
-		model.servers = append(model.servers, models.Server(msg))
-		return model, nil
+		model.state.Add(models.Server(msg))
+		return model, models.GlobalStateSyncCmd
 	}
 	return model, model.navigator.Update(msg)
 }

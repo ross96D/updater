@@ -3,7 +3,6 @@ package form
 import (
 	"iter"
 	"strings"
-	"unsafe"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -134,15 +133,15 @@ func (f *Form) find(id uint32) *Item {
 	return nil
 }
 
-func (f *Form) findLabel(name string) *ItemLabel {
+func (f *Form) findLabel(name string) (ItemLabel, bool) {
 	for _, row := range f.items {
 		for j := range row {
 			if item, ok := row[j].(ItemLabel); ok && item.name == name {
-				return (*ItemLabel)(unsafe.Pointer(&row[j]))
+				return item, true
 			}
 		}
 	}
-	return nil
+	return ItemLabel{}, false
 }
 
 func (f *Form) findInputByLink(link uint32) Item {
@@ -234,8 +233,9 @@ func (f Form) View() string {
 }
 
 func (f Form) GetLinkedValue(labelName string) (any, bool) {
-	label := f.findLabel(labelName)
-	if label == nil {
+	label, ok := f.findLabel(labelName)
+	if !ok {
+		panic(label)
 		return nil, false
 	}
 	input := f.findInputByLink(label.id)

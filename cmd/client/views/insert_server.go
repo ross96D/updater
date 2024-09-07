@@ -2,6 +2,7 @@ package views
 
 import (
 	"net/url"
+	"reflect"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
@@ -50,6 +51,10 @@ func (sfv ServerFormView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg.(type) {
 	case form.SubmitMsg:
 		sfv.fill()
+		// TODO validate
+		if reflect.ValueOf(sfv.Server).IsZero() {
+			panic("ZERO")
+		}
 		return sfv, tea.Sequence(components.NavigatorPop, InsertServerCmd(sfv.Server))
 	}
 	model, cmd := sfv.form.Update(msg)
@@ -61,6 +66,11 @@ func (sfv ServerFormView) View() string {
 	return sfv.form.View()
 }
 
+// TODO implement validation
+func (sfv *ServerFormView) Validate() bool {
+	return true
+}
+
 func (sfv *ServerFormView) fill() {
 	if item, ok := sfv.form.GetLinkedValue(servername); ok {
 		sfv.Server.ServerName = item.(form.ItemInput[string]).Value()
@@ -68,10 +78,10 @@ func (sfv *ServerFormView) fill() {
 	if item, ok := sfv.form.GetLinkedValue(address); ok {
 		sfv.Server.Url = item.(form.ItemInput[*url.URL]).Value()
 	}
-	if item, ok := sfv.form.GetLinkedValue(servername); ok {
+	if item, ok := sfv.form.GetLinkedValue(password); ok {
 		sfv.Server.Password = item.(form.ItemInput[models.Password]).Value()
 	}
-	if item, ok := sfv.form.GetLinkedValue(servername); ok {
+	if item, ok := sfv.form.GetLinkedValue(username); ok {
 		sfv.Server.UserName = item.(form.ItemInput[string]).Value()
 	}
 }
