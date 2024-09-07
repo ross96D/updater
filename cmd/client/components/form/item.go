@@ -12,7 +12,7 @@ import (
 	"github.com/ross96D/updater/cmd/client/components/label"
 )
 
-func Link[T any](label ItemLabel, input ItemInput[T]) []Item {
+func Link[T comparable](label ItemLabel, input ItemInput[T]) []Item {
 	input.linkID = label.ID()
 	return []Item{label, input}
 }
@@ -69,11 +69,21 @@ func (f ItemLabel) ID() uint32 {
 }
 
 func (f ItemLabel) Update(msg tea.Msg) (Item, tea.Cmd) {
-	if msg, ok := msg.(tea.WindowSizeMsg); ok {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
 		f.label.Update(msg)
-	}
-	if _, ok := msg.(acceptInputMsg); ok {
+
+	case acceptInputMsg:
 		return f, NextItemCmd
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			return f, tea.Quit
+		case "y", "Y":
+			// Validate every field
+			return f, SubmitCmd
+		}
 	}
 	return f, nil
 }
@@ -100,7 +110,7 @@ func Label(text string) ItemLabel {
 			label.TextStyle(
 				lipgloss.NewStyle().
 					PaddingLeft(1).
-					PaddingRight(2),
+					PaddingRight(3),
 			),
 		),
 	}
@@ -143,7 +153,7 @@ type CustomParseValidation[T any] interface {
 type acceptInputMsg struct{}
 
 // Form item that for an input field
-type ItemInput[T any] struct {
+type ItemInput[T comparable] struct {
 	value        T
 	parse        ParseValidation[T]
 	onAccept     func() tea.Cmd
@@ -156,6 +166,7 @@ type ItemInput[T any] struct {
 	id      uint32
 	linkID  uint32
 	isFocus bool
+	filled  bool
 }
 
 func (item ItemInput[T]) Blur() Item {
@@ -178,16 +189,6 @@ func (ItemInput[T]) getType() itemType {
 	return inputType
 }
 
-func (f ItemInput[T]) View() string {
-	wrapper := &styleEmpty
-	if f.errorMessage != "" {
-		wrapper = &sytleErr
-	} else if f.isFocus {
-		wrapper = &styleFocus
-	}
-	return wrapper.Render(lipgloss.JoinHorizontal(lipgloss.Left, f.label.Render(), f.input.View()))
-}
-
 func (f ItemInput[T]) ID() uint32 {
 	return f.id
 }
@@ -206,6 +207,8 @@ func (f ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
 		if f.onAccept != nil {
 			cmd = tea.Batch(cmd, f.onAccept())
 		}
+		f.input.Prompt = "[✔] "
+		f.filled = true
 		return f, cmd
 
 	case tea.WindowSizeMsg:
@@ -213,7 +216,19 @@ func (f ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
 		return f, nil
 
 	case tea.KeyMsg:
+		var cmd tea.Cmd
+		f.input, cmd = f.input.Update(msg)
+		if !reflect.ValueOf(f.value).IsZero() {
+			if v, err := f.parse(f.input.Value()); err == nil && v == f.value {
+				f.input.Prompt = "[✔] "
+				f.filled = true
+			} else {
+				f.input.Prompt = "[ ] "
+				f.filled = false
+			}
+		}
 		f.errorMessage = ""
+		return f, cmd
 
 	case errValidationMsg:
 		f.errorMessage = string(msg.ErrValidation)
@@ -225,35 +240,46 @@ func (f ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
 	return f, cmd
 }
 
+func (f ItemInput[T]) View() string {
+	wrapper := &styleEmpty
+	if f.errorMessage != "" {
+		wrapper = &sytleErr
+	} else if f.isFocus {
+		wrapper = &styleFocus
+	}
+	return wrapper.Render(lipgloss.JoinHorizontal(lipgloss.Left, f.label.Render(), f.input.View()))
+}
+
 func (item ItemInput[T]) Value() T {
 	return item.value
 }
 
-type inputOptions[T any] func(*ItemInput[T])
+type inputOptions[T comparable] func(*ItemInput[T])
 
-func WithValidation[T any](parser ParseValidation[T]) inputOptions[T] {
+func WithValidation[T comparable](parser ParseValidation[T]) inputOptions[T] {
 	return func(ii *ItemInput[T]) {
 		ii.parse = parser
 	}
 }
 
-func WithValidationFromType[T any, V CustomParseValidation[T]]() inputOptions[T] {
+func WithValidationFromType[T comparable, V CustomParseValidation[T]]() inputOptions[T] {
 	return func(ii *ItemInput[T]) {
 		ii.parse = (*new(V)).ParseValidationItem
 	}
 }
 
-func WithOnAccept[T any](onAccept func() tea.Cmd) inputOptions[T] {
+func WithOnAccept[T comparable](onAccept func() tea.Cmd) inputOptions[T] {
 	return func(ii *ItemInput[T]) {
 		ii.onAccept = onAccept
 	}
 }
 
-func Input[T any](opts ...inputOptions[T]) ItemInput[T] {
+func Input[T comparable](opts ...inputOptions[T]) ItemInput[T] {
 	item := ItemInput[T]{
 		id:    generateID(),
 		input: textinput.New(),
 	}
+	item.input.Prompt = "[ ] "
 	for _, opt := range opts {
 		opt(&item)
 	}
@@ -266,11 +292,11 @@ func Input[T any](opts ...inputOptions[T]) ItemInput[T] {
 	return item
 }
 
-func unsafeCast[T, V any](v V) T {
+func unsafeCast[T, V comparable](v V) T {
 	return *(*T)(unsafe.Pointer(&v))
 }
 
-func validationFallback[T any](i *ItemInput[T]) {
+func validationFallback[T comparable](i *ItemInput[T]) {
 	if i.parse != nil {
 		return
 	}

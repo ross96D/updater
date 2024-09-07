@@ -51,9 +51,8 @@ func (sfv ServerFormView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg.(type) {
 	case form.SubmitMsg:
 		sfv.fill()
-		// TODO validate
-		if reflect.ValueOf(sfv.Server).IsZero() {
-			panic("ZERO")
+		if !sfv.Validate() {
+			return sfv, nil
 		}
 		return sfv, tea.Sequence(components.NavigatorPop, InsertServerCmd(sfv.Server))
 	}
@@ -68,7 +67,7 @@ func (sfv ServerFormView) View() string {
 
 // TODO implement validation
 func (sfv *ServerFormView) Validate() bool {
-	return true
+	return !reflect.ValueOf(sfv.Server).IsZero()
 }
 
 func (sfv *ServerFormView) fill() {

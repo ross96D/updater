@@ -48,15 +48,6 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			f.updateFocus(msgT)
 			return f, nil
 
-		case tea.KeyRunes:
-			switch msgT.String() {
-			case "q":
-				return f, tea.Quit
-			case "y", "Y":
-				// Validate every field
-				return f, SubmitCmd
-			}
-
 		// accept value of input
 		case tea.KeyEnter:
 			var cmd tea.Cmd

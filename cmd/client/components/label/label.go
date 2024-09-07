@@ -9,8 +9,8 @@ type LabelOptions func(*Label)
 
 // Prefer the use of this struct for static text views
 type Label struct {
-	text  string
 	style lipgloss.Style
+	text  string
 
 	wrapped bool
 	width   int
