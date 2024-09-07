@@ -117,8 +117,8 @@ func NewErrValidation(err error) error {
 }
 
 type errValidationMsg struct {
-	id uint32
 	ErrValidation
+	id uint32
 }
 
 func errValidationCmd(item Item, err ErrValidation) tea.Cmd {
@@ -144,15 +144,15 @@ type acceptInputMsg struct{}
 
 // Form item that for an input field
 type ItemInput[T any] struct {
-	input        textinput.Model
-	errorMessage string
-	parse        ParseValidation[T]
 	value        T
-	label        label.Label
+	parse        ParseValidation[T]
 	onAccept     func() tea.Cmd
+	errorMessage string
+	label        label.Label
+	input        textinput.Model
 	id           uint32
-	isFocus      bool
 	linkID       uint32
+	isFocus      bool
 }
 
 func (item ItemInput[T]) Blur() Item {

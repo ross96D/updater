@@ -235,7 +235,6 @@ func (f Form) View() string {
 func (f Form) GetLinkedValue(labelName string) (any, bool) {
 	label, ok := f.findLabel(labelName)
 	if !ok {
-		panic(label)
 		return nil, false
 	}
 	input := f.findInputByLink(label.id)
