@@ -149,10 +149,13 @@ type ItemInput[T any] struct {
 	onAccept     func() tea.Cmd
 	errorMessage string
 	label        label.Label
-	input        textinput.Model
-	id           uint32
-	linkID       uint32
-	isFocus      bool
+	// TODO: performance oportunity. this could be a point and that way reduce
+	// the memory copying. [textinput.Model] have 5184 bytes
+	// We could also refactor the [textinput.Model] to improve perfomance
+	input   textinput.Model
+	id      uint32
+	linkID  uint32
+	isFocus bool
 }
 
 func (item ItemInput[T]) Blur() Item {
