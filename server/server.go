@@ -153,7 +153,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = share.Update(app, data)
+		err = share.Update(r.Context(), app, data)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -167,7 +167,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		err = user_handler.HandlerUserUpdate(payload)
+		err = user_handler.HandlerUserUpdate(r.Context(), payload)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return

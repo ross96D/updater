@@ -2,6 +2,7 @@ package share_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"math/rand/v2"
 	"os"
@@ -54,7 +55,7 @@ func TestUpdateApp(t *testing.T) {
 	data := make(map[string]io.Reader)
 	data["asset1"] = createRandomData(500)
 
-	err = share.Update(app, TestData(data))
+	err = share.Update(context.Background(), app, TestData(data))
 	require.NoError(t, err)
 
 	for k, v := range app.Assets {

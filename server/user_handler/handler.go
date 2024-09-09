@@ -110,7 +110,7 @@ func GetReleaseRepository(app configuration.Application) (*github.RepositoryRele
 	return client.Repositories.GetLatestRelease(context.TODO(), app.GithubRelease.Owner, app.GithubRelease.Repo)
 }
 
-func HandlerUserUpdate(payload []byte) error {
+func HandlerUserUpdate(ctx context.Context, payload []byte) error {
 	var app App
 	err := json.Unmarshal(payload, &app)
 	if err != nil {
@@ -128,12 +128,12 @@ func HandlerUserUpdate(payload []byte) error {
 		return err
 	}
 
-	return share.Update(application, data)
+	return share.Update(ctx, application, data)
 }
 
 type App struct {
-	Index int `json:"index"`
 	configuration.Application
+	Index int `json:"index"`
 }
 
 func HandleUserAppsList(w io.Writer) error {

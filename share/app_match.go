@@ -1,6 +1,7 @@
 package share
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +22,7 @@ type NoData struct{}
 
 func (NoData) Get(name string) io.ReadCloser { return nil }
 
-func Update(app configuration.Application, data Data) error {
+func Update(ctx context.Context, app configuration.Application, data Data) error {
 	u := NewAppUpdater(app, data)
 	// TODO log on additional asset fail but do not return 500
 	err := u.UpdateAdditionalAssets()
@@ -148,11 +149,13 @@ func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err erro
 			if v.Command.Path != "" {
 				cmd.Dir = v.Command.Path
 			}
-			output, err := cmd.CombinedOutput()
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
 			if err != nil {
-				return fmt.Errorf("%s cmd: %s %s %w", v.Name, cmd.String(), string(output), err)
+				return fmt.Errorf("%s cmd: %s %w", v.Name, cmd.String(), err)
 			}
-			log.Debug().Msgf("%s cmd: %s %s", v.Name, cmd.String(), string(output))
+			log.Debug().Msgf("%s cmd: %s", v.Name, cmd.String())
 		}
 
 		return nil
