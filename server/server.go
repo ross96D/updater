@@ -160,7 +160,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = share.Update(r.Context(), app, data)
+		err = share.Update(r.Context(), app, share.WithData(data))
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return

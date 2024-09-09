@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/utils"
@@ -56,7 +55,7 @@ func TestUpdateApp(t *testing.T) {
 	data := make(map[string]io.Reader)
 	data["asset1"] = createRandomData(500)
 
-	err = share.Update(context.Background(), app, TestData(data))
+	err = share.Update(context.Background(), app, share.WithData(TestData(data)))
 	require.NoError(t, err)
 
 	for k, v := range app.Assets {
@@ -165,9 +164,9 @@ func TestPostActionCommand(t *testing.T) {
 	}
 
 	err := share.NewAppUpdater(
+		context.Background(),
 		app,
-		share.NoData{},
-		logger.ResponseWithLogger.FromContext(context.Background()),
+		share.WithData(share.NoData{}),
 	).RunPostAction()
 
 	require.NoError(t, err)

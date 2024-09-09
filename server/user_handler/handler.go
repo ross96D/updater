@@ -128,7 +128,7 @@ func HandlerUserUpdate(ctx context.Context, payload []byte) error {
 		return err
 	}
 
-	return share.Update(ctx, application, data)
+	return share.Update(ctx, application, share.WithData(data))
 }
 
 type App struct {

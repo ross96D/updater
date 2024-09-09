@@ -24,8 +24,22 @@ type NoData struct{}
 
 func (NoData) Get(name string) io.ReadCloser { return nil }
 
-func Update(ctx context.Context, app configuration.Application, data Data) error {
-	u := NewAppUpdater(app, data, logger.ResponseWithLogger.FromContext(ctx))
+type UpdateOpts func(*appUpdater)
+
+func WithDryRun() UpdateOpts {
+	return func(au *appUpdater) {
+		au.dryRun = true
+	}
+}
+
+func WithData(data Data) UpdateOpts {
+	return func(au *appUpdater) {
+		au.data = data
+	}
+}
+
+func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) error {
+	u := NewAppUpdater(ctx, app, opts...)
 	// TODO log on additional asset fail but do not return 500
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
@@ -48,20 +62,26 @@ type appUpdater struct {
 
 	// how do i know if i am on a failed state?
 	// if update aditional assets fail is a failed state?
-	state state
+	state  state
+	dryRun bool
 }
 
 func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 	return u.data.Get(asset.Name)
 }
 
-func NewAppUpdater(app configuration.Application, data Data, logger *zerolog.Logger) *appUpdater {
-	return &appUpdater{
+func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...UpdateOpts) *appUpdater {
+	appUpd := &appUpdater{
 		app:    app,
-		data:   data,
 		state:  correct,
-		logger: logger,
+		logger: logger.ResponseWithLogger.FromContext(ctx),
 	}
+
+	for _, opt := range opts {
+		opt(appUpd)
+	}
+
+	return appUpd
 }
 
 func (u *appUpdater) UpdateTaskAssets() error {
