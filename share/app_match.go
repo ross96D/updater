@@ -86,6 +86,7 @@ func (u *appUpdater) UpdateTaskAssets() error {
 	var errs []error = make([]error, 0)
 
 	for _, v := range u.app.Assets {
+		// if v.ServicePath == "" then is not a Task Asset
 		if v.ServicePath == "" {
 			continue
 		}
@@ -105,6 +106,7 @@ func (u *appUpdater) UpdateTaskAssets() error {
 func (u *appUpdater) UpdateAdditionalAssets() error {
 	var errs []error = make([]error, 0)
 	for _, v := range u.app.Assets {
+		// if v.ServicePath != "" then is not an Additional Asset
 		if v.ServicePath != "" {
 			continue
 		}
