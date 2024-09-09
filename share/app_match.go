@@ -13,7 +13,6 @@ import (
 	"github.com/ross96D/updater/share/utils"
 	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type Data interface {
@@ -44,7 +43,6 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
 	err3 := u.RunPostAction()
-	// u.CleanUp()
 	return errors.Join(err, err2, err3)
 }
 
@@ -56,9 +54,9 @@ const (
 )
 
 type appUpdater struct {
-	app    configuration.Application
-	logger *zerolog.Logger
-	data   Data
+	app  configuration.Application
+	log  *zerolog.Logger
+	data Data
 
 	// how do i know if i am on a failed state?
 	// if update aditional assets fail is a failed state?
@@ -72,9 +70,9 @@ func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 
 func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...UpdateOpts) *appUpdater {
 	appUpd := &appUpdater{
-		app:    app,
-		state:  correct,
-		logger: logger.ResponseWithLogger.FromContext(ctx),
+		app:   app,
+		state: correct,
+		log:   logger.ResponseWithLogger.FromContext(ctx),
 	}
 
 	for _, opt := range opts {
@@ -123,72 +121,89 @@ func (u *appUpdater) UpdateAdditionalAssets() error {
 	return errors.Join(errs...)
 }
 
-func (u *appUpdater) updateTask(v configuration.Asset) (err error) {
+func (u *appUpdater) updateTask(asset configuration.Asset) (err error) {
 	var fnCopy func() error
-	if fnCopy, err = u.updateAsset(v); err != nil {
-		return fmt.Errorf("updateTask updateAsset() %w", err)
+	if fnCopy, err = u.updateAsset(asset); err != nil {
+		return fmt.Errorf("updateTask %w", err)
 	}
 
 	// TODO this needs a mutex?
-	if err = taskservice.Stop(v.ServicePath); err != nil {
+	u.log.Info().Msgf("stop %s", asset.ServicePath)
+	if err = taskservice.Stop(asset.ServicePath); err != nil {
+		u.log.Error().Err(err).Msgf("error stoping %s", asset.ServicePath)
 		return fmt.Errorf("updateTask Stop() %w", err)
 	}
 
 	defer func() {
-		if err := taskservice.Start(v.ServicePath); err != nil {
-			log.Error().Err(fmt.Errorf("reruning the task %s %w", v.ServicePath, err)).Send()
+		u.log.Info().Msgf("start %s", asset.ServicePath)
+		if err := taskservice.Start(asset.ServicePath); err != nil {
+			// TODO Should i fail here?
+			u.log.Error().Err(err).Msgf("error starting %s", asset.ServicePath)
 		}
 	}()
 
 	return fnCopy()
 }
 
-func (u *appUpdater) updateAsset(v configuration.Asset) (fnCopy func() (err error), err error) {
-	assetData := u.seek(v)
-	if assetData == nil {
-		err = fmt.Errorf("no match for asset %s", v.Name)
-		return
+func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err error), err error) {
+	data := u.seek(asset)
+	if data == nil {
+		msg := "updateAsset() no match " + asset.Name
+		u.log.Warn().Msg(msg)
+		return nil, errors.New(msg)
 	}
 
 	fnCopy = func() (err error) {
-		defer assetData.Close()
-		if err = utils.RenameSafe(v.SystemPath, v.SystemPath+".old"); err != nil {
+		defer data.Close()
+		if err = utils.RenameSafe(asset.SystemPath, asset.SystemPath+".old"); err != nil {
 			return
 		}
 
-		if err = utils.CopyFromReader(assetData, v.SystemPath); err != nil {
-			os.Remove(v.SystemPath)
-			log.Debug().Msgf("roll back rename %s to %s", v.SystemPath+".old", v.SystemPath)
-			_ = utils.RenameSafe(v.SystemPath+".old", v.SystemPath)
-			return nil
+		if err = utils.CopyFromReader(data, asset.SystemPath); err != nil {
+			u.log.Error().
+				Err(err).
+				Msgf("Copying from %s. Rollback rename %s to %s",
+					asset.Name, asset.SystemPath+".old", asset.SystemPath)
+			os.Remove(asset.SystemPath)
+			err2 := utils.RenameSafe(asset.SystemPath+".old", asset.SystemPath)
+			if err2 != nil {
+				u.log.Error().Err(err2).Msgf("rename fail %s to %s", asset.SystemPath+".old", asset.SystemPath)
+			}
+			return err
 		}
-		if v.Unzip {
-			if err = utils.Unzip(v.SystemPath); err != nil {
+		if asset.Unzip {
+			u.log.Info().Msg("unzip: " + asset.SystemPath)
+			if err = utils.Unzip(asset.SystemPath); err != nil {
+				u.log.Error().Err(err).Msg("unzip: " + asset.SystemPath)
 				return err
 			}
 		}
 
-		if v.Command != nil {
-			cmd := exec.Command(v.Command.Command, v.Command.Args...)
-			if v.Command.Path != "" {
-				cmd.Dir = v.Command.Path
+		if asset.Command != nil {
+			cmd := exec.Command(asset.Command.Command, asset.Command.Args...)
+			if asset.Command.Path != "" {
+				cmd.Dir = asset.Command.Path
 			}
+			u.log.Info().Msg("Running command for " + asset.Name + ": " + cmd.String())
+			// TODO this should pipe the data into the logger
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 			err = cmd.Run()
 			if err != nil {
-				return fmt.Errorf("%s cmd: %s %w", v.Name, cmd.String(), err)
+				u.log.Error().Err(err).Msgf("%s cmd: %s", asset.Name, cmd.String())
+				// TODO should i leave the error be like this if i already kinda handle it?
+				return fmt.Errorf("%s cmd: %s %w", asset.Name, cmd.String(), err)
 			}
-			log.Debug().Msgf("%s cmd: %s", v.Name, cmd.String())
+			u.log.Info().Msgf("success %s cmd: %s", asset.Name, cmd.String())
 		}
-
+		u.log.Info().Msgf("Asset %s update success", asset.Name)
 		return nil
 	}
 
 	return
 }
 
-func (u appUpdater) RunPostAction() error {
+func (u *appUpdater) RunPostAction() error {
 	if u.app.Command == nil || u.state == failed {
 		return nil
 	}
@@ -196,11 +211,13 @@ func (u appUpdater) RunPostAction() error {
 	if u.app.Command.Path != "" {
 		cmd.Dir = u.app.Command.Path
 	}
-	log.Debug().Msg("running post action " + cmd.String())
-	output, err := cmd.CombinedOutput()
+	u.log.Info().Msg("running post command " + cmd.String())
+	// TODO this should pipe the data into the logger
+	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("postaction cmd: %s %s %w", cmd.String(), string(output), err)
+		u.log.Error().Err(err).Msgf("post command %s", cmd.String())
+		return fmt.Errorf("post command cmd: %s %w", cmd.String(), err)
 	}
-	log.Debug().Msgf("postaction cmd: %s %s", cmd.String(), string(output))
+	u.log.Info().Msgf("success post command %s", cmd.String())
 	return nil
 }
