@@ -117,7 +117,7 @@ end:
 func (handler *responseHandler) end() {
 	handler.notify = make(chan bool)
 	handler.endCh <- true
-	t := time.NewTimer(25 * time.Millisecond)
+	t := time.NewTimer(100 * time.Millisecond)
 	select {
 	case <-handler.notify:
 	case <-t.C:
