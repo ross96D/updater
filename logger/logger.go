@@ -99,7 +99,7 @@ func (handler *responseHandler) handle() {
 			m, ok := handler.q.pop()
 			if !ok {
 				// allow context switch and reduce cpu pressure
-				time.Sleep(500 * time.Microsecond)
+				time.Sleep(100 * time.Microsecond)
 				continue
 			}
 			if err := handler.write(m); err != nil {
