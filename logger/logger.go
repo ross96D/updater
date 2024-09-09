@@ -37,7 +37,17 @@ func (q *queue) push(m message) {
 	if q.Space() == 0 {
 		return
 	}
-	q.messages[q.tail] = m
+
+	// copy data as the incoming message can become corrupted
+	var mnew message
+	if q.messages[q.tail] != nil && cap(q.messages[q.tail]) >= len(m) {
+		mnew = q.messages[q.tail][:len(m)]
+	} else {
+		mnew = make(message, len(m))
+	}
+
+	copy(mnew, m)
+	q.messages[q.tail] = mnew
 	q.tail++
 }
 
