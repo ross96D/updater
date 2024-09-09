@@ -16,7 +16,24 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func checkPath(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return errors.New(path + " is a directory")
+	}
+	if info.Size() == 0 {
+		return errors.New(path + " have size 0")
+	}
+	return nil
+}
+
 func Unzip(path string) error {
+	if err := checkPath(path); err != nil {
+		return err
+	}
 	if checkZip(path) {
 		return unzip(path)
 	}
