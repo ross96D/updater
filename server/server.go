@@ -34,6 +34,10 @@ func New(keyPath, certPath string) *Server {
 	return s
 }
 
+func (s *Server) TestServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
+}
+
 func (s *Server) Start() error {
 	log.Info().Msg("starting server on " + ":" + strconv.Itoa(int(share.Config().Port)))
 	portStr := ":" + strconv.Itoa(int(share.Config().Port))
