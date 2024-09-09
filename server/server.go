@@ -49,18 +49,18 @@ func (s *Server) setHandlers() {
 	s.router.Use(logger.LoggerMiddleware)
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
-		r.Get("/list", list)
+		r.Get("/list", List)
 		r.Group(func(r chi.Router) {
 			r.Use(logger.ResponseWithLogger)
-			r.Post("/update", upload)
+			r.Post("/update", Update)
 		})
-		r.Post("/reload", reload)
-		r.Post("/upgrade", upgradeUpdater)
+		r.Post("/reload", Reload)
+		r.Post("/upgrade", Upgrade)
 	})
-	s.router.Post("/login", login)
+	s.router.Post("/login", Login)
 }
 
-func upgradeUpdater(w http.ResponseWriter, r *http.Request) {
+func Upgrade(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(auth.TypeKey) != "user" {
 		http.Error(w, "", 403)
 		return
@@ -85,7 +85,7 @@ func upgradeUpdater(w http.ResponseWriter, r *http.Request) {
 	os.Exit(1)
 }
 
-func reload(w http.ResponseWriter, r *http.Request) {
+func Reload(w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -105,7 +105,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
+func Login(w http.ResponseWriter, r *http.Request) {
 	name, pass, ok := r.BasicAuth()
 	if !ok {
 		http.Error(w, "No basic auth", http.StatusUnauthorized)
@@ -130,7 +130,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(token)
 }
 
-func list(w http.ResponseWriter, r *http.Request) {
+func List(w http.ResponseWriter, r *http.Request) {
 	origin := r.Context().Value(auth.TypeKey)
 	if origin != "user" {
 		http.Error(w, "", 400)
@@ -145,7 +145,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func upload(w http.ResponseWriter, r *http.Request) {
+func Update(w http.ResponseWriter, r *http.Request) {
 	switch r.Context().Value(auth.TypeKey) {
 	case "webhook":
 		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
