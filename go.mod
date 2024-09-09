@@ -12,6 +12,7 @@ require (
 	github.com/google/go-github/v60 v60.0.0
 	github.com/google/uuid v1.2.0
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb
+	github.com/justinas/alice v1.2.0
 	github.com/lestrrat-go/jwx/v2 v2.0.21
 	github.com/ross96D/taskmaster v0.0.1
 	github.com/rs/zerolog v1.32.0
@@ -57,6 +58,7 @@ require (
 	github.com/rickb777/plural v1.2.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	github.com/rs/xid v1.5.0 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect

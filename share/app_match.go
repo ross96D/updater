@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/utils"
 	taskservice "github.com/ross96D/updater/task_service"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,7 +25,7 @@ type NoData struct{}
 func (NoData) Get(name string) io.ReadCloser { return nil }
 
 func Update(ctx context.Context, app configuration.Application, data Data) error {
-	u := NewAppUpdater(app, data)
+	u := NewAppUpdater(app, data, logger.ResponseWithLogger.FromContext(ctx))
 	// TODO log on additional asset fail but do not return 500
 	err := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
@@ -40,8 +42,9 @@ const (
 )
 
 type appUpdater struct {
-	app  configuration.Application
-	data Data
+	app    configuration.Application
+	logger *zerolog.Logger
+	data   Data
 
 	// how do i know if i am on a failed state?
 	// if update aditional assets fail is a failed state?
@@ -52,11 +55,12 @@ func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 	return u.data.Get(asset.Name)
 }
 
-func NewAppUpdater(app configuration.Application, data Data) *appUpdater {
+func NewAppUpdater(app configuration.Application, data Data, logger *zerolog.Logger) *appUpdater {
 	return &appUpdater{
-		app:   app,
-		data:  data,
-		state: correct,
+		app:    app,
+		data:   data,
+		state:  correct,
+		logger: logger,
 	}
 }
 

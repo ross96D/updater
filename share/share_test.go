@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/utils"
@@ -163,7 +164,11 @@ func TestPostActionCommand(t *testing.T) {
 		},
 	}
 
-	err := share.NewAppUpdater(app, share.NoData{}).RunPostAction()
+	err := share.NewAppUpdater(
+		app,
+		share.NoData{},
+		logger.ResponseWithLogger.FromContext(context.Background()),
+	).RunPostAction()
 
 	require.NoError(t, err)
 }

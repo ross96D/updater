@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/server/auth"
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
@@ -45,12 +46,14 @@ func (s *Server) Start() error {
 
 func (s *Server) setHandlers() {
 	s.router.Use(middleware.Recoverer)
-	// TODO change to zerologger and improve the log
-	s.router.Use(middleware.DefaultLogger)
+	s.router.Use(logger.LoggerMiddleware)
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
-		r.Post("/update", upload)
 		r.Get("/list", list)
+		r.Group(func(r chi.Router) {
+			r.Use(logger.ResponseWithLogger)
+			r.Post("/update", upload)
+		})
 		r.Post("/reload", reload)
 		r.Post("/upgrade", upgradeUpdater)
 	})
