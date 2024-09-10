@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/match"
 	"github.com/rs/zerolog/log"
 )
 
@@ -19,7 +20,7 @@ type GithubReleaseData struct {
 	release *github.RepositoryRelease
 }
 
-func NewGithubReleaseData(app configuration.Application) (share.Data, error) {
+func NewGithubReleaseData(app configuration.Application) (match.Data, error) {
 	if app.GithubRelease == nil {
 		return nil, errors.New("no github repo configured")
 	}
@@ -110,7 +111,7 @@ func GetReleaseRepository(app configuration.Application) (*github.RepositoryRele
 	return client.Repositories.GetLatestRelease(context.TODO(), app.GithubRelease.Owner, app.GithubRelease.Repo)
 }
 
-func HandlerUserUpdate(ctx context.Context, payload []byte) error {
+func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 	var app App
 	err := json.Unmarshal(payload, &app)
 	if err != nil {
@@ -128,7 +129,12 @@ func HandlerUserUpdate(ctx context.Context, payload []byte) error {
 		return err
 	}
 
-	return share.Update(ctx, application, share.WithData(data))
+	if dryRun {
+		return match.Update(ctx, application, match.WithData(data), match.WithDryRun())
+	} else {
+		return match.Update(ctx, application, match.WithData(data))
+	}
+
 }
 
 type App struct {

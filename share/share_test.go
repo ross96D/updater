@@ -15,6 +15,7 @@ import (
 
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/match"
 	"github.com/ross96D/updater/share/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,7 +56,7 @@ func TestUpdateApp(t *testing.T) {
 	data := make(map[string]io.Reader)
 	data["asset1"] = createRandomData(500)
 
-	err = share.Update(context.Background(), app, share.WithData(TestData(data)))
+	err = match.Update(context.Background(), app, match.WithData(TestData(data)))
 	require.NoError(t, err)
 
 	for k, v := range app.Assets {
@@ -163,10 +164,11 @@ func TestPostActionCommand(t *testing.T) {
 		},
 	}
 
-	err := share.NewAppUpdater(
+	err := match.NewAppUpdater(
 		context.Background(),
 		app,
-		share.WithData(share.NoData{}),
+		match.WithData(match.NoData{}),
+		match.WithDryRun(),
 	).RunPostAction()
 
 	require.NoError(t, err)
