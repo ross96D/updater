@@ -15,7 +15,10 @@ import (
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
+	"github.com/ross96D/updater/share/match"
+	"github.com/ross96D/updater/share/utils"
 	"github.com/ross96D/updater/upgrade"
+	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -150,6 +153,8 @@ func List(w http.ResponseWriter, r *http.Request) {
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {
+	logger := logger.ResponseWithLogger.FromContext(r.Context())
+
 	switch r.Context().Value(auth.TypeKey) {
 	case "webhook":
 		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
@@ -160,9 +165,22 @@ func Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = share.Update(r.Context(), app, share.WithData(data))
+		if r.Header.Get("dry-run") == "true" {
+			err = match.Update(r.Context(), app, match.WithData(data), match.WithDryRun())
+		} else {
+			err = match.Update(r.Context(), app, match.WithData(data))
+		}
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			switch err.(type) {
+			case match.ErrErrors, match.ErrError:
+				logger.Error().Err(err).
+					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
+					Send()
+			default:
+				logger.Warn().Err(err).
+					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
+					Send()
+			}
 			return
 		}
 	case "user":
@@ -174,9 +192,17 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		err = user_handler.HandlerUserUpdate(r.Context(), payload)
+		if r.Header.Get("dry-run") == "true" {
+			err = user_handler.HandlerUserUpdate(r.Context(), payload, true)
+		} else {
+			err = user_handler.HandlerUserUpdate(r.Context(), payload, false)
+		}
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			logger.
+				Error().
+				Err(err).
+				Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
+				Send()
 			return
 		}
 	default:
@@ -206,7 +232,7 @@ func (d Data) Get(name string) io.ReadCloser {
 	return r
 }
 
-func ParseForm(r *http.Request) (share.Data, error) {
+func ParseForm(r *http.Request) (match.Data, error) {
 	err := r.ParseMultipartForm(10 << 20) // store 10 MB in memory
 	if err != nil {
 		return nil, err
