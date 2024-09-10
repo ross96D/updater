@@ -49,20 +49,22 @@ func PackError(errs ...error) error {
 	}
 
 	isError := false
+	noNilErrs := make([]error, 0, len(errs))
 	for _, err := range errs {
 		if _, ok := err.(ErrError); ok {
 			isError = true
-			break
 		}
 		if _, ok := err.(ErrErrors); ok {
 			isError = true
-			break
+		}
+		if err != nil {
+			noNilErrs = append(noNilErrs, err)
 		}
 	}
 	if isError {
-		return ErrErrors{errs}
+		return ErrErrors{noNilErrs}
 	}
-	return errors.Join(errs...)
+	return errors.Join(noNilErrs...)
 }
 
 type Data interface {
