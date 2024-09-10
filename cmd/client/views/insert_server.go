@@ -115,19 +115,15 @@ func (sfv *ServerFormView) fill() {
 
 func (sfv *ServerFormView) setValues() {
 	if item, ok := sfv.form.GetLinkedValue(servername); ok {
-		item.(*form.ItemInput[string]).SetValue(sfv.Server.ServerName)
-		item.(*form.ItemInput[string]).SetText(sfv.Server.ServerName)
+		item.(*form.ItemInput[string]).Set(sfv.Server.ServerName, sfv.Server.ServerName)
 	}
 	if item, ok := sfv.form.GetLinkedValue(address); ok {
-		item.(*form.ItemInput[*url.URL]).SetValue(sfv.Server.Url)
-		item.(*form.ItemInput[*url.URL]).SetText(sfv.Server.Url.String())
+		item.(*form.ItemInput[*url.URL]).Set(sfv.Server.Url, sfv.Server.Url.String())
 	}
 	if item, ok := sfv.form.GetLinkedValue(password); ok {
-		item.(*form.ItemInput[models.Password]).SetValue(sfv.Server.Password)
-		item.(*form.ItemInput[models.Password]).SetText(string(sfv.Server.Password))
+		item.(*form.ItemInput[models.Password]).Set(sfv.Server.Password, string(sfv.Server.Password))
 	}
 	if item, ok := sfv.form.GetLinkedValue(username); ok {
-		item.(*form.ItemInput[string]).SetValue(sfv.Server.UserName)
-		item.(*form.ItemInput[string]).SetText(sfv.Server.UserName)
+		item.(*form.ItemInput[string]).Set(sfv.Server.UserName, sfv.Server.UserName)
 	}
 }

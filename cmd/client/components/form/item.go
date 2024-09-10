@@ -258,6 +258,12 @@ func (item *ItemInput[T]) SetValue(v T) {
 	item.value = v
 }
 
+func (item *ItemInput[T]) Set(v T, t string) {
+	item.value = v
+	item.input.SetValue(t)
+	item.filled = true
+}
+
 func (item *ItemInput[T]) SetText(v string) {
 	item.input.SetValue(v)
 }
