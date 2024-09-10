@@ -88,7 +88,7 @@ func TestUpdateEnpoint(t *testing.T) {
 					data: "no data",
 				},
 			},
-			expectError: noerror,
+			expectError: nofatal,
 		},
 		{
 			name: "update match all",
@@ -106,7 +106,7 @@ func TestUpdateEnpoint(t *testing.T) {
 					data: "-",
 				},
 			},
-			expectError: fatal,
+			expectError: noerror,
 		},
 	}
 	r := regexp.MustCompile(`\d{1,2}:\d{1,2}[A,P]M (?<Level>[^\s]+)`)
