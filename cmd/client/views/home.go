@@ -35,8 +35,6 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case tea.KeyCtrlC.String(), "q":
 			return hv, tea.Quit
-		case "a":
-			return hv, components.NavigatorPush(NewServerFormView())
 		}
 	case homeViewInitialize:
 		hv.init()
@@ -78,17 +76,30 @@ func (hv *HomeView) init() {
 		})
 	}
 
-	listModel := components.NewList(items, "", &components.DelegatesKeyMap{
-		Select: components.KeyMap{
-			Key: key.NewBinding(
-				key.WithKeys("enter"),
-				key.WithHelp("enter", "select server"),
-			),
-			Action: func() tea.Cmd {
-				return homeViewSelectItemMsg
+	listModel := components.NewList(items, "",
+		&components.DelegatesKeyMap{
+			Select: components.KeyMap{
+				Key: key.NewBinding(
+					key.WithKeys("enter"),
+					key.WithHelp("enter", "select server"),
+				),
+				Action: func() tea.Cmd {
+					return homeViewSelectItemMsg
+				},
+			},
+			Others: []components.KeyMap{
+				{
+					Key: key.NewBinding(
+						key.WithKeys("a", "A"),
+						key.WithHelp("a", "add server"),
+					),
+					Action: func() tea.Cmd {
+						return components.NavigatorPush(NewServerFormView())
+					},
+				},
 			},
 		},
-	})
+	)
 	hv.list = listModel
 	hv.initialized = true
 }

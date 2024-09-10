@@ -54,6 +54,7 @@ type KeyMap struct {
 // custom keys actions
 type DelegatesKeyMap struct {
 	Select KeyMap
+	Others []KeyMap
 }
 
 type List[T any] struct {
@@ -103,16 +104,6 @@ func NewList[T any](items []Item[T], title string, delegateKeys *DelegatesKeyMap
 	list := list.New(ConvertToItems(items), delegate, 0, 0)
 	list.Title = title
 	list.Styles.Title = titleStyle
-	list.AdditionalFullHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			listKeys.toggleSpinner,
-			listKeys.toggleTitleBar,
-			listKeys.toggleStatusBar,
-			listKeys.togglePagination,
-			listKeys.toggleHelpMenu,
-		}
-	}
-
 	l := List[T]{
 		list:         list,
 		keys:         listKeys,
@@ -227,6 +218,12 @@ func newItemDelegate[T any](keys *DelegatesKeyMap) list.DefaultDelegate {
 			switch {
 			case key.Matches(msg, keys.Select.Key):
 				return keys.Select.Action()
+			default:
+				for _, v := range keys.Others {
+					if key.Matches(msg, v.Key) {
+						return v.Action()
+					}
+				}
 			}
 		}
 
@@ -234,6 +231,9 @@ func newItemDelegate[T any](keys *DelegatesKeyMap) list.DefaultDelegate {
 	}
 
 	help := []key.Binding{keys.Select.Key}
+	for _, v := range keys.Others {
+		help = append(help, v.Key)
+	}
 
 	d.ShortHelpFunc = func() []key.Binding {
 		return help
