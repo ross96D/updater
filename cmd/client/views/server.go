@@ -43,10 +43,7 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return sv, tea.WindowSize()
 
 	case serverViewSelectItem:
-		item, err := sv.list.Selected()
-		if err != nil {
-			panic(err)
-		}
+		item := sv.list.Selected()
 		return sv, components.NavigatorPush(AppView{App: *item.Value})
 
 	case models.GlobalStateSyncMsg:

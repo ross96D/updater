@@ -33,6 +33,10 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model.state.Add(models.Server(msg))
 		return model, models.GlobalStateSyncCmd
 	}
+	if msg, ok := msg.(EditServerMsg); ok {
+		model.state.Set(msg.index, msg.server)
+		return model, models.GlobalStateSyncCmd
+	}
 	return model, model.navigator.Update(msg)
 }
 

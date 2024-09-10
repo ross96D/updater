@@ -124,15 +124,15 @@ func (f *Form) find(id uint32) *Item {
 	return nil
 }
 
-func (f *Form) findLabel(name string) (ItemLabel, bool) {
+func (f *Form) findLabel(name string) (*ItemLabel, bool) {
 	for _, row := range f.items {
 		for j := range row {
-			if item, ok := row[j].(ItemLabel); ok && item.name == name {
+			if item, ok := row[j].(*ItemLabel); ok && item.name == name {
 				return item, true
 			}
 		}
 	}
-	return ItemLabel{}, false
+	return nil, false
 }
 
 func (f *Form) findInputByLink(link uint32) Item {

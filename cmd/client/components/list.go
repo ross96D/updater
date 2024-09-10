@@ -119,11 +119,12 @@ func NewList[T any](items []Item[T], title string, delegateKeys *DelegatesKeyMap
 	return l
 }
 
-func (l *List[T]) Selected() (Item[T], error) {
-	if l.quitting {
-		return l.list.SelectedItem().(Item[T]), nil
-	}
-	return l.list.SelectedItem().(Item[T]), fmt.Errorf("no element selected")
+func (l *List[T]) Selected() Item[T] {
+	return l.list.SelectedItem().(Item[T])
+}
+
+func (l *List[T]) SelectedIndex() int {
+	return l.list.Index()
 }
 
 func (l *List[T]) SelectedMessage() (string, error) {

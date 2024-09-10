@@ -18,6 +18,22 @@ var InsertServerCmd = func(s models.Server) tea.Cmd {
 	}
 }
 
+type EditServerMsg struct {
+	server models.Server
+	index  int
+}
+
+type EditServer EditServerMsg
+
+var EditServerCmd = func(index int, server models.Server) tea.Cmd {
+	return func() tea.Msg {
+		return EditServerMsg{
+			server: server,
+			index:  index,
+		}
+	}
+}
+
 const (
 	servername = "ServerName"
 	address    = "Address"
@@ -25,8 +41,9 @@ const (
 	password   = "Password"
 )
 
-func NewServerFormView() ServerFormView {
-	return ServerFormView{
+func NewServerFormView(es *EditServer) ServerFormView {
+	sfv := ServerFormView{
+		index: -1,
 		form: form.NewForm(
 			[][]form.Item{
 				form.Link(form.Label(servername), form.Input[string]()),
@@ -36,11 +53,18 @@ func NewServerFormView() ServerFormView {
 			},
 		),
 	}
+	if es != nil {
+		sfv.index = es.index
+		sfv.Server = es.server
+		sfv.setValues()
+	}
+	return sfv
 }
 
 type ServerFormView struct {
 	Server models.Server
 	form   form.Form
+	index  int
 }
 
 func (sfv ServerFormView) Init() tea.Cmd {
@@ -54,7 +78,11 @@ func (sfv ServerFormView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !sfv.Validate() {
 			return sfv, nil
 		}
-		return sfv, tea.Sequence(components.NavigatorPop, InsertServerCmd(sfv.Server))
+		if sfv.index == -1 {
+			return sfv, tea.Sequence(components.NavigatorPop, InsertServerCmd(sfv.Server))
+		} else {
+			return sfv, tea.Sequence(components.NavigatorPop, EditServerCmd(sfv.index, sfv.Server))
+		}
 	}
 	model, cmd := sfv.form.Update(msg)
 	sfv.form = model.(form.Form)
@@ -72,15 +100,34 @@ func (sfv *ServerFormView) Validate() bool {
 
 func (sfv *ServerFormView) fill() {
 	if item, ok := sfv.form.GetLinkedValue(servername); ok {
-		sfv.Server.ServerName = item.(form.ItemInput[string]).Value()
+		sfv.Server.ServerName = item.(*form.ItemInput[string]).Value()
 	}
 	if item, ok := sfv.form.GetLinkedValue(address); ok {
-		sfv.Server.Url = item.(form.ItemInput[*url.URL]).Value()
+		sfv.Server.Url = item.(*form.ItemInput[*url.URL]).Value()
 	}
 	if item, ok := sfv.form.GetLinkedValue(password); ok {
-		sfv.Server.Password = item.(form.ItemInput[models.Password]).Value()
+		sfv.Server.Password = item.(*form.ItemInput[models.Password]).Value()
 	}
 	if item, ok := sfv.form.GetLinkedValue(username); ok {
-		sfv.Server.UserName = item.(form.ItemInput[string]).Value()
+		sfv.Server.UserName = item.(*form.ItemInput[string]).Value()
+	}
+}
+
+func (sfv *ServerFormView) setValues() {
+	if item, ok := sfv.form.GetLinkedValue(servername); ok {
+		item.(*form.ItemInput[string]).SetValue(sfv.Server.ServerName)
+		item.(*form.ItemInput[string]).SetText(sfv.Server.ServerName)
+	}
+	if item, ok := sfv.form.GetLinkedValue(address); ok {
+		item.(*form.ItemInput[*url.URL]).SetValue(sfv.Server.Url)
+		item.(*form.ItemInput[*url.URL]).SetText(sfv.Server.Url.String())
+	}
+	if item, ok := sfv.form.GetLinkedValue(password); ok {
+		item.(*form.ItemInput[models.Password]).SetValue(sfv.Server.Password)
+		item.(*form.ItemInput[models.Password]).SetText(string(sfv.Server.Password))
+	}
+	if item, ok := sfv.form.GetLinkedValue(username); ok {
+		item.(*form.ItemInput[string]).SetValue(sfv.Server.UserName)
+		item.(*form.ItemInput[string]).SetText(sfv.Server.UserName)
 	}
 }

@@ -13,9 +13,13 @@ type homeViewInitialize struct{}
 
 type homeViewSelectItem struct{}
 
+type homeEditSelectedMsg struct{}
+
 var homeViewInitializeMsg = func() tea.Msg { return homeViewInitialize{} }
 
 var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
+
+var homeEditSelectedCmd = func() tea.Msg { return homeEditSelectedMsg{} }
 
 type HomeView struct {
 	Servers     *models.GlobalState
@@ -41,11 +45,15 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return hv, nil
 
 	case homeViewSelectItem:
-		item, err := hv.list.Selected()
-		if err != nil {
-			panic(err)
-		}
+		item := hv.list.Selected()
 		return hv, components.NavigatorPush(ServerView{Server: *item.Value})
+
+	case homeEditSelectedMsg:
+		item := hv.list.Selected()
+		index := hv.list.SelectedIndex()
+		m := NewServerFormView(&EditServer{server: *item.Value, index: index})
+		return hv, components.NavigatorPush(m)
+
 	case models.GlobalStateSyncMsg:
 		hv.init()
 		cmd = tea.WindowSize()
@@ -94,7 +102,16 @@ func (hv *HomeView) init() {
 						key.WithHelp("a", "add server"),
 					),
 					Action: func() tea.Cmd {
-						return components.NavigatorPush(NewServerFormView())
+						return components.NavigatorPush(NewServerFormView(nil))
+					},
+				},
+				{
+					Key: key.NewBinding(
+						key.WithKeys("e", "E"),
+						key.WithHelp("e", "edit selected server"),
+					),
+					Action: func() tea.Cmd {
+						return homeEditSelectedCmd
 					},
 				},
 			},

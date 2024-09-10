@@ -24,6 +24,10 @@ func (gs *GlobalState) Get(i int) Server {
 	return (*gs.servers)[i]
 }
 
+func (gs *GlobalState) Set(i int, s Server) {
+	(*gs.servers)[i] = s
+}
+
 func (gs *GlobalState) GetRef(i int) *Server {
 	return &(*gs.servers)[i]
 }

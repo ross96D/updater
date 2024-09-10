@@ -12,7 +12,7 @@ import (
 	"github.com/ross96D/updater/cmd/client/components/label"
 )
 
-func Link[T comparable](label ItemLabel, input ItemInput[T]) []Item {
+func Link[T comparable](label *ItemLabel, input *ItemInput[T]) []Item {
 	input.linkID = label.ID()
 	return []Item{label, input}
 }
@@ -50,25 +50,25 @@ type ItemLabel struct {
 	isFocus bool
 }
 
-func (item ItemLabel) Blur() Item {
+func (item *ItemLabel) Blur() Item {
 	item.isFocus = false
 	return item
 }
 
-func (item ItemLabel) Focus() Item {
+func (item *ItemLabel) Focus() Item {
 	item.isFocus = true
 	return item
 }
 
-func (f ItemLabel) linkedId() uint32 {
+func (f *ItemLabel) linkedId() uint32 {
 	return 0
 }
 
-func (f ItemLabel) ID() uint32 {
+func (f *ItemLabel) ID() uint32 {
 	return f.id
 }
 
-func (f ItemLabel) Update(msg tea.Msg) (Item, tea.Cmd) {
+func (f *ItemLabel) Update(msg tea.Msg) (Item, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		f.label.Update(msg)
@@ -92,7 +92,7 @@ func (ItemLabel) getType() itemType {
 	return labelType
 }
 
-func (f ItemLabel) View() string {
+func (f *ItemLabel) View() string {
 	style := &styleEmpty
 	if f.isFocus {
 		style = &styleFocus
@@ -101,8 +101,8 @@ func (f ItemLabel) View() string {
 	return style.Render(f.label.Render())
 }
 
-func Label(text string) ItemLabel {
-	return ItemLabel{
+func Label(text string) *ItemLabel {
+	return &ItemLabel{
 		name: text,
 		id:   generateID(),
 		label: label.NewText(
@@ -169,31 +169,31 @@ type ItemInput[T comparable] struct {
 	filled  bool
 }
 
-func (item ItemInput[T]) Blur() Item {
+func (item *ItemInput[T]) Blur() Item {
 	item.input.Blur()
 	item.isFocus = false
 	return item
 }
 
-func (item ItemInput[T]) Focus() Item {
+func (item *ItemInput[T]) Focus() Item {
 	item.input.Focus()
 	item.isFocus = true
 	return item
 }
 
-func (item ItemInput[T]) linkedId() uint32 {
+func (item *ItemInput[T]) linkedId() uint32 {
 	return item.linkID
 }
 
-func (ItemInput[T]) getType() itemType {
+func (*ItemInput[T]) getType() itemType {
 	return inputType
 }
 
-func (f ItemInput[T]) ID() uint32 {
+func (f *ItemInput[T]) ID() uint32 {
 	return f.id
 }
 
-func (f ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
+func (f *ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
 	switch msg := msg.(type) {
 	case acceptInputMsg:
 		var err error
@@ -250,8 +250,16 @@ func (f ItemInput[T]) View() string {
 	return wrapper.Render(lipgloss.JoinHorizontal(lipgloss.Left, f.label.Render(), f.input.View()))
 }
 
-func (item ItemInput[T]) Value() T {
+func (item *ItemInput[T]) Value() T {
 	return item.value
+}
+
+func (item *ItemInput[T]) SetValue(v T) {
+	item.value = v
+}
+
+func (item *ItemInput[T]) SetText(v string) {
+	item.input.SetValue(v)
 }
 
 type inputOptions[T comparable] func(*ItemInput[T])
@@ -274,7 +282,7 @@ func WithOnAccept[T comparable](onAccept func() tea.Cmd) inputOptions[T] {
 	}
 }
 
-func Input[T comparable](opts ...inputOptions[T]) ItemInput[T] {
+func Input[T comparable](opts ...inputOptions[T]) *ItemInput[T] {
 	item := ItemInput[T]{
 		id:    generateID(),
 		input: textinput.New(),
@@ -289,7 +297,7 @@ func Input[T comparable](opts ...inputOptions[T]) ItemInput[T] {
 	if item.parse == nil {
 		panic("no parse function placed")
 	}
-	return item
+	return &item
 }
 
 func unsafeCast[T, V comparable](v V) T {
