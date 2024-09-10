@@ -30,6 +30,8 @@ func (ServerView) Init() tea.Cmd {
 }
 
 func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -46,12 +48,17 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(err)
 		}
 		return sv, components.NavigatorPush(AppView{App: *item.Value})
+
+	case models.GlobalStateSyncMsg:
+		sv.init()
+		cmd = tea.WindowSize()
 	}
 	if !sv.initialized {
 		return sv, Repeat(msg)
 	}
 
-	m, cmd := sv.list.Update(msg)
+	m, cmd2 := sv.list.Update(msg)
+	cmd = tea.Batch(cmd, cmd2)
 	sv.list = m.(components.List[*user_handler.App])
 	return sv, cmd
 }

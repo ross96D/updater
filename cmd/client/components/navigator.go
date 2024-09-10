@@ -2,8 +2,10 @@ package components
 
 import (
 	"sync"
+	"unsafe"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ross96D/updater/cmd/client/models"
 )
 
 type stack struct {
@@ -48,6 +50,9 @@ func (s *stack) Pop() tea.Model {
 	}
 
 	l := len(s.list)
+	if l == 1 {
+		return s.list[l-1]
+	}
 	s.list = s.list[:l-1]
 
 	return s.list[l-2]
@@ -65,6 +70,10 @@ func NavigatorPush(m tea.Model) tea.Cmd {
 func NavigatorPop() tea.Msg {
 	return navigatorPop{}
 }
+
+type AlertPop struct{}
+
+var StopPop = func() tea.Msg { return nil }
 
 type Navigator struct {
 	s stack
@@ -87,14 +96,31 @@ func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case navigatorPop:
 		nav.Pop()
-		return nil
+		return models.GlobalStateSyncCmd
 
 	case navigatorPush:
 		_, cmd := nav.Push(msg)
-		return cmd
+		return tea.Sequence(cmd, models.GlobalStateSyncCmd)
+
+	case tea.KeyMsg:
+		// navigation go back
+		if msg.Type == tea.KeyEscape {
+			m, cmd := nav.s.Last().Update(AlertPop{})
+			nav.s.SetLast(m)
+			if nav.stopBackNavigation(cmd) {
+				m, cmd := nav.s.Last().Update(AlertPop{})
+				nav.s.SetLast(m)
+				return cmd
+			}
+			return NavigatorPop
+		}
 	}
 
 	m, cmd := nav.s.Last().Update(msg)
 	nav.s.SetLast(m)
 	return cmd
+}
+
+func (nav *Navigator) stopBackNavigation(cmd tea.Cmd) bool {
+	return unsafe.Pointer(&cmd) == unsafe.Pointer(&StopPop)
 }

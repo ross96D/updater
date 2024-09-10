@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -24,6 +25,8 @@ func (av AppView) Init() tea.Cmd {
 }
 
 func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	if av.viewPort == nil {
 		v := viewport.New(0, 0)
 		av.viewPort = &v
@@ -43,9 +46,14 @@ func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		av.viewPort.Height = msg.Height - 2
 		av.viewPort.Width = msg.Width
+
+	case models.GlobalStateSyncMsg:
+		av.init()
+		cmd = tea.WindowSize()
 	}
 
-	v, cmd := av.viewPort.Update(msg)
+	v, cmd2 := av.viewPort.Update(msg)
+	cmd = tea.Batch(cmd, cmd2)
 	av.viewPort = &v
 
 	return av, cmd
