@@ -40,13 +40,13 @@ func TestUpdateEnpoint(t *testing.T) {
 				{
 					name: "service.zipped"
 					system_path: "/not/a/path"
-					service: "service name"
+					service: "service-name"
 					unzip:       true
 				},
 				{
 					name: "service.zipped.command"
 					system_path: "/not/a/path"
-					service: "service with command name"
+					service: "service-with-command-name"
 					unzip:       true
 					cmd: {
 						command: "npm"
@@ -57,7 +57,6 @@ func TestUpdateEnpoint(t *testing.T) {
 			]
 		},
 	]
-	
 	`
 	log.Logger = log.Logger.Output(io.Discard)
 
@@ -89,7 +88,25 @@ func TestUpdateEnpoint(t *testing.T) {
 					data: "no data",
 				},
 			},
-			expectError: nofatal,
+			expectError: noerror,
+		},
+		{
+			name: "update match all",
+			assets: []testAsset{
+				{
+					name: "zipped",
+					data: "-",
+				},
+				{
+					name: "service.zipped",
+					data: "-",
+				},
+				{
+					name: "service.zipped.command",
+					data: "-",
+				},
+			},
+			expectError: fatal,
 		},
 	}
 	r := regexp.MustCompile(`\d{1,2}:\d{1,2}[A,P]M (?<Level>[^\s]+)`)
