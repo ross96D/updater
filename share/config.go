@@ -57,6 +57,7 @@ func ConfigPathValidation(config configuration.Configuration) (invalidPaths []st
 }
 
 func ReloadString(data string) error {
+	// TODO aparently this have a bug that sometime miss a field while reading the string
 	newConfig, err := configuration.LoadString(data)
 	if err != nil {
 		return err
