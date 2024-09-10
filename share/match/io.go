@@ -3,13 +3,16 @@ package match
 import (
 	"io"
 	"os"
+	"os/exec"
 
+	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/utils"
 	taskservice "github.com/ross96D/updater/task_service"
+	"github.com/rs/zerolog"
 )
 
 type IO interface {
-	RunCommand(string, ...string) error
+	RunCommand(*zerolog.Logger, configuration.Command) error
 	Unzip(string) error
 	ServiceStart(string) error
 	ServiceStop(string) error
@@ -20,8 +23,8 @@ type IO interface {
 
 type implIO struct{}
 
-func (implIO) RunCommand(name string, args ...string) error {
-	panic("not implemented") // TODO: Implement
+func (implIO) RunCommand(logger *zerolog.Logger, command configuration.Command) error {
+	return RunCommand(logger, command)
 }
 
 func (implIO) Unzip(path string) error {
@@ -50,7 +53,14 @@ func (implIO) Remove(path string) error {
 
 type dryRunIO struct{}
 
-func (dryRunIO) RunCommand(_ string, _ ...string) error {
+func (dryRunIO) RunCommand(logger *zerolog.Logger, command configuration.Command) error {
+	cmd := exec.Command(command.Command, command.Args...)
+	if command.Path != "" {
+		cmd.Path = command.Path
+	}
+	logger.Info().Msg("running post command " + cmd.String())
+	logger.Info().Msg("success post command " + cmd.String())
+
 	return nil
 }
 

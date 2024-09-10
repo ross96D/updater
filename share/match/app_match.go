@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"unsafe"
 
 	"github.com/ross96D/updater/logger"
@@ -217,23 +216,14 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 
 		if asset.Command != nil {
 			//! TODO
-			// u.io.RunCommand(asset.Command.Command, asset.Command.Args...)
-
-			cmd := exec.Command(asset.Command.Command, asset.Command.Args...)
-			if asset.Command.Path != "" {
-				cmd.Dir = asset.Command.Path
-			}
-			u.log.Info().Msg("Running command for " + asset.Name + ": " + cmd.String())
-			// TODO this should pipe the data into the logger
-			// cmd.Stdout = os.Stdout
-			// cmd.Stderr = os.Stderr
-			err = cmd.Run()
+			logger := u.log.With().Logger()
+			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+				return c.Str("asset", asset.Name)
+			})
+			err = u.io.RunCommand(&logger, *asset.Command)
 			if err != nil {
-				u.log.Error().Err(err).Msgf("%s cmd: %s", asset.Name, cmd.String())
-				// TODO should i leave the error be like this if i already kinda handle it?
-				return ErrError{fmt.Errorf("%s cmd: %s %w", asset.Name, cmd.String(), err)}
+				return err
 			}
-			u.log.Info().Msgf("success %s cmd: %s", asset.Name, cmd.String())
 		}
 		u.log.Info().Msgf("Asset %s update success", asset.Name)
 		return nil
@@ -243,22 +233,9 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 }
 
 func (u *appUpdater) RunPostAction() error {
-	//! TODO
-	// u.io.RunCommand(asset.Command.Command, asset.Command.Args...)
 	if u.app.Command == nil {
 		return nil
 	}
-	cmd := exec.Command(u.app.Command.Command, u.app.Command.Args...)
-	if u.app.Command.Path != "" {
-		cmd.Dir = u.app.Command.Path
-	}
-	u.log.Info().Msg("running post command " + cmd.String())
-	// TODO this should pipe the data into the logger
-	err := cmd.Run()
-	if err != nil {
-		u.log.Error().Err(err).Msgf("post command %s", cmd.String())
-		return ErrError{fmt.Errorf("post command cmd: %s %w", cmd.String(), err)}
-	}
-	u.log.Info().Msgf("success post command %s", cmd.String())
-	return nil
+	err := u.io.RunCommand(u.log, *u.app.Command)
+	return err
 }
