@@ -10,6 +10,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -22,6 +24,9 @@ import (
 )
 
 func TestUpdateEnpoint(t *testing.T) {
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+
 	configuration := `
 	port:            7432
 	user_secret_key: "secret_key"
@@ -54,6 +59,14 @@ func TestUpdateEnpoint(t *testing.T) {
 						path: "not/a/path"
 					}
 				},
+				{
+					name: "dumb_test"
+					system_path: "` + filepath.Join(dir, "server_data_test", "dumb_file.txt") + `"
+					cmd: {
+						command: "echo"
+						args: ["test", "command", "output"]
+					}
+				}
 			]
 		},
 	]
@@ -74,9 +87,10 @@ func TestUpdateEnpoint(t *testing.T) {
 		name        string
 		assets      []testAsset
 		expectError expectError
+		useImpl     bool
 	}
 
-	err := share.ReloadString(configuration)
+	err = share.ReloadString(configuration)
 	require.NoError(t, err)
 
 	data := []testData{
@@ -105,15 +119,41 @@ func TestUpdateEnpoint(t *testing.T) {
 					name: "service.zipped.command",
 					data: "-",
 				},
+				{
+					name: "dumb_test",
+					data: "-",
+				},
 			},
 			expectError: noerror,
 		},
+		{
+			name: "update no fatal with impl",
+			assets: []testAsset{
+				{
+					name: "dumb_test",
+					data: "dumb-file2\n",
+				},
+			},
+			useImpl:     true,
+			expectError: nofatal,
+		},
 	}
+	t.Cleanup(func() {
+		err = os.Rename(
+			filepath.Join(dir, "server_data_test", "dumb_file.txt.old"),
+			filepath.Join(dir, "server_data_test", "dumb_file.txt"),
+		)
+		if err != nil {
+			panic(err)
+		}
+	})
+
 	r := regexp.MustCompile(`\d{1,2}:\d{1,2}[A,P]M (?<Level>[^\s]+)`)
 
 	for _, data := range data {
 		t.Run(data.name, func(t *testing.T) {
 			buff := &bytes.Buffer{}
+			// append assets to multipart reader
 			multipartWriter := multipart.NewWriter(buff)
 			for _, asset := range data.assets {
 				fieldW, err := multipartWriter.CreateFormFile(asset.name, asset.name)
@@ -124,9 +164,12 @@ func TestUpdateEnpoint(t *testing.T) {
 				require.NoError(t, err)
 			}
 			multipartWriter.Close()
+
 			req := httptest.NewRequest(http.MethodPost, "/update", buff)
 			req.Header.Set("Authorization", "identifier-secret-token")
-			req.Header.Set("dry-run", "true")
+			if !data.useImpl {
+				req.Header.Set("dry-run", "true")
+			}
 			req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
 			w := httptest.NewRecorder()
