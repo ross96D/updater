@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -75,4 +76,18 @@ func createSafe(path string) (*os.File, error) {
 		}
 	}
 	return os.Create(path)
+}
+
+func Ignore2[T, V any](a T, b V) T { return a }
+
+const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+
+var reAnsi = regexp.MustCompile(ansi)
+
+func StripAnsi(s string) string {
+	return reAnsi.ReplaceAllString(s, "")
+}
+
+func StripAnsiBytes(b []byte) []byte {
+	return reAnsi.ReplaceAll(b, []byte{})
 }
