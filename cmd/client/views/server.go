@@ -75,7 +75,7 @@ func (sv *ServerView) init() {
 		Select: components.KeyMap{
 			Key: key.NewBinding(
 				key.WithKeys("enter"),
-				key.WithHelp("enter", "select the file to donwload"),
+				key.WithHelp("enter", "select app"),
 			),
 			Action: func() tea.Cmd {
 				return serverViewSelectItemMsg

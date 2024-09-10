@@ -82,7 +82,7 @@ func (hv *HomeView) init() {
 		Select: components.KeyMap{
 			Key: key.NewBinding(
 				key.WithKeys("enter"),
-				key.WithHelp("enter", "select the file to donwload"),
+				key.WithHelp("enter", "select server"),
 			),
 			Action: func() tea.Cmd {
 				return homeViewSelectItemMsg
