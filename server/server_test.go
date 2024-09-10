@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServerEnpoints(t *testing.T) {
+func TestUpdateEnpoint(t *testing.T) {
 	configuration := `
 	port:            7432
 	user_secret_key: "secret_key"
@@ -61,47 +61,85 @@ func TestServerEnpoints(t *testing.T) {
 	`
 	log.Logger = log.Logger.Output(io.Discard)
 
-	t.Run("/update with out match", func(t *testing.T) {
-		err := share.ReloadString(configuration)
-		require.NoError(t, err)
+	type testAsset struct {
+		name string
+		data string
+	}
+	type expectError int
+	const (
+		noerror = iota
+		nofatal
+		fatal
+	)
+	type testData struct {
+		name        string
+		assets      []testAsset
+		expectError expectError
+	}
 
-		buff := &bytes.Buffer{}
-		multipartWriter := multipart.NewWriter(buff)
-		{ // Create Form field
-			fieldW, err := multipartWriter.CreateFormFile("ctm_web", "ctm_web.tar.gz")
+	err := share.ReloadString(configuration)
+	require.NoError(t, err)
+
+	data := []testData{
+		{
+			name: "update with out match",
+			assets: []testAsset{
+				{
+					name: "inexistent",
+					data: "no data",
+				},
+			},
+			expectError: nofatal,
+		},
+	}
+	r := regexp.MustCompile(`\d{1,2}:\d{1,2}[A,P]M (?<Level>[^\s]+)`)
+
+	for _, data := range data {
+		t.Run(data.name, func(t *testing.T) {
+			buff := &bytes.Buffer{}
+			multipartWriter := multipart.NewWriter(buff)
+			for _, asset := range data.assets {
+				fieldW, err := multipartWriter.CreateFormFile(asset.name, asset.name)
+				require.NoError(t, err)
+				var buff *bytes.Buffer = &bytes.Buffer{}
+				buff.Write([]byte(asset.data))
+				_, err = io.Copy(fieldW, buff)
+				require.NoError(t, err)
+			}
+			multipartWriter.Close()
+			req := httptest.NewRequest(http.MethodPost, "/update", buff)
+			req.Header.Set("Authorization", "identifier-secret-token")
+			req.Header.Set("dry-run", "true")
+			req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+
+			w := httptest.NewRecorder()
+			server.New("", "").TestServeHTTP(w, req)
+
+			res := w.Result()
+			defer res.Body.Close()
+			assert.Equal(t, 200, res.StatusCode)
+
+			body, err := io.ReadAll(res.Body)
 			require.NoError(t, err)
-			var buff *bytes.Buffer = &bytes.Buffer{}
-			buff.Write([]byte("testing"))
-			_, err = io.Copy(fieldW, buff)
-			require.NoError(t, err)
-		}
-		multipartWriter.Close()
-		req := httptest.NewRequest(http.MethodPost, "/update", buff)
-		req.Header.Add("Authorization", "identifier-secret-token")
-		req.Header.Add("dry-run", "true")
-		req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 
-		w := httptest.NewRecorder()
+			lines := bytes.Split(body, []byte("\n"))
+			last := lines[len(lines)-2]
+			require.True(t, r.Match(utils.StripAnsiBytes(last)))
+			level := r.FindSubmatch(utils.StripAnsiBytes(last))[r.SubexpIndex("Level")]
+			switch data.expectError {
+			case noerror:
+				assert.NotEqual(t, "ERR", string(level))
+				assert.NotEqual(t, "WRN", string(level))
 
-		server.New("", "").TestServeHTTP(w, req)
+			case nofatal:
+				assert.NotEqual(t, "ERR", string(level))
 
-		res := w.Result()
-		defer res.Body.Close()
+			case fatal:
+				assert.Equal(t, "ERR", string(level))
 
-		data, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-
-		assert.Equal(t, 200, res.StatusCode)
-
-		println("response")
-		println(string(data))
-		lines := bytes.Split(data, []byte("\n"))
-		last := lines[len(lines)-2]
-		r := regexp.MustCompile(`\d{1,2}:\d{1,2}[A,P]M (?<Level>[^\s]+)`)
-		require.True(t, r.Match(utils.StripAnsiBytes(last)))
-		level := r.FindSubmatch(utils.StripAnsiBytes(last))[r.SubexpIndex("Level")]
-		assert.NotEqual(t, "ERR", string(level))
-	})
+			}
+		})
+	}
 }
 
 func GetData(sizeInBytes uint64) io.Reader {
