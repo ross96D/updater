@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/server/user_handler"
@@ -22,6 +23,8 @@ func HttpClient() *http.Client {
 				InsecureSkipVerify: true,
 			},
 		},
+		// TODO Make this configurable???
+		Timeout: 10 * time.Second,
 	}
 }
 
