@@ -12,7 +12,16 @@ const filename = "debug.log"
 
 var w io.Writer
 
+func Debug() error {
+	var err error
+	w, err = os.Create(filename)
+	return err
+}
+
 func Print(values ...interface{}) {
+	if w == nil {
+		return
+	}
 	for i, v := range values {
 		values[i] = deInterface(reflect.ValueOf(v)).Interface()
 	}
@@ -30,12 +39,4 @@ func deInterface(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
-}
-
-func init() {
-	var err error
-	w, err = os.Create(filename)
-	if err != nil {
-		panic(err)
-	}
 }
