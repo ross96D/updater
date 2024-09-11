@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/state"
 )
 
 type homeViewInitialize struct{}
@@ -22,7 +23,7 @@ var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
 var homeEditSelectedCmd = func() tea.Msg { return homeEditSelectedMsg{} }
 
 type HomeView struct {
-	Servers     *models.GlobalState
+	Servers     *state.GlobalState
 	list        components.List[*models.Server]
 	initialized bool
 }
@@ -54,7 +55,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m := NewServerFormView(&EditServer{server: *item.Value, index: index})
 		return hv, components.NavigatorPush(m)
 
-	case models.GlobalStateSyncMsg:
+	case state.GlobalStateSyncMsg:
 		hv.init()
 		cmd = tea.WindowSize()
 	}

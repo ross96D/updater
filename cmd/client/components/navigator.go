@@ -5,7 +5,7 @@ import (
 	"unsafe"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/state"
 )
 
 type stack struct {
@@ -96,11 +96,11 @@ func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case navigatorPop:
 		nav.Pop()
-		return models.GlobalStateSyncCmd
+		return state.GlobalStateSyncCmd
 
 	case navigatorPush:
 		_, cmd := nav.Push(msg)
-		return tea.Sequence(cmd, models.GlobalStateSyncCmd)
+		return tea.Sequence(cmd, state.GlobalStateSyncCmd)
 
 	case tea.KeyMsg:
 		// navigation go back

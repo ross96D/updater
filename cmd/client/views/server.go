@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -46,7 +47,7 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		item := sv.list.Selected()
 		return sv, components.NavigatorPush(AppView{App: *item.Value})
 
-	case models.GlobalStateSyncMsg:
+	case state.GlobalStateSyncMsg:
 		sv.init()
 		cmd = tea.WindowSize()
 	}

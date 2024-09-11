@@ -3,6 +3,7 @@ package main
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/cmd/client/views"
 	"github.com/ross96D/updater/server/user_handler"
 )
@@ -34,7 +35,7 @@ func main() {
 			},
 		},
 	}
-	if _, err := tea.NewProgram(views.HomeView{Servers: models.NewState(servers)}).Run(); err != nil {
+	if _, err := tea.NewProgram(views.HomeView{Servers: state.NewState(servers)}).Run(); err != nil {
 		panic(err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -47,7 +47,7 @@ func (av AppView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		av.viewPort.Height = msg.Height - 2
 		av.viewPort.Width = msg.Width
 
-	case models.GlobalStateSyncMsg:
+	case state.GlobalStateSyncMsg:
 		av.init()
 		cmd = tea.WindowSize()
 	}
