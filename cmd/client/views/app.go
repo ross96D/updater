@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
@@ -26,18 +27,42 @@ func NewApp(servers []models.Server) tea.Model {
 }
 
 func (model *app) Init() tea.Cmd {
-	return model.initCmd
+	return tea.Batch(model.state.FetchCmd(), model.initCmd)
 }
 
 func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg, ok := msg.(InsertServerMsg); ok {
+	switch msg := msg.(type) {
+	case tea.Cmd:
+		return model, msg
+
+	case InsertServerMsg:
 		model.state.Add(models.Server(msg))
 		return model, state.GlobalStateSyncCmd
-	}
-	if msg, ok := msg.(EditServerMsg); ok {
+
+	case EditServerMsg:
 		model.state.Set(msg.index, msg.server)
 		return model, state.GlobalStateSyncCmd
+
+	case state.FetchResultMsg:
+		index := model.state.Find(
+			func(s *models.Server) bool {
+				return s.ServerName == msg.ServerName
+			},
+		)
+		if index == -1 {
+			return model, nil
+		}
+		server := model.state.Get(index)
+		server.Apps = msg.Apps
+		model.state.Set(index, server)
+		return model, state.GlobalStateSyncCmd
+
+	case state.ErrFetchFailMsg:
+		// TODO send a toast notification
+		pretty.Print(msg, msg.Err.Error())
+		return model, nil
 	}
+
 	return model, model.navigator.Update(msg)
 }
 
