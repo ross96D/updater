@@ -1,33 +1,41 @@
 package views
 
 import (
+	"strings"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/ross96D/go-utils/list"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
-	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
 type app struct {
 	// TODO change []models.Server to a global and easy to access state
-	state     *state.GlobalState
-	navigator *components.Navigator
-	initCmd   tea.Cmd
+	state         *state.GlobalState
+	navigator     *components.Navigator
+	initCmd       tea.Cmd
+	notifications *list.List[toast.Toast]
+	windowSize    tea.WindowSizeMsg
 }
 
 func NewApp(servers []models.Server) tea.Model {
+	var notifications list.List[toast.Toast]
 	nav := new(components.Navigator)
 	state := state.NewState(servers)
 	_, cmd := nav.Push(HomeView{Servers: state})
 	return &app{
-		navigator: nav,
-		state:     state,
-		initCmd:   cmd,
+		navigator:     nav,
+		state:         state,
+		initCmd:       cmd,
+		notifications: &notifications,
 	}
 }
 
 func (model *app) Init() tea.Cmd {
-	return tea.Batch(model.state.FetchCmd(), model.initCmd)
+	return tea.Batch(model.state.FetchCmd(), model.initCmd, tea.WindowSize())
 }
 
 func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -59,13 +67,45 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case state.ErrFetchFailMsg:
 		// TODO send a toast notification
-		pretty.Print(msg, msg.Err.Error())
 		return model, nil
+
+	case toast.RemoveToastMsg:
+		model.removeToast(msg)
+		return model, tea.WindowSize()
+
+	case tea.WindowSizeMsg:
+		model.windowSize = msg
+		if width := msg.Width - lipgloss.Width(model.notificationsView()); width > 20 {
+			msg.Width = width
+		}
+		return model, model.navigator.Update(msg)
 	}
 
 	return model, model.navigator.Update(msg)
 }
 
 func (model *app) View() string {
-	return model.navigator.View()
+	notificationsView := model.notificationsView()
+	width, height := lipgloss.Size(notificationsView)
+	notificationsView = lipgloss.Place(width, height, lipgloss.Right, lipgloss.Top, notificationsView)
+
+	return lipgloss.JoinHorizontal(lipgloss.Left, model.navigator.View(), notificationsView)
+}
+
+func (model *app) notificationsView() string {
+	builder := strings.Builder{}
+	for node := range model.notifications.Each {
+		builder.WriteString(node.Value.View())
+		builder.WriteByte('\n')
+	}
+	return builder.String()
+}
+
+func (model *app) removeToast(msg toast.RemoveToastMsg) {
+	for node := range model.notifications.Each {
+		if node.Value.ID() == msg.ID {
+			model.notifications.Remove(&node)
+			break
+		}
+	}
 }
