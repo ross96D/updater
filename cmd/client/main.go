@@ -26,6 +26,7 @@ func init() {
 	rootCommand.AddCommand(reloadCommand)
 	rootCommand.AddCommand(updateCommand)
 	rootCommand.AddCommand(upgradeCommand)
+	rootCommand.AddCommand(cliCommand)
 
 	rootCommand.PersistentFlags().StringVarP(&baseUrl, "host", "H", "http://localhost:8081/cicd", "set the url of the updater service. The default value is http://localhost:10000")
 	rootCommand.PersistentFlags().StringVarP(&user, "user", "u", "", "user name")
