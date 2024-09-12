@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -24,7 +25,17 @@ func LoadConfig() {
 	configFile := filepath.Join(configDir, "config")
 
 	f, err := os.Open(configFile)
-	if err != nil {
+	switch err.(type) {
+	case nil:
+	case *fs.PathError:
+		f, err = os.Create(configFile)
+		if err != nil {
+			panic(err)
+		}
+		_ = f.Close()
+		_ = SaveConfig()
+		return
+	default:
 		panic(err)
 	}
 	defer f.Close()
