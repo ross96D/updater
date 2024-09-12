@@ -12,7 +12,7 @@ const filename = "debug.log"
 
 var w io.Writer
 
-func Debug() error {
+func ActivateDebug() error {
 	var err error
 	w, err = os.Create(filename)
 	return err
