@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	//nolint
 	pretty.ActivateDebug()
 	servers := []models.Server{
 		{
