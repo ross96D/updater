@@ -80,7 +80,7 @@ func TestReload(t *testing.T) {
 	require.Equal(t, expected, old)
 
 	err := share.Reload("config_test_reload.cue")
-	require.Equal(t, nil, err)
+	require.NoError(t, err)
 	reloaded := share.Config()
 
 	require.NotEqual(t, old, reloaded)
