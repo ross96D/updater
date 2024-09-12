@@ -176,11 +176,10 @@ func TestUpdateEnpoint(t *testing.T) {
 			server.New("", "").TestServeHTTP(w, req)
 
 			res := w.Result()
-			defer res.Body.Close()
-			assert.Equal(t, 200, res.StatusCode)
-
 			body, err := io.ReadAll(res.Body)
+			assert.Equal(t, 200, res.StatusCode, string(body))
 			require.NoError(t, err)
+			defer res.Body.Close()
 
 			lines := bytes.Split(body, []byte("\n"))
 			last := lines[len(lines)-2]
