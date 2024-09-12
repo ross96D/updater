@@ -29,9 +29,9 @@ func (r URLValidator) ParseValidationItem(uri string) (*url.URL, error) {
 }
 
 type Server struct {
-	ServerName string
-	Url        *url.URL
-	UserName   string
-	Password   Password
-	Apps       []user_handler.App
+	ServerName string             `json:"servername"`
+	Url        *url.URL           `json:"url"`
+	UserName   string             `json:"username"`
+	Password   Password           `json:"password"`
+	Apps       []user_handler.App `json:"apps"`
 }
