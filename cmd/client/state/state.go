@@ -4,7 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/api"
 	"github.com/ross96D/updater/cmd/client/models"
-	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -85,6 +84,5 @@ func (gs *GlobalState) FetchCmd() tea.Cmd {
 	for _, server := range *gs.servers {
 		cmds = append(cmds, f(server))
 	}
-	pretty.Print(len(cmds))
 	return tea.Batch(cmds...)
 }
