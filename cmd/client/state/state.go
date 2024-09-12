@@ -1,6 +1,9 @@
 package state
 
 import (
+	"bytes"
+	"encoding/json"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/api"
 	"github.com/ross96D/updater/cmd/client/models"
@@ -15,6 +18,47 @@ var GlobalStateSyncCmd = func() tea.Msg {
 
 type GlobalState struct {
 	servers *[]models.Server
+}
+
+func (gs *GlobalState) MarshalJSON() ([]byte, error) {
+	buff := bytes.Buffer{}
+	if gs.servers == nil {
+		buff.WriteString("null")
+		return buff.Bytes(), nil
+	}
+	buff.WriteByte('[')
+	for i, v := range *gs.servers {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		buff.Write(b)
+		if i != len(*gs.servers) {
+			buff.WriteByte(',')
+		}
+	}
+	buff.WriteByte(']')
+
+	return buff.Bytes(), nil
+}
+
+func (gs *GlobalState) UnmarshalJSON(b []byte) error {
+	if string(b) == "null" || string(b) == "" || string(b) == "\"\"" {
+		gs.servers = nil
+		return nil
+	}
+	if string(b) == "[]" {
+		gs.servers = &[]models.Server{}
+		return nil
+	}
+
+	servers := []models.Server{}
+	err := json.Unmarshal(b, &servers)
+	if err != nil {
+		return err
+	}
+	gs.servers = &servers
+	return nil
 }
 
 func (gs *GlobalState) Len() int {
