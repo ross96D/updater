@@ -17,7 +17,11 @@ func LoadConfig() {
 	if err != nil {
 		panic(err)
 	}
-	configFile := filepath.Join(configDir, "updatercli", "config")
+	configDir = filepath.Join(configDir, "updatercli")
+	//nolint
+	os.Mkdir(configDir, 0751)
+
+	configFile := filepath.Join(configDir, "config")
 
 	f, err := os.Open(configFile)
 	if err != nil {
