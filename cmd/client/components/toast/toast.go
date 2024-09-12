@@ -1,7 +1,6 @@
 package toast
 
 import (
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -35,23 +34,8 @@ func WithType(toastType toastType) ToastOpts {
 }
 
 func New(text string, opts ...ToastOpts) Toast {
-	b := strings.Builder{}
-	count := 0
-	for _, r := range text {
-		if r == '\n' {
-			count = 0
-			b.WriteRune(r)
-			continue
-		}
-		if count == maxWidth {
-			b.WriteByte('\n')
-		}
-		count++
-		b.WriteRune(r)
-	}
-
 	toast := Toast{
-		text:      b.String(),
+		text:      text,
 		dur:       5 * time.Second,
 		toastType: Info,
 		id:        uuid.New(),
@@ -83,7 +67,7 @@ func (model *Toast) Equals(other *Toast) bool {
 
 const maxWidth = 20
 
-var generalStyle = lipgloss.NewStyle().Width(maxWidth).Inline(true).Bold(true)
+var generalStyle = lipgloss.NewStyle().Width(maxWidth).Inline(false).Bold(true)
 
 var infoStyle = generalStyle.Background(lipgloss.Color("#2b7"))
 var warnStyle = generalStyle.Background(lipgloss.Color("#cc2"))
@@ -102,11 +86,11 @@ func (model Toast) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (model Toast) View() string {
 	switch model.toastType {
 	case Info:
-		return infoStyle.Render(model.text)
+		return infoStyle.Render(model.text) + "\n"
 	case Warn:
-		return warnStyle.Render(model.text)
+		return warnStyle.Render(model.text) + "\n"
 	case Error:
-		return errorStyle.Render(model.text)
+		return errorStyle.Render(model.text) + "\n"
 	default:
 		return ""
 	}

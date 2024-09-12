@@ -66,8 +66,9 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, state.GlobalStateSyncCmd
 
 	case state.ErrFetchFailMsg:
-		// TODO send a toast notification
-		return model, nil
+		t := toast.New(msg.Err.Error(), toast.WithType(toast.Error))
+		model.notifications.PushBack(t)
+		return model, t.Init()
 
 	case toast.RemoveToastMsg:
 		model.removeToast(msg)
