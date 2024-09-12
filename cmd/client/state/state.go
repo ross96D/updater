@@ -20,12 +20,13 @@ type GlobalState struct {
 	servers *[]models.Server
 }
 
-func (gs *GlobalState) MarshalJSON() ([]byte, error) {
+func (gs GlobalState) MarshalJSON() ([]byte, error) {
 	buff := bytes.Buffer{}
 	if gs.servers == nil {
 		buff.WriteString("null")
 		return buff.Bytes(), nil
 	}
+	buff.WriteString("{\"servers\":")
 	buff.WriteByte('[')
 	for i, v := range *gs.servers {
 		b, err := json.Marshal(v)
@@ -33,24 +34,23 @@ func (gs *GlobalState) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		buff.Write(b)
-		if i != len(*gs.servers) {
+		if i != len(*gs.servers)-1 {
 			buff.WriteByte(',')
 		}
 	}
 	buff.WriteByte(']')
+	buff.WriteByte('}')
 
 	return buff.Bytes(), nil
 }
 
 func (gs *GlobalState) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" || string(b) == "" || string(b) == "\"\"" {
-		gs.servers = nil
+	if len(b) == 0 {
+		gs = nil
 		return nil
 	}
-	if string(b) == "[]" {
-		gs.servers = &[]models.Server{}
-		return nil
-	}
+
+	b = b[bytes.IndexRune(b, ':')+1 : len(b)-1]
 
 	servers := []models.Server{}
 	err := json.Unmarshal(b, &servers)
