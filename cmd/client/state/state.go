@@ -45,7 +45,7 @@ func (gs GlobalState) MarshalJSON() ([]byte, error) {
 }
 
 func (gs *GlobalState) UnmarshalJSON(b []byte) error {
-	if len(b) == 0 {
+	if len(b) == 0 || string(b) == "null" {
 		gs = nil
 		return nil
 	}
