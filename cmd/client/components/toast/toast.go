@@ -1,12 +1,17 @@
 package toast
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/google/uuid"
 )
+
+type RemoveToastMsg struct {
+	ID uuid.UUID
+}
 
 type toastType int
 
@@ -30,24 +35,64 @@ func WithType(toastType toastType) ToastOpts {
 }
 
 func New(text string, opts ...ToastOpts) Toast {
-	return Toast{}
+	b := strings.Builder{}
+	count := 0
+	for _, r := range text {
+		if r == '\n' {
+			count = 0
+			b.WriteRune(r)
+			continue
+		}
+		if count == maxWidth {
+			b.WriteByte('\n')
+		}
+		count++
+		b.WriteRune(r)
+	}
+
+	toast := Toast{
+		text:      b.String(),
+		dur:       5 * time.Second,
+		toastType: Info,
+		id:        uuid.New(),
+	}
+	for _, opt := range opts {
+		opt(&toast)
+	}
+	return toast
 }
 
 type Toast struct {
 	text      string
 	toastType toastType
 	dur       time.Duration
+	id        uuid.UUID
 }
 
-var generalStyle = lipgloss.NewStyle().Height(2).Width(20)
+func (model *Toast) Text() string {
+	return model.text
+}
+
+func (model *Toast) ID() uuid.UUID {
+	return model.id
+}
+
+func (model *Toast) Equals(other *Toast) bool {
+	return model.id == other.id
+}
+
+const maxWidth = 20
+
+var generalStyle = lipgloss.NewStyle().Width(maxWidth).Inline(true).Bold(true)
 
 var infoStyle = generalStyle.Background(lipgloss.Color("#2b7"))
 var warnStyle = generalStyle.Background(lipgloss.Color("#cc2"))
 var errorStyle = generalStyle.Background(lipgloss.Color("#d36"))
 
 func (model Toast) Init() tea.Cmd {
-	// tea.Tick()
-	return nil
+	return tea.Tick(model.dur, func(t time.Time) tea.Msg {
+		return RemoveToastMsg{ID: model.id}
+	})
 }
 
 func (model Toast) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -63,6 +108,6 @@ func (model Toast) View() string {
 	case Error:
 		return errorStyle.Render(model.text)
 	default:
-		panic(fmt.Sprintf("unexpected toast.toastType: %#v", model.toastType))
+		return ""
 	}
 }
