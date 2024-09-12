@@ -5,7 +5,7 @@ tasks:
     cmd: pwd
 
   build-cli:
-    cmd: go build -o ./out/bin/client ./cmd/client/main.go
+    cmd: go build -trimpath -ldflags "-w -s" -o ./out/bin/client ./cmd/client/
 
   build:
     vars:
@@ -13,7 +13,7 @@ tasks:
         sh: task get_name
       PWD:
         sh: task pwd
-    cmd: go build  -o ./out/bin/{{.TASK_NAME}} main.go
+    cmd: go build -trimpath -ldflags "-w -s" -o ./out/bin/{{.TASK_NAME}} main.go
 
   get_name_windows:
     platforms:
