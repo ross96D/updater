@@ -102,3 +102,11 @@ func TestJsonMarshal(t *testing.T) {
 
 	require.Equal(t, configuration, decodedConfiguration)
 }
+
+func TestNull(t *testing.T) {
+	var decodedConfiguration state.Config
+	err := json.Unmarshal([]byte("{\"global_state\":null}"), &decodedConfiguration)
+	require.NoError(t, err)
+
+	require.Equal(t, state.Config{State: state.GlobalState{}}, decodedConfiguration)
+}
