@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -46,4 +47,5 @@ type Server struct {
 	UserName   string             `json:"username"`
 	Password   Password           `json:"password"`
 	Apps       []user_handler.App `json:"apps"`
+	Status     list.Status        `json:"-"`
 }
