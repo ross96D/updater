@@ -9,6 +9,10 @@ import (
 
 var configuration Config
 
+func Configuration() Config {
+	return configuration
+}
+
 type Config struct {
 	State GlobalState `json:"global_state"`
 }

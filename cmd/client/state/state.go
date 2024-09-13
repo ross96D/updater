@@ -20,6 +20,13 @@ type GlobalState struct {
 	servers *[]models.Server
 }
 
+func (gs GlobalState) Servers() []models.Server {
+	if gs.servers != nil {
+		return *gs.servers
+	}
+	return nil
+}
+
 func (gs GlobalState) MarshalJSON() ([]byte, error) {
 	buff := bytes.Buffer{}
 	if gs.servers == nil {
