@@ -119,8 +119,9 @@ func NewList[T any](items []Item[T], title string, delegateKeys *DelegatesKeyMap
 	return l
 }
 
-func (l *List[T]) Selected() Item[T] {
-	return l.list.SelectedItem().(Item[T])
+func (l *List[T]) Selected() (Item[T], bool) {
+	v, ok := l.list.SelectedItem().(Item[T])
+	return v, ok
 }
 
 func (l *List[T]) SelectedIndex() int {
@@ -208,10 +209,6 @@ func newItemDelegate[T any](keys *DelegatesKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
 	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
-		if _, ok := m.SelectedItem().(Item[T]); !ok {
-			return nil
-		}
-
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
 			switch {

@@ -46,11 +46,17 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return hv, nil
 
 	case homeViewSelectItem:
-		item := hv.list.Selected()
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
 		return hv, components.NavigatorPush(ServerView{Server: *item.Value})
 
 	case homeEditSelectedMsg:
-		item := hv.list.Selected()
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
 		index := hv.list.SelectedIndex()
 		m := NewServerFormView(&EditServer{server: *item.Value, index: index})
 		return hv, components.NavigatorPush(m)
