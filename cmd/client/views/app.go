@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ross96D/go-utils/list"
 	"github.com/ross96D/updater/cmd/client/components"
+	listcomp "github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
@@ -61,13 +62,26 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		server := model.state.Get(index)
 		server.Apps = msg.Apps
+		server.Status = listcomp.Ready
 		model.state.Set(index, server)
 		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case state.ErrFetchFailMsg:
 		t := toast.New(msg.Err.Error(), toast.WithType(toast.Error))
 		model.notifications.PushBack(t)
-		return model, t.Init()
+
+		index := model.state.Find(
+			func(s *models.Server) bool {
+				return s.ServerName == msg.ServerName
+			},
+		)
+		if index == -1 {
+			return model, t.Init()
+		}
+		server := model.state.Get(index)
+		server.Status = listcomp.Error
+		model.state.Set(index, server)
+		return model, tea.Batch(state.GlobalStateSyncCmd, t.Init())
 
 	case toast.RemoveToastMsg:
 		model.removeToast(msg)

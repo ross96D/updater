@@ -90,7 +90,7 @@ func (sv *ServerView) init() {
 				return serverViewSelectItemMsg
 			},
 		},
-	})
+	}, false)
 
 	sv.list = listModel
 	sv.initialized = true
