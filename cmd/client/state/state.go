@@ -117,6 +117,10 @@ var ErrFetchFailCmd = func(err error) tea.Cmd {
 }
 
 func (gs *GlobalState) FetchCmd() tea.Cmd {
+	if gs.servers == nil {
+		gs.servers = &[]models.Server{}
+	}
+
 	cmds := make([]tea.Cmd, 0)
 
 	f := func(server models.Server) tea.Cmd {
