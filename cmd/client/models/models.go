@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/ross96D/updater/server/user_handler"
@@ -25,7 +26,18 @@ func UnsafeNewURL(uri string) *url.URL {
 type URLValidator struct{}
 
 func (r URLValidator) ParseValidationItem(uri string) (*url.URL, error) {
-	return url.Parse(uri)
+	url, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+	errs := make([]error, 0)
+	if url.Scheme == "" {
+		errs = append(errs, errors.New("missing schema"))
+	}
+	if url.Host == "" {
+		errs = append(errs, errors.New("missing host"))
+	}
+	return url, errors.Join(errs...)
 }
 
 type Server struct {
