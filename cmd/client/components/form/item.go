@@ -162,11 +162,12 @@ type ItemInput[T comparable] struct {
 	// TODO: performance oportunity. this could be a point and that way reduce
 	// the memory copying. [textinput.Model] have 5184 bytes
 	// We could also refactor the [textinput.Model] to improve perfomance
-	input   textinput.Model
-	id      uint32
-	linkID  uint32
-	isFocus bool
-	filled  bool
+	input    textinput.Model
+	id       uint32
+	linkID   uint32
+	isFocus  bool
+	filled   bool
+	required bool
 }
 
 func (item *ItemInput[T]) Blur() Item {
@@ -199,7 +200,10 @@ func (f *ItemInput[T]) Update(msg tea.Msg) (Item, tea.Cmd) {
 		var err error
 		f.value, err = f.parse(f.input.Value())
 		if err != nil {
-			return f, errValidationCmd(f, err.(ErrValidation))
+			return f, errValidationCmd(f, NewErrValidation(err).(ErrValidation))
+		}
+		if f.required && reflect.ValueOf(f.value).IsZero() {
+			return f, nil
 		}
 
 		var cmd tea.Cmd
@@ -285,6 +289,12 @@ func WithValidationFromType[T comparable, V CustomParseValidation[T]]() inputOpt
 func WithOnAccept[T comparable](onAccept func() tea.Cmd) inputOptions[T] {
 	return func(ii *ItemInput[T]) {
 		ii.onAccept = onAccept
+	}
+}
+
+func WithRequired[T comparable]() inputOptions[T] {
+	return func(ii *ItemInput[T]) {
+		ii.required = true
 	}
 }
 

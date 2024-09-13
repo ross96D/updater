@@ -46,9 +46,9 @@ func NewServerFormView(es *EditServer) ServerFormView {
 		index: -1,
 		form: form.NewForm(
 			[][]form.Item{
-				form.Link(form.Label(servername), form.Input[string]()),
-				form.Link(form.Label(address), form.Input(form.WithValidationFromType[*url.URL, models.URLValidator]())),
-				form.Link(form.Label(username), form.Input[string]()),
+				form.Link(form.Label(servername), form.Input(form.WithRequired[string]())),
+				form.Link(form.Label(address), form.Input(form.WithValidationFromType[*url.URL, models.URLValidator](), form.WithRequired[*url.URL]())),
+				form.Link(form.Label(username), form.Input(form.WithRequired[string]())),
 				form.Link(form.Label(password), form.Input(form.WithValidationFromType[models.Password, models.PasswordValidator]())),
 			},
 		),
