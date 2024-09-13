@@ -108,11 +108,17 @@ type FetchResultMsg struct {
 	Apps       []user_handler.App
 }
 
-type ErrFetchFailMsg struct{ Err error }
+type ErrFetchFailMsg struct {
+	ServerName string
+	Err        error
+}
 
-var ErrFetchFailCmd = func(err error) tea.Cmd {
+var ErrFetchFailCmd = func(name string, err error) tea.Cmd {
+	if err == nil {
+		return nil
+	}
 	return func() tea.Msg {
-		return ErrFetchFailMsg{err}
+		return ErrFetchFailMsg{ServerName: name, Err: err}
 	}
 }
 
@@ -127,11 +133,11 @@ func (gs *GlobalState) FetchCmd() tea.Cmd {
 		return func() tea.Msg {
 			session, err := api.NewSession(server)
 			if err != nil {
-				return ErrFetchFailCmd(err)
+				return ErrFetchFailCmd(server.ServerName, err)
 			}
 			apps, err := session.List()
 			if err != nil {
-				return ErrFetchFailCmd(err)
+				return ErrFetchFailCmd(server.ServerName, err)
 			}
 			return FetchResultMsg{ServerName: server.ServerName, Apps: apps}
 		}
