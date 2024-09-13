@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 )
@@ -24,7 +25,7 @@ var homeEditSelectedCmd = func() tea.Msg { return homeEditSelectedMsg{} }
 
 type HomeView struct {
 	State       *state.GlobalState
-	list        components.List[*models.Server]
+	list        list.List[*models.Server]
 	initialized bool
 }
 
@@ -71,7 +72,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	model, cmd2 := hv.list.Update(msg)
 	cmd = tea.Batch(cmd, cmd2)
-	hv.list = model.(components.List[*models.Server])
+	hv.list = model.(list.List[*models.Server])
 	return hv, cmd
 }
 
@@ -81,19 +82,19 @@ func (hv HomeView) View() string {
 
 func (hv *HomeView) init() {
 	length := hv.State.Len()
-	items := make([]components.Item[*models.Server], 0, length)
+	items := make([]list.Item[*models.Server], 0, length)
 
 	for i := 0; i < length; i++ {
 		server := hv.State.GetRef(i)
-		items = append(items, components.Item[*models.Server]{
+		items = append(items, list.Item[*models.Server]{
 			Message: server.ServerName + " " + (*url.URL)(server.Url).String(),
 			Value:   server,
 		})
 	}
 
-	listModel := components.NewList(items, "",
-		&components.DelegatesKeyMap{
-			Select: components.KeyMap{
+	listModel := list.NewList(items, "",
+		&list.DelegatesKeyMap{
+			Select: list.KeyMap{
 				Key: key.NewBinding(
 					key.WithKeys("enter"),
 					key.WithHelp("enter", "select server"),
@@ -102,7 +103,7 @@ func (hv *HomeView) init() {
 					return homeViewSelectItemMsg
 				},
 			},
-			Others: []components.KeyMap{
+			Others: []list.KeyMap{
 				{
 					Key: key.NewBinding(
 						key.WithKeys("a", "A"),

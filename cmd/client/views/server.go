@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
@@ -22,7 +23,7 @@ var serverViewSelectItemMsg = func() tea.Msg { return serverViewSelectItem{} }
 
 type ServerView struct {
 	Server      models.Server
-	list        components.List[*user_handler.App]
+	list        list.List[*user_handler.App]
 	initialized bool
 }
 
@@ -60,7 +61,7 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	m, cmd2 := sv.list.Update(msg)
 	cmd = tea.Batch(cmd, cmd2)
-	sv.list = m.(components.List[*user_handler.App])
+	sv.list = m.(list.List[*user_handler.App])
 	return sv, cmd
 }
 
@@ -70,17 +71,17 @@ func (sv ServerView) View() string {
 
 func (sv *ServerView) init() {
 	length := len(sv.Server.Apps)
-	items := make([]components.Item[*user_handler.App], 0, length)
+	items := make([]list.Item[*user_handler.App], 0, length)
 
 	for i := 0; i < length; i++ {
-		items = append(items, components.Item[*user_handler.App]{
+		items = append(items, list.Item[*user_handler.App]{
 			Message: strconv.Itoa(sv.Server.Apps[i].Index) + " TODO missing name",
 			Value:   &sv.Server.Apps[i],
 		})
 	}
 	title := sv.Server.ServerName + " IP: " + (*url.URL)(sv.Server.Url).String()
-	listModel := components.NewList(items, title, &components.DelegatesKeyMap{
-		Select: components.KeyMap{
+	listModel := list.NewList(items, title, &list.DelegatesKeyMap{
+		Select: list.KeyMap{
 			Key: key.NewBinding(
 				key.WithKeys("enter"),
 				key.WithHelp("enter", "select app"),
