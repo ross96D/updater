@@ -48,7 +48,7 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case EditServerMsg:
 		model.state.Set(msg.index, msg.server)
-		return model, state.GlobalStateSyncCmd
+		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case state.FetchResultMsg:
 		index := model.state.Find(
@@ -62,7 +62,7 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		server := model.state.Get(index)
 		server.Apps = msg.Apps
 		model.state.Set(index, server)
-		return model, state.GlobalStateSyncCmd
+		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case state.ErrFetchFailMsg:
 		t := toast.New(msg.Err.Error(), toast.WithType(toast.Error))
