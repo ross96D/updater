@@ -3,12 +3,15 @@ package main
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/cmd/client/views"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
 func main() {
+	//nolint
+	pretty.ActivateDebug()
 	servers := []models.Server{
 		{
 			ServerName: "server1",
