@@ -44,7 +44,7 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case InsertServerMsg:
 		model.state.Add(models.Server(msg))
-		return model, state.GlobalStateSyncCmd
+		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case EditServerMsg:
 		model.state.Set(msg.index, msg.server)

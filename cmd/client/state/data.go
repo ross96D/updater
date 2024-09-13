@@ -5,7 +5,19 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
+
+type ErrSaveConfigMsg error
+
+var SaveCmd = func() tea.Msg {
+	err := SaveConfig()
+	if err != nil {
+		return ErrSaveConfigMsg(err)
+	}
+	return nil
+}
 
 var configuration Config
 
