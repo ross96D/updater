@@ -9,8 +9,8 @@ import (
 
 var configuration Config
 
-func Configuration() Config {
-	return configuration
+func Configuration() *Config {
+	return &configuration
 }
 
 type Config struct {

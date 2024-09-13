@@ -13,7 +13,8 @@ var cliCommand = &cobra.Command{
 	Use: "cli",
 	Run: func(cmd *cobra.Command, args []string) {
 		state.LoadConfig()
-		program := views.NewApp(state.Configuration().State.Servers())
+		state := &state.Configuration().State
+		program := views.NewApp(state)
 		if _, err := tea.NewProgram(program).Run(); err != nil {
 			print(err.Error())
 			os.Exit(1)

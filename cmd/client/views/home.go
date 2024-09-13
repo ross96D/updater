@@ -23,7 +23,7 @@ var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
 var homeEditSelectedCmd = func() tea.Msg { return homeEditSelectedMsg{} }
 
 type HomeView struct {
-	Servers     *state.GlobalState
+	State       *state.GlobalState
 	list        components.List[*models.Server]
 	initialized bool
 }
@@ -74,11 +74,11 @@ func (hv HomeView) View() string {
 }
 
 func (hv *HomeView) init() {
-	length := hv.Servers.Len()
+	length := hv.State.Len()
 	items := make([]components.Item[*models.Server], 0, length)
 
 	for i := 0; i < length; i++ {
-		server := hv.Servers.GetRef(i)
+		server := hv.State.GetRef(i)
 		items = append(items, components.Item[*models.Server]{
 			Message: server.ServerName + " " + (*url.URL)(server.Url).String(),
 			Value:   server,

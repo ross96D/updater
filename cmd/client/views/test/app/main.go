@@ -4,6 +4,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/pretty"
+	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/cmd/client/views"
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share/configuration"
@@ -90,7 +91,7 @@ func main() {
 			},
 		},
 	}
-	m := views.NewApp(servers)
+	m := views.NewApp(state.NewState(servers))
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		panic(err)
 	}
