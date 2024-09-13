@@ -11,8 +11,7 @@ import (
 )
 
 func main() {
-	//nolint
-	pretty.ActivateDebug()
+	pretty.ActivateDebug() //nolint: errcheck
 	servers := []models.Server{
 		{
 			ServerName: "server1",
