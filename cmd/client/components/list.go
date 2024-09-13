@@ -129,7 +129,11 @@ func (l *List[T]) SelectedIndex() int {
 
 func (l *List[T]) SelectedMessage() (string, error) {
 	if l.quitting {
-		return l.list.SelectedItem().(Item[T]).Message, nil
+		if item, ok := l.list.SelectedItem().(Item[T]); ok {
+			return item.Message, nil
+		} else {
+			return "", fmt.Errorf("no element selected")
+		}
 	}
 	return l.list.SelectedItem().(Item[T]).Message, fmt.Errorf("no element selected")
 }
@@ -193,12 +197,6 @@ func (m List[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m List[T]) View() string {
-	if m.quitting {
-		bold := lipgloss.NewStyle().Bold(true).Italic(true).PaddingTop(1).Render
-		italic := lipgloss.NewStyle().Italic(true).Render
-		s, _ := m.SelectedMessage()
-		return bold("Selected: ") + italic(s+"\n")
-	}
 	return appStyle.Render(m.list.View())
 }
 
