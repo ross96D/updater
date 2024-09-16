@@ -50,16 +50,21 @@ func PackError(errs ...error) error {
 	isError := false
 	noNilErrs := make([]error, 0, len(errs))
 	for _, err := range errs {
+		if err == nil {
+			continue
+		}
 		if _, ok := err.(ErrError); ok {
 			isError = true
 		}
 		if _, ok := err.(ErrErrors); ok {
 			isError = true
 		}
-		if err != nil {
-			noNilErrs = append(noNilErrs, err)
-		}
+		noNilErrs = append(noNilErrs, err)
 	}
+	if len(noNilErrs) == 0 {
+		return nil
+	}
+
 	if isError {
 		return ErrErrors{noNilErrs}
 	}
@@ -88,12 +93,28 @@ func WithData(data Data) UpdateOpts {
 	}
 }
 
-func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) error {
+func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) (err error) {
 	u := NewAppUpdater(ctx, app, opts...)
-	err := u.UpdateAdditionalAssets()
+
+	if u.app.Service != "" {
+		u.log.Info().Msgf("stoping app level service %s", u.app.Service)
+		err = u.io.ServiceStop(u.app.Service)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			u.log.Info().Msgf("starting app level service %s", u.app.Service)
+			errServiceStart := u.io.ServiceStart(u.app.Service)
+			// include error
+			err = PackError(errServiceStart, err)
+		}()
+	}
+
+	err1 := u.UpdateAdditionalAssets()
 	err2 := u.UpdateTaskAssets()
 	err3 := u.RunPostAction()
-	return PackError(err, err2, err3)
+	err = PackError(err1, err2, err3)
+	return
 }
 
 type appUpdater struct {
@@ -192,30 +213,37 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 
 	fnCopy = func() (err error) {
 		defer data.Close()
-		if err = u.io.RenameSafe(asset.SystemPath, asset.SystemPath+".old"); err != nil {
+		SystemPathOld := asset.SystemPath + ".old"
+
+		if err = u.io.RenameSafe(asset.SystemPath, SystemPathOld); err != nil {
 			return ErrError{err}
 		}
 
-		if err = u.io.CopyFromReader(data, asset.SystemPath); err != nil {
-			u.log.Error().Err(err).Msgf("Copying from %s. Rollback rename %s to %s", asset.Name, asset.SystemPath+".old", asset.SystemPath)
-
-			_ = u.io.Remove(asset.SystemPath)
-			err2 := u.io.RenameSafe(asset.SystemPath+".old", asset.SystemPath)
+		rollback := func() {
+			u.io.Remove(asset.SystemPath) //nolint: errcheck
+			err2 := u.io.RenameSafe(SystemPathOld, asset.SystemPath)
 			if err2 != nil {
-				u.log.Error().Err(err2).Msgf("rename fail %s to %s", asset.SystemPath+".old", asset.SystemPath)
+				u.log.Error().Err(err2).Msgf("move fail %s to %s", SystemPathOld, asset.SystemPath)
 			}
+		}
+
+		u.log.Info().Msgf("Copying from %s to %s", asset.Name, asset.SystemPath)
+		if err = u.io.CopyFromReader(data, asset.SystemPath); err != nil {
+			u.log.Error().Err(err).Msgf("Copying from %s to %s. Rollback, move %s to %s", asset.Name, asset.SystemPath, SystemPathOld, asset.SystemPath)
+			rollback()
 			return ErrError{err}
 		}
+
 		if asset.Unzip {
 			u.log.Info().Msg("unzip: " + asset.SystemPath)
 			if err = u.io.Unzip(asset.SystemPath); err != nil {
 				u.log.Error().Err(err).Msg("unzip: " + asset.SystemPath)
+				rollback()
 				return ErrError{err}
 			}
 		}
 
 		if asset.Command != nil {
-			//! TODO
 			logger := u.log.With().Logger()
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
 				return c.Str("asset", asset.Name)
@@ -225,10 +253,13 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 				return err
 			}
 		}
-		u.log.Info().Msgf("Asset %s update success", asset.Name)
+
+		if !asset.KeepOld {
+			u.io.Remove(SystemPathOld) //nolint: errcheck
+		}
+		u.log.Info().Msgf("Asset %s updated successfully", asset.Name)
 		return nil
 	}
-
 	return
 }
 
