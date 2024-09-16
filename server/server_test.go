@@ -247,8 +247,8 @@ func TestParseMultipartForm(t *testing.T) {
 		}
 
 		hasher := crc32.New(crc32.IEEETable)
-		_, _ = io.Copy(hasher, data.Get("data"))
-		_, _ = w.Write([]byte(fmt.Sprintf("data:%s", hex.EncodeToString(hasher.Sum(nil)))))
+		io.Copy(hasher, data.Get("data"))                                            //nolint: errcheck
+		w.Write([]byte(fmt.Sprintf("data:%s", hex.EncodeToString(hasher.Sum(nil))))) //nolint: errcheck
 	}(w, r)
 
 	// validate
