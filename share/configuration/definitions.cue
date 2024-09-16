@@ -15,7 +15,7 @@ base_path?:             string // path where the temporal files used by the app 
 
 #Application: {
 	auth_token?: string
-
+	service?:    string
 	assets!: [...#Asset]
 
 	// use this to set a command to be run after succesfully update 
@@ -35,6 +35,9 @@ base_path?:             string // path where the temporal files used by the app 
 	name!:        string
 	service?:     string
 	system_path!: string
+
+	// if keeps the previous version with at .old at the end
+	keep_old: bool | *false
 
 	// if this is set to true, the asset will be decompressed
 	unzip: bool | *false

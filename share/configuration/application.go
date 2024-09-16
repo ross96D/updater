@@ -9,6 +9,8 @@ type IRepo interface {
 type Application struct {
 	AuthToken string `json:"auth_token"`
 
+	Service string `json:"field"`
+
 	Assets []Asset `json:"assets"`
 
 	Command *Command `json:"cmd"`
