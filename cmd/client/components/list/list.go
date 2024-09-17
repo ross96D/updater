@@ -148,6 +148,10 @@ func (l *List[T]) Selected() (Item[T], bool) {
 	return v, ok
 }
 
+func (l *List[T]) SetSelected(i int) {
+	l.list.Select(i)
+}
+
 func (l *List[T]) SelectedIndex() int {
 	return l.list.Index()
 }
