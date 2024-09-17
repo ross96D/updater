@@ -3,13 +3,14 @@ package views
 import (
 	"fmt"
 	"net/url"
-	"os"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ross96D/updater/cmd/client/api"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/components/confirmation_dialog"
 	"github.com/ross96D/updater/cmd/client/components/list"
+	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 )
@@ -99,7 +100,21 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case homeUpgradeSelectedMsg:
-		os.Exit(1)
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		return hv, func() tea.Msg {
+			session, err := api.NewSession(*item.Value)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: item.Value.ServerName, Err: err}
+			}
+			resp, err := session.Upgrade()
+			if err != nil {
+				return err
+			}
+			return toast.AddToastMsg(toast.New(resp))
+		}
 
 	case state.GlobalStateSyncMsg:
 		hv.init()
