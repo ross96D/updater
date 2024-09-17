@@ -12,6 +12,8 @@ type RemoveToastMsg struct {
 	ID uuid.UUID
 }
 
+type AddToastMsg Toast
+
 type toastType int
 
 const (

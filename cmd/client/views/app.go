@@ -87,6 +87,11 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model.removeToast(msg)
 		return model, tea.WindowSize()
 
+	case toast.AddToastMsg:
+		t := toast.Toast(msg)
+		model.notifications.PushBack(toast.Toast(msg))
+		return model, t.Init()
+
 	case tea.WindowSizeMsg:
 		model.windowSize = msg
 		if width := msg.Width - lipgloss.Width(model.notificationsView()); width > 20 {
