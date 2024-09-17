@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/ross96D/updater/cmd/client/models"
@@ -28,10 +29,29 @@ func HttpClient() *http.Client {
 	}
 }
 
+var m map[string]*Session = make(map[string]*Session)
+var mmut map[string]*sync.Mutex = make(map[string]*sync.Mutex)
+
 func NewSession(server models.Server) (*Session, error) {
 	if server.Url == nil {
 		return nil, errors.New("missing url")
 	}
+	key := server.Url.String()
+
+	// mutex to avoid concurrency issues when creating the session and using the global cache
+	var mut *sync.Mutex
+	mut, ok := mmut[key]
+	if !ok {
+		mut = &sync.Mutex{}
+		mmut[key] = mut
+	}
+	mut.Lock()
+	defer mut.Unlock()
+
+	if session, ok := m[key]; ok && session.IsValid() {
+		return session, nil
+	}
+
 	uri := server.Url.JoinPath("login")
 
 	request, err := http.NewRequest(http.MethodPost, uri.String(), nil)
@@ -49,7 +69,9 @@ func NewSession(server models.Server) (*Session, error) {
 		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
-	return &Session{token: b, url: server.Url}, err
+	session := &Session{token: b, url: server.Url, servername: server.ServerName}
+	m[key] = session
+	return session, err
 }
 
 type Session struct {
@@ -127,4 +149,12 @@ func (session Session) Update(app user_handler.App) (response io.ReadCloser, err
 		return nil, err
 	}
 	return
+}
+
+func (session Session) IsValid() bool {
+	token, err := jwt.Parse(session.token)
+	if err != nil {
+		return false
+	}
+	return time.Until(token.Expiration()) > time.Minute
 }
