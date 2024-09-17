@@ -13,7 +13,7 @@ import (
 )
 
 func TestHandleUserAppsList(t *testing.T) {
-	share.Init("config_test.cue")
+	share.MustInit("config_test.cue")
 	buff := bytes.NewBuffer([]byte{})
 	err := user_handler.HandleUserAppsList(buff)
 	require.NoError(t, err)

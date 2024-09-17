@@ -16,13 +16,20 @@ var DefaultPath string = "nothing for now"
 
 var ErrNoChecksum = errors.New("no checksum")
 
-func Init(path string) {
+func Init(path string) error {
 	newConfig, err := configuration.Load(path)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if err = changeConfig(newConfig); err != nil {
+		return err
+	}
+	return nil
+}
+
+func MustInit(path string) {
+	if err := Init(path); err != nil {
 		panic(err)
 	}
 }

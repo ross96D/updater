@@ -18,7 +18,7 @@ var rootCmd = &cobra.Command{
 	Use:   "mpgcli",
 	Short: "A brief description of your application",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		share.Init(configurationPath)
+		share.MustInit(configurationPath)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := server.New(keyPath, certPath).Start(); err != nil {

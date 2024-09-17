@@ -66,7 +66,7 @@ func TestUpdateApp(t *testing.T) {
 }
 
 func TestReload(t *testing.T) {
-	share.Init("config_test.cue")
+	share.MustInit("config_test.cue")
 	old := share.Config()
 
 	expected := configuration.Configuration{
