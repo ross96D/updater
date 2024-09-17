@@ -96,7 +96,7 @@ func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case navigatorPop:
 		nav.Pop()
-		return state.GlobalStateSyncCmd
+		return nil
 
 	case navigatorPush:
 		_, cmd := nav.Push(msg)
