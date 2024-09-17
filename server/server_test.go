@@ -66,6 +66,7 @@ func TestUpdateEnpoint(t *testing.T) {
 						command: "echo"
 						args: ["test", "command", "output"]
 					}
+					keep_old: true
 				}
 			]
 		},
