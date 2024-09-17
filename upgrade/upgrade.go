@@ -17,16 +17,19 @@ import (
 	"github.com/ross96D/updater/share"
 )
 
+type binaryName string
+
 const (
-	owner = "ross96D"
-	repo  = "updater"
-	bin   = repo
+	owner              = "ross96D"
+	repo               = "updater"
+	Updater binaryName = "updater"
+	Client  binaryName = "client"
 )
 
 var ErrUpToDate = errors.New("already up to date")
 
-func Upgrade() error {
-	tempBinPath := filepath.Join(os.TempDir(), bin)
+func Upgrade(bin binaryName) error {
+	tempBinPath := filepath.Join(os.TempDir(), string(bin))
 
 	ghclient := github.NewClient(nil)
 
@@ -48,7 +51,7 @@ func Upgrade() error {
 		return ErrUpToDate
 	}
 
-	downloadableAsset, checksumAsset, err := obtainAssets(release)
+	downloadableAsset, checksumAsset, err := obtainAssets(string(bin), release)
 	if err != nil {
 		return fmt.Errorf("Upgrade obtainAssets %w", err)
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v60/github"
 )
 
-func obtainAssets(release *github.RepositoryRelease) (downloadable *github.ReleaseAsset, checksum *github.ReleaseAsset, err error) {
+func obtainAssets(prefix string, release *github.RepositoryRelease) (downloadable *github.ReleaseAsset, checksum *github.ReleaseAsset, err error) {
 	for _, asset := range release.Assets {
 		if strings.HasSuffix(*asset.Name, "checksums.txt") {
 			checksum = asset
@@ -24,7 +24,7 @@ func obtainAssets(release *github.RepositoryRelease) (downloadable *github.Relea
 		if len(splitted) < 4 {
 			continue
 		}
-		if strings.Contains(splitted[2], runtime.GOOS) && strings.Contains(splitted[3], runtime.GOARCH) {
+		if strings.Contains(splitted[0], prefix) && strings.Contains(splitted[2], runtime.GOOS) && strings.Contains(splitted[3], runtime.GOARCH) {
 			downloadable = asset
 		}
 	}

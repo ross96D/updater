@@ -72,7 +72,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", 403)
 		return
 	}
-	err := upgrade.Upgrade()
+	err := upgrade.Upgrade(upgrade.Updater)
 	if err == upgrade.ErrUpToDate {
 		_, _ = w.Write([]byte(err.Error()))
 		return
