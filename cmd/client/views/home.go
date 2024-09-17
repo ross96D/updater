@@ -95,7 +95,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return hv, nil
 		}
 		return hv, components.NavigatorPush(&confirmation_dialog.Model{
-			Descripion: fmt.Sprintf("updagrade %s?", item.Value.ServerName),
+			Descripion: fmt.Sprintf("updgrade %s?", item.Value.ServerName),
 			Task:       homeUpgradeSelectedCmd,
 		})
 
