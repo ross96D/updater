@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/models"
@@ -75,7 +76,7 @@ func (sv *ServerView) init() {
 
 	for i := 0; i < length; i++ {
 		items = append(items, list.Item[*user_handler.App]{
-			Message: strconv.Itoa(sv.Server.Apps[i].Index) + " TODO missing name",
+			Message: strconv.Itoa(sv.Server.Apps[i].Index) + " " + ansi.Wrap(sv.Server.Apps[i].Name, 25, "..."),
 			Value:   &sv.Server.Apps[i],
 		})
 	}

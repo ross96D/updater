@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
 )
@@ -65,7 +66,7 @@ func (av AppView) View() string {
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Top,
-		"TODO: app name is missing",
+		strconv.Itoa(av.App.Index)+" "+ansi.Wrap(av.App.Name, 25, "..."),
 		av.viewPort.View(),
 		"Press u to update the application",
 	)
