@@ -19,19 +19,38 @@ git:
   tag_sort: -version:creatordate
 
 builds:
-  - env:
+  - id: updater
+    binary: updater
+    env:
       - CGO_ENABLED=0
+    main: main.go
     goos:
       - linux
       - windows
-      # - darwin
-
+    flags:
+      - -trimpath
     ldflags:
       - -s -w -X main.Date={{.CommitDate}}
-
     goarch:
       - amd64
+    # ensure a reproducible build.
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
+  - id: deplo
+    binary: deplo
+    env:
+      - CGO_ENABLED=0
+    main: main.go
+    ldflags:
+      - -s -w -X main.Date={{.CommitDate}}
+    flags:
+      - -trimpath
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: linux
+        goarm: arm64
     # ensure a reproducible build.
     mod_timestamp: "{{ .CommitTimestamp }}"
 
