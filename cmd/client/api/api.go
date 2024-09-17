@@ -12,9 +12,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/server/user_handler"
 )
+
+type ErrNetwork struct {
+	ServerName string
+	Message    string
+}
+
+func (err ErrNetwork) Error() string {
+	return err.ServerName + ": " + err.Message
+}
+
+type ErrNetworkMsg ErrNetwork
+
+func (err ErrNetworkMsg) Error() string {
+	return ErrNetwork(err).Error()
+}
 
 func HttpClient() *http.Client {
 	return &http.Client{
@@ -75,11 +91,21 @@ func NewSession(server models.Server) (*Session, error) {
 }
 
 type Session struct {
-	url   *url.URL
-	token []byte
+	servername string
+	url        *url.URL
+	token      []byte
 }
 
 func (session Session) List() (apps []user_handler.App, err error) {
+	defer func() {
+		if err != nil {
+			err = ErrNetworkMsg{
+				ServerName: session.servername,
+				Message:    err.Error(),
+			}
+		}
+	}()
+
 	uri := session.url.JoinPath("list")
 
 	request, err := http.NewRequest(http.MethodGet, uri.String(), nil)
@@ -106,6 +132,15 @@ func (session Session) List() (apps []user_handler.App, err error) {
 }
 
 func (session Session) Upgrade() (response string, err error) {
+	defer func() {
+		if err != nil {
+			err = ErrNetworkMsg{
+				ServerName: session.servername,
+				Message:    err.Error(),
+			}
+		}
+	}()
+
 	uri := session.url.JoinPath("upgrade")
 	request, err := http.NewRequest(http.MethodPost, uri.String(), nil)
 	if err != nil {
@@ -128,6 +163,15 @@ func (session Session) Upgrade() (response string, err error) {
 }
 
 func (session Session) Update(app user_handler.App) (response io.ReadCloser, err error) {
+	defer func() {
+		if err != nil {
+			err = ErrNetworkMsg{
+				ServerName: session.servername,
+				Message:    err.Error(),
+			}
+		}
+	}()
+
 	bodyBytes, err := json.Marshal(app)
 	if err != nil {
 		return
