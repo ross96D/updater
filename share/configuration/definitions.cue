@@ -14,6 +14,7 @@ base_path?:             string // path where the temporal files used by the app 
 }
 
 #Application: {
+	name?:       string
 	auth_token?: string
 	service?:    string
 	assets!: [...#Asset]

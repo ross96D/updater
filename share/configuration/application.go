@@ -7,6 +7,8 @@ type IRepo interface {
 }
 
 type Application struct {
+	Name string `json:"name"`
+
 	AuthToken string `json:"auth_token"`
 
 	Service string `json:"field"`
