@@ -85,6 +85,9 @@ func NewSession(server models.Server) (*Session, error) {
 		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
+	if err != nil {
+		return nil, err
+	}
 	session := &Session{token: b, url: server.Url, servername: server.ServerName}
 	m[key] = session
 	return session, err
