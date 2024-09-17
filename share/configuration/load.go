@@ -4,15 +4,32 @@ import (
 	"bytes"
 	_ "embed"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"cuelang.org/go/cue/cuecontext"
+	cuerrors "cuelang.org/go/cue/errors"
 
 	"cuelang.org/go/cue/load"
 )
+
+type cuerror struct{ error cuerrors.Error }
+
+func (err cuerror) Error() string {
+	result := strings.Builder{}
+	position := err.error.Position().Position()
+	if position.IsValid() {
+		result.WriteString(position.String())
+		result.WriteString(" ")
+	}
+	format, args := err.error.Msg()
+	result.WriteString(fmt.Sprintf(format, args...))
+	return result.String()
+}
 
 var cacheDir string
 var definitionPath string
@@ -78,6 +95,9 @@ func _load() (c Configuration, err error) {
 
 	var config Configuration
 	err = v[0].Decode(&config)
+	if err, ok := err.(cuerrors.Error); ok && err != nil {
+		return config, cuerror{err}
+	}
 	return config, err
 }
 
