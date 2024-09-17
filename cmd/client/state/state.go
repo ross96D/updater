@@ -3,6 +3,7 @@ package state
 import (
 	"bytes"
 	"encoding/json"
+	"slices"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/api"
@@ -91,6 +92,10 @@ func (gs *GlobalState) Get(i int) models.Server {
 
 func (gs *GlobalState) Set(i int, s models.Server) {
 	(*gs.servers)[i] = s
+}
+
+func (gs *GlobalState) Remove(i int) {
+	*gs.servers = slices.Delete(*gs.servers, i, i+1)
 }
 
 func (gs *GlobalState) GetRef(i int) *models.Server {
