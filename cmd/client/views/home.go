@@ -1,27 +1,34 @@
 package views
 
 import (
+	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/components/confirmation_dialog"
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
 type homeViewInitialize struct{}
-
 type homeViewSelectItem struct{}
-
 type homeEditSelectedMsg struct{}
+type homeAskDeleteSelectedMsg struct{}
+type homeDeleteSelectedMsg struct{}
+type homeAskUpgradeSelectedMsg struct{}
+type homeUpgradeSelectedMsg struct{}
 
 var homeViewInitializeMsg = func() tea.Msg { return homeViewInitialize{} }
-
 var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
-
 var homeEditSelectedCmd = func() tea.Msg { return homeEditSelectedMsg{} }
+var homeAskDeleteSelectedCmd = func() tea.Msg { return homeAskDeleteSelectedMsg{} }
+var homeDeleteSelectedCmd = func() tea.Msg { return homeDeleteSelectedMsg{} }
+var homeAskUpgradeSelectedCmd = func() tea.Msg { return homeAskUpgradeSelectedMsg{} }
+var homeUpgradeSelectedCmd = func() tea.Msg { return homeUpgradeSelectedMsg{} }
 
 type HomeView struct {
 	State       *state.GlobalState
@@ -62,6 +69,38 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m := NewServerFormView(&EditServer{server: *item.Value, index: index})
 		return hv, components.NavigatorPush(m)
 
+	case homeAskDeleteSelectedMsg:
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		return hv, components.NavigatorPush(&confirmation_dialog.Model{
+			Descripion: fmt.Sprintf("updagrade %s?", item.Value.ServerName),
+			Task:       homeDeleteSelectedCmd,
+		})
+
+	case homeDeleteSelectedMsg:
+		_, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		index := hv.list.SelectedIndex()
+		hv.State.Remove(index)
+		return hv, state.GlobalStateSyncCmd
+
+	case homeAskUpgradeSelectedMsg:
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		return hv, components.NavigatorPush(&confirmation_dialog.Model{
+			Descripion: fmt.Sprintf("updagrade %s?", item.Value.ServerName),
+			Task:       homeUpgradeSelectedCmd,
+		})
+
+	case homeUpgradeSelectedMsg:
+		os.Exit(1)
+
 	case state.GlobalStateSyncMsg:
 		hv.init()
 		cmd = tea.WindowSize()
@@ -81,7 +120,19 @@ func (hv HomeView) View() string {
 }
 
 func (hv *HomeView) init() {
+	var selected int
+	if hv.initialized {
+		selected = hv.list.SelectedIndex()
+	}
+
 	length := hv.State.Len()
+	if selected >= length {
+		selected = length - 1
+	}
+	if selected < 0 {
+		selected = 0
+	}
+
 	items := make([]list.Item[*models.Server], 0, length)
 
 	for i := 0; i < length; i++ {
@@ -123,10 +174,29 @@ func (hv *HomeView) init() {
 						return homeEditSelectedCmd
 					},
 				},
+				{
+					Key: key.NewBinding(
+						key.WithKeys("d", "D"),
+						key.WithHelp("d", "delete selected server"),
+					),
+					Action: func() tea.Cmd {
+						return homeAskDeleteSelectedCmd
+					},
+				},
+				{
+					Key: key.NewBinding(
+						key.WithKeys("u", "U"),
+						key.WithHelp("u", "send an updgrade request for the selected updater server"),
+					),
+					Action: func() tea.Cmd {
+						return homeAskUpgradeSelectedCmd
+					},
+				},
 			},
 		},
 		true,
 	)
 	hv.list = listModel
 	hv.initialized = true
+	hv.list.SetSelected(selected)
 }
