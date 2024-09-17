@@ -25,7 +25,6 @@ require (
 	cuelabs.dev/go/oci/ociregistry v0.0.0-20240314152124-224736b49f2e // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/charmbracelet/x/ansi v0.2.3 // indirect
 	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -74,6 +73,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-require github.com/ross96D/go-utils/list v0.0.0
-
-replace github.com/ross96D/go-utils/list v0.0.0 => /home/abelardo/personal/go/go-utils/list
+require (
+	github.com/charmbracelet/x/ansi v0.2.3
+	github.com/ross96D/go-utils/list v0.0.0-20240917013915-97146f3e6dde
+)
