@@ -1,26 +1,33 @@
 package views
 
 import (
+	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/ross96D/updater/cmd/client/api"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/components/confirmation_dialog"
 	"github.com/ross96D/updater/cmd/client/components/list"
+	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
-type serverViewInitialize struct{}
+type serverViewInitializeMsg struct{}
+type serverViewSelectItemMsg struct{}
+type serverViewAskUpgradeSelectedMsg struct{}
+type serverViewUpgradeSelectedMsg struct{}
 
-type serverViewSelectItem struct{}
-
-var serverViewInitializeMsg = func() tea.Msg { return serverViewInitialize{} }
-
-var serverViewSelectItemMsg = func() tea.Msg { return serverViewSelectItem{} }
+var serverViewInitializeCmd = func() tea.Msg { return serverViewInitializeMsg{} }
+var serverViewSelectItemCmd = func() tea.Msg { return serverViewSelectItemMsg{} }
+var serverViewAskUpgradeSelectedCmd = func() tea.Msg { return serverViewAskUpgradeSelectedMsg{} }
+var serverViewUpgradeSelectedCmd = func() tea.Msg { return serverViewUpgradeSelectedMsg{} }
 
 type ServerView struct {
 	Server      models.Server
@@ -29,7 +36,7 @@ type ServerView struct {
 }
 
 func (ServerView) Init() tea.Cmd {
-	return serverViewInitializeMsg
+	return serverViewInitializeCmd
 }
 
 func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -41,16 +48,47 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC.String(), "q":
 			return sv, tea.Quit
 		}
-	case serverViewInitialize:
+	case serverViewInitializeMsg:
 		sv.init()
 		return sv, tea.WindowSize()
 
-	case serverViewSelectItem:
+	case serverViewSelectItemMsg:
 		item, ok := sv.list.Selected()
 		if !ok {
 			return sv, nil
 		}
 		return sv, components.NavigatorPush(AppView{App: *item.Value})
+
+	case serverViewAskUpgradeSelectedMsg:
+		item, ok := sv.list.Selected()
+		if !ok {
+			return sv, nil
+		}
+		return sv, components.NavigatorPush(&confirmation_dialog.Model{
+			Descripion: fmt.Sprintf("updgrade %s?", item.Value.Name),
+			Task:       serverViewUpgradeSelectedCmd,
+		})
+
+	case serverViewUpgradeSelectedMsg:
+		item, ok := sv.list.Selected()
+		if !ok {
+			return sv, nil
+		}
+		return sv, func() tea.Msg {
+			session, err := api.NewSession(sv.Server)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
+			}
+			resp, err := session.Update(*item.Value)
+			if err != nil {
+				return err
+			}
+			go func() {
+				io.Copy(io.Discard, resp) //nolint errcheck
+				resp.Close()
+			}()
+			return toast.AddToastMsg(toast.New("updating... TODO, show update logs"))
+		}
 
 	case state.GlobalStateSyncMsg:
 		sv.init()
@@ -88,7 +126,18 @@ func (sv *ServerView) init() {
 				key.WithHelp("enter", "select app"),
 			),
 			Action: func() tea.Cmd {
-				return serverViewSelectItemMsg
+				return serverViewSelectItemCmd
+			},
+		},
+		Others: []list.KeyMap{
+			{
+				Key: key.NewBinding(
+					key.WithKeys("u", "U"),
+					key.WithHelp("u", "send an update request for the selected application"),
+				),
+				Action: func() tea.Cmd {
+					return serverViewAskUpgradeSelectedCmd
+				},
 			},
 		},
 	}, false)
