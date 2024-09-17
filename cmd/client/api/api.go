@@ -46,7 +46,7 @@ func NewSession(server models.Server) (*Session, error) {
 
 	b, err := io.ReadAll(resp.Body)
 	if resp.StatusCode > 400 {
-		err = fmt.Errorf("login status code %d %s", resp.StatusCode, string(b))
+		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
 	return &Session{token: b, url: server.Url}, err
@@ -75,7 +75,7 @@ func (session Session) List() (apps []user_handler.App, err error) {
 		if b == nil {
 			b = []byte("")
 		}
-		err = fmt.Errorf("status code %d\n %s", resp.StatusCode, string(b))
+		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return
 	}
 	apps = make([]user_handler.App, 0)
@@ -99,7 +99,7 @@ func (session Session) Upgrade() (response string, err error) {
 		return
 	}
 	if resp.StatusCode > 400 {
-		err = fmt.Errorf("%s", string(b))
+		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 	}
 	response = string(b)
 	return
@@ -123,7 +123,7 @@ func (session Session) Update(app user_handler.App) (response io.ReadCloser, err
 	if resp.StatusCode >= 400 {
 		b, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		err = fmt.Errorf("status code %d\n %s", resp.StatusCode, string(b))
+		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
 	return
