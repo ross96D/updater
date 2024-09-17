@@ -47,10 +47,15 @@ builds:
       - -trimpath
     goarch:
       - amd64
-      - arm64
-    ignore:
-      - goos: linux
-        goarm: arm64
+      # - arm64
+    goos:
+      - linux
+      - windows
+    # ignore:
+    #   - goos: linux
+    #     goarm: arm64
+    #   - goos: windows
+    #     goarm: arm64
     # ensure a reproducible build.
     mod_timestamp: "{{ .CommitTimestamp }}"
 
