@@ -86,7 +86,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		index := hv.list.SelectedIndex()
 		hv.State.Remove(index)
-		return hv, state.GlobalStateSyncCmd
+		return hv, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case homeAskUpgradeSelectedMsg:
 		item, ok := hv.list.Selected()
