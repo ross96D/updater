@@ -13,7 +13,7 @@ import (
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/components/confirmation_dialog"
 	"github.com/ross96D/updater/cmd/client/components/list"
-	"github.com/ross96D/updater/cmd/client/components/toast"
+	"github.com/ross96D/updater/cmd/client/components/streamviewport"
 	"github.com/ross96D/updater/cmd/client/models"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
@@ -23,16 +23,23 @@ type serverViewInitializeMsg struct{}
 type serverViewSelectItemMsg struct{}
 type serverViewAskUpgradeSelectedMsg struct{}
 type serverViewUpgradeSelectedMsg struct{}
+type serverViewStartStreamPagerMsg struct{ io.ReadCloser }
 
 var serverViewInitializeCmd = func() tea.Msg { return serverViewInitializeMsg{} }
 var serverViewSelectItemCmd = func() tea.Msg { return serverViewSelectItemMsg{} }
 var serverViewAskUpgradeSelectedCmd = func() tea.Msg { return serverViewAskUpgradeSelectedMsg{} }
 var serverViewUpgradeSelectedCmd = func() tea.Msg { return serverViewUpgradeSelectedMsg{} }
+var serverViewStartStreamPagerCmd = func(rc io.ReadCloser) tea.Cmd {
+	return func() tea.Msg {
+		return serverViewStartStreamPagerMsg{rc}
+	}
+}
 
 type ServerView struct {
 	Server      models.Server
 	list        list.List[*user_handler.App]
 	initialized bool
+	windowsSize tea.WindowSizeMsg
 }
 
 func (ServerView) Init() tea.Cmd {
@@ -48,6 +55,10 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC.String(), "q":
 			return sv, tea.Quit
 		}
+
+	case tea.WindowSizeMsg:
+		sv.windowsSize = msg
+
 	case serverViewInitializeMsg:
 		sv.init()
 		return sv, tea.WindowSize()
@@ -83,12 +94,11 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return err
 			}
-			go func() {
-				io.Copy(io.Discard, resp) //nolint errcheck
-				resp.Close()
-			}()
-			return toast.AddToastMsg(toast.New("updating... TODO, show update logs"))
+			return serverViewStartStreamPagerCmd(resp)
 		}
+
+	case serverViewStartStreamPagerMsg:
+		return sv, components.NavigatorPush(streamviewport.New(msg.ReadCloser, sv.windowsSize.Width, sv.windowsSize.Height))
 
 	case state.GlobalStateSyncMsg:
 		sv.init()
