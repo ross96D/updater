@@ -1,6 +1,7 @@
 package share
 
 import (
+	"bytes"
 	_ "embed"
 	"strconv"
 	"strings"
@@ -16,11 +17,27 @@ type VersionData struct {
 	Patch int
 }
 
+func (v VersionData) MarshalJSON() ([]byte, error) {
+	b := bytes.Buffer{}
+	b.WriteByte('"')
+	b.WriteString(strconv.Itoa(v.Major))
+	b.WriteByte('.')
+	b.WriteString(strconv.Itoa(v.Minor))
+	b.WriteByte('.')
+	b.WriteString(strconv.Itoa(v.Patch))
+	b.WriteByte('"')
+	return b.Bytes(), nil
+}
+
+func (v *VersionData) UnmarshalJSON(p []byte) (err error) {
+	*v, err = VersionDataFromString(string(p))
+	return
+}
+
 func (v VersionData) IsLater(other VersionData) bool {
 	if v == other {
 		return false
 	}
-
 	if v.Major > other.Major {
 		return true
 	}
@@ -43,7 +60,6 @@ func (v VersionData) IsLater(other VersionData) bool {
 }
 
 func VersionDataFromString(version string) (vd VersionData, err error) {
-	// it seems that the json unmarshaler send the string with quotes.
 	version, _ = strings.CutPrefix(version, "\"")
 	version, _ = strings.CutSuffix(version, "\"")
 
