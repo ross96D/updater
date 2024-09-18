@@ -17,6 +17,16 @@ type VersionData struct {
 	Patch int
 }
 
+func (v VersionData) String() string {
+	b := bytes.Buffer{}
+	b.WriteString(strconv.Itoa(v.Major))
+	b.WriteByte('.')
+	b.WriteString(strconv.Itoa(v.Minor))
+	b.WriteByte('.')
+	b.WriteString(strconv.Itoa(v.Patch))
+	return b.String()
+}
+
 func (v VersionData) MarshalJSON() ([]byte, error) {
 	b := bytes.Buffer{}
 	b.WriteByte('"')
