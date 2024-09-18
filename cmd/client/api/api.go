@@ -195,6 +195,7 @@ func (session Session) Update(app user_handler.App) (response io.ReadCloser, err
 		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
+	response = request.Body
 	return
 }
 
