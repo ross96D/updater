@@ -61,7 +61,8 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return model, nil
 		}
 		server := model.state.Get(index)
-		server.Apps = msg.Apps
+		server.Apps = msg.Server.Apps
+		server.Version = msg.Server.Version
 		server.Status = listcomp.Ready
 		model.state.Set(index, server)
 		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)

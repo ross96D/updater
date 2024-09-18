@@ -110,7 +110,7 @@ func NewState(servers []models.Server) *GlobalState {
 
 type FetchResultMsg struct {
 	ServerName string
-	Apps       []user_handler.App
+	Server     user_handler.Server
 }
 
 type ErrFetchFailMsg struct {
@@ -140,11 +140,11 @@ func (gs *GlobalState) FetchCmd() tea.Cmd {
 			if err != nil {
 				return ErrFetchFailCmd(server.ServerName, err)
 			}
-			apps, err := session.List()
+			s, err := session.List()
 			if err != nil {
 				return ErrFetchFailCmd(server.ServerName, err)
 			}
-			return FetchResultMsg{ServerName: server.ServerName, Apps: apps}
+			return FetchResultMsg{ServerName: server.ServerName, Server: s}
 		}
 	}
 	for _, server := range *gs.servers {

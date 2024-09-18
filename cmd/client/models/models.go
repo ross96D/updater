@@ -6,6 +6,7 @@ import (
 
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/server/user_handler"
+	"github.com/ross96D/updater/share"
 )
 
 type Password string
@@ -46,6 +47,7 @@ type Server struct {
 	Url        *url.URL           `json:"url"`
 	UserName   string             `json:"username"`
 	Password   Password           `json:"password"`
+	Version    share.VersionData  `json:"version"`
 	Apps       []user_handler.App `json:"apps"`
 	Status     list.Status        `json:"-"`
 }

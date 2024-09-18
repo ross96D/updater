@@ -99,7 +99,7 @@ type Session struct {
 	token      []byte
 }
 
-func (session Session) List() (apps []user_handler.App, err error) {
+func (session Session) List() (server user_handler.Server, err error) {
 	defer func() {
 		if err != nil {
 			err = ErrNetworkMsg{
@@ -129,8 +129,7 @@ func (session Session) List() (apps []user_handler.App, err error) {
 		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return
 	}
-	apps = make([]user_handler.App, 0)
-	err = json.Unmarshal(b, &apps)
+	err = json.Unmarshal(b, &server)
 	return
 }
 

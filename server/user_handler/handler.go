@@ -137,6 +137,11 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 
 }
 
+type Server struct {
+	Apps    []App             `json:"apps"`
+	Version share.VersionData `json:"version"`
+}
+
 type App struct {
 	configuration.Application
 	Index int `json:"index"`
@@ -156,5 +161,6 @@ func HandleUserAppsList(w io.Writer) error {
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "\t")
-	return enc.Encode(apps)
+
+	return enc.Encode(Server{Apps: apps, Version: share.Version()})
 }

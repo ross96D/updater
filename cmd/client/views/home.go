@@ -153,7 +153,9 @@ func (hv *HomeView) init() {
 	for i := 0; i < length; i++ {
 		server := hv.State.GetRef(i)
 		items = append(items, list.Item[*models.Server]{
-			Message:     server.ServerName + " " + (*url.URL)(server.Url).String(),
+			Message: server.Version.String() + " " +
+				server.ServerName + " " +
+				(*url.URL)(server.Url).String(),
 			Value:       server,
 			StatusValue: server.Status,
 		})
