@@ -155,3 +155,7 @@ func (b *StreamBuffer) Read(p []byte) (n int, err error) {
 	b.off += n
 	return n, nil
 }
+
+// TODO should i return a copy of the bytes? is this thread safe (i dont think so)?
+// but copying the data can be slow because i plan to call this functions very often
+func (b *StreamBuffer) Bytes() []byte { return b.buf[b.off:] }
