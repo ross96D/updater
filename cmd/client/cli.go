@@ -34,7 +34,7 @@ var cliCommand = &cobra.Command{
 		state.LoadConfig()
 		state := &state.Configuration().State
 		program := views.NewApp(state)
-		if _, err := tea.NewProgram(program).Run(); err != nil {
+		if _, err := tea.NewProgram(program, tea.WithAltScreen(), tea.WithMouseCellMotion()).Run(); err != nil {
 			print(err.Error())
 			os.Exit(1)
 		}
