@@ -171,7 +171,7 @@ func (session Session) Upgrade() (response string, err error) {
 	return
 }
 
-func (session Session) Update(app user_handler.App) (_ io.ReadCloser, err error) {
+func (session Session) Update(app user_handler.App, dryRun bool) (_ io.ReadCloser, err error) {
 	defer func() {
 		if err != nil {
 			err = ErrNetworkMsg{
@@ -190,7 +190,10 @@ func (session Session) Update(app user_handler.App) (_ io.ReadCloser, err error)
 	if err != nil {
 		return
 	}
-	request.Header.Add("Authorization", "Bearer "+string(session.token))
+	request.Header.Set("Authorization", "Bearer "+string(session.token))
+	if dryRun {
+		request.Header.Set("dry-run", "true")
+	}
 	resp, err := HttpClient().Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("doing request %w", err)

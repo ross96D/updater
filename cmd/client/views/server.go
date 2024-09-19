@@ -23,12 +23,14 @@ type serverViewInitializeMsg struct{}
 type serverViewSelectItemMsg struct{}
 type serverViewAskUpgradeSelectedMsg struct{}
 type serverViewUpgradeSelectedMsg struct{}
+type serverViewDryRunUpgradeSelectedMsg struct{}
 type serverViewStartStreamPagerMsg struct{ io.ReadCloser }
 
 var serverViewInitializeCmd = func() tea.Msg { return serverViewInitializeMsg{} }
 var serverViewSelectItemCmd = func() tea.Msg { return serverViewSelectItemMsg{} }
 var serverViewAskUpgradeSelectedCmd = func() tea.Msg { return serverViewAskUpgradeSelectedMsg{} }
 var serverViewUpgradeSelectedCmd = func() tea.Msg { return serverViewUpgradeSelectedMsg{} }
+var serverViewDryRunUpgradeSelectedCmd = func() tea.Msg { return serverViewDryRunUpgradeSelectedMsg{} }
 var serverViewStartStreamPagerCmd = func(rc io.ReadCloser) tea.Cmd {
 	return func() tea.Msg {
 		return serverViewStartStreamPagerMsg{rc}
@@ -86,7 +88,24 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
 			}
-			resp, err := session.Update(*item.Value)
+			resp, err := session.Update(*item.Value, false)
+			if err != nil {
+				return err
+			}
+			return serverViewStartStreamPagerCmd(resp)
+		}
+
+	case serverViewDryRunUpgradeSelectedMsg:
+		item, ok := sv.list.Selected()
+		if !ok {
+			return sv, nil
+		}
+		return sv, func() tea.Msg {
+			session, err := api.NewSession(sv.Server)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
+			}
+			resp, err := session.Update(*item.Value, true)
 			if err != nil {
 				return err
 			}
@@ -143,6 +162,15 @@ func (sv *ServerView) init() {
 				),
 				Action: func() tea.Cmd {
 					return serverViewAskUpgradeSelectedCmd
+				},
+			},
+			{
+				Key: key.NewBinding(
+					key.WithKeys("ctrl+u", "ctrl+U"),
+					key.WithHelp("ctrl+u", "dry-run update application"),
+				),
+				Action: func() tea.Cmd {
+					return serverViewDryRunUpgradeSelectedCmd
 				},
 			},
 		},
