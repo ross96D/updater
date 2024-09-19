@@ -98,7 +98,7 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case serverViewStartStreamPagerMsg:
-		return sv, components.NavigatorPush(streamviewport.New(msg.ReadCloser, sv.windowsSize.Width, sv.windowsSize.Height))
+		return sv, components.NavigatorPush(streamviewport.New(msg, sv.windowsSize.Width, sv.windowsSize.Height))
 
 	case state.GlobalStateSyncMsg:
 		sv.init()
