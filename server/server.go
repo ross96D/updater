@@ -155,21 +155,21 @@ func List(w http.ResponseWriter, r *http.Request) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	logger := logger.ResponseWithLogger.FromContext(r.Context())
 
+	dryRun := r.Header.Get("dry-run") == "true"
+	logger.Info().Bool("dry-run", dryRun).Send()
+
 	switch r.Context().Value(auth.TypeKey) {
 	case "webhook":
 		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
 
 		data, err := ParseForm(r)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			logger.Error().Err(err).Msg("ParseForm")
 			return
 		}
 
-		if r.Header.Get("dry-run") == "true" {
-			err = match.Update(r.Context(), app, match.WithData(data), match.WithDryRun())
-		} else {
-			err = match.Update(r.Context(), app, match.WithData(data))
-		}
+		err = match.Update(r.Context(), app, match.WithData(data), match.WithDryRun(dryRun))
+
 		if err != nil {
 			switch err.(type) {
 			case match.ErrErrors, match.ErrError:
@@ -186,17 +186,13 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	case "user":
 		payload, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Error().Err(err).Send()
-			http.Error(w, "internal error", 500)
+			logger.Error().Err(err).Msg("reading data")
 			return
 		}
 		defer r.Body.Close()
 
-		if r.Header.Get("dry-run") == "true" {
-			err = user_handler.HandlerUserUpdate(r.Context(), payload, true)
-		} else {
-			err = user_handler.HandlerUserUpdate(r.Context(), payload, false)
-		}
+		err = user_handler.HandlerUserUpdate(r.Context(), payload, dryRun)
+
 		if err != nil {
 			logger.
 				Error().

@@ -81,9 +81,11 @@ func (NoData) Get(name string) io.ReadCloser { return nil }
 
 type UpdateOpts func(*appUpdater)
 
-func WithDryRun() UpdateOpts {
+func WithDryRun(dryRun bool) UpdateOpts {
 	return func(au *appUpdater) {
-		au.io = dryRunIO{}
+		if dryRun {
+			au.io = dryRunIO{}
+		}
 	}
 }
 

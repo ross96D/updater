@@ -129,12 +129,7 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 		return err
 	}
 
-	if dryRun {
-		return match.Update(ctx, application, match.WithData(data), match.WithDryRun())
-	} else {
-		return match.Update(ctx, application, match.WithData(data))
-	}
-
+	return match.Update(ctx, application, match.WithData(data), match.WithDryRun(dryRun))
 }
 
 type Server struct {
