@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -30,6 +31,12 @@ type ErrNetworkMsg ErrNetwork
 
 func (err ErrNetworkMsg) Error() string {
 	return ErrNetwork(err).Error()
+}
+
+func Request(method, url string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequestWithContext(context.Background(), method, url, body)
+	request.Header.Set("User-Agent", "deplo-client")
+	return request, err
 }
 
 func HttpClient() *http.Client {
@@ -70,7 +77,7 @@ func NewSession(server models.Server) (*Session, error) {
 
 	uri := server.Url.JoinPath("login")
 
-	request, err := http.NewRequest(http.MethodPost, uri.String(), nil)
+	request, err := Request(http.MethodPost, uri.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +118,7 @@ func (session Session) List() (server user_handler.Server, err error) {
 
 	uri := session.url.JoinPath("list")
 
-	request, err := http.NewRequest(http.MethodGet, uri.String(), nil)
+	request, err := Request(http.MethodGet, uri.String(), nil)
 	if err != nil {
 		return
 	}
@@ -144,7 +151,7 @@ func (session Session) Upgrade() (response string, err error) {
 	}()
 
 	uri := session.url.JoinPath("upgrade")
-	request, err := http.NewRequest(http.MethodPost, uri.String(), nil)
+	request, err := Request(http.MethodPost, uri.String(), nil)
 	if err != nil {
 		return
 	}
@@ -179,7 +186,7 @@ func (session Session) Update(app user_handler.App) (_ io.ReadCloser, err error)
 		return
 	}
 	uri := session.url.JoinPath("update")
-	request, err := http.NewRequest(http.MethodPost, uri.String(), bytes.NewReader(bodyBytes))
+	request, err := Request(http.MethodPost, uri.String(), bytes.NewReader(bodyBytes))
 	if err != nil {
 		return
 	}
