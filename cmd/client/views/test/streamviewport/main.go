@@ -27,7 +27,7 @@ func main() {
 	defer f.Close()
 	limitReader := limio.NewReader(f)
 	limitReader.SimpleLimit(10*limio.KB, time.Minute)
-	m := streamviewport.New(limitReader, 80, 20)
+	m := streamviewport.New(limitReader)
 
 	if _, err := tea.NewProgram(m, tea.WithMouseCellMotion()).Run(); err != nil {
 		panic(err)

@@ -39,7 +39,6 @@ type ServerView struct {
 	Server      models.Server
 	list        list.List[*user_handler.App]
 	initialized bool
-	windowsSize tea.WindowSizeMsg
 }
 
 func (ServerView) Init() tea.Cmd {
@@ -55,9 +54,6 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC.String(), "q":
 			return sv, tea.Quit
 		}
-
-	case tea.WindowSizeMsg:
-		sv.windowsSize = msg
 
 	case serverViewInitializeMsg:
 		sv.init()
@@ -98,7 +94,7 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case serverViewStartStreamPagerMsg:
-		return sv, components.NavigatorPush(streamviewport.New(msg, sv.windowsSize.Width, sv.windowsSize.Height))
+		return sv, components.NavigatorPush(streamviewport.New(msg))
 
 	case state.GlobalStateSyncMsg:
 		sv.init()
