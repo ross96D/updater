@@ -143,7 +143,7 @@ func (sv *ServerView) init() {
 			{
 				Key: key.NewBinding(
 					key.WithKeys("u", "U"),
-					key.WithHelp("u", "send an update request for the selected application"),
+					key.WithHelp("u", "update application"),
 				),
 				Action: func() tea.Cmd {
 					return serverViewAskUpgradeSelectedCmd

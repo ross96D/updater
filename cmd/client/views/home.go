@@ -185,7 +185,7 @@ func (hv *HomeView) init() {
 				{
 					Key: key.NewBinding(
 						key.WithKeys("e", "E"),
-						key.WithHelp("e", "edit selected server"),
+						key.WithHelp("e", "edit server"),
 					),
 					Action: func() tea.Cmd {
 						return homeEditSelectedCmd
@@ -203,7 +203,7 @@ func (hv *HomeView) init() {
 				{
 					Key: key.NewBinding(
 						key.WithKeys("u", "U"),
-						key.WithHelp("u", "send an updgrade request for the selected updater server"),
+						key.WithHelp("u", "updgrade server"),
 					),
 					Action: func() tea.Cmd {
 						return homeAskUpgradeSelectedCmd
