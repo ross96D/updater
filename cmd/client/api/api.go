@@ -164,7 +164,7 @@ func (session Session) Upgrade() (response string, err error) {
 	return
 }
 
-func (session Session) Update(app user_handler.App) (response io.ReadCloser, err error) {
+func (session Session) Update(app user_handler.App) (_ io.ReadCloser, err error) {
 	defer func() {
 		if err != nil {
 			err = ErrNetworkMsg{
@@ -194,8 +194,7 @@ func (session Session) Update(app user_handler.App) (response io.ReadCloser, err
 		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 		return nil, err
 	}
-	response = request.Body
-	return
+	return resp.Body, nil
 }
 
 func (session Session) IsValid() bool {
