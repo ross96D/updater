@@ -156,13 +156,14 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	logger := logger.ResponseWithLogger.FromContext(r.Context())
 
 	dryRun := r.Header.Get("dry-run") == "true"
-	logger.Info().Bool("dry-run", dryRun).Send()
 
 	switch r.Context().Value(auth.TypeKey) {
 	case "webhook":
 		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
 
 		data, err := ParseForm(r)
+		// we need to parse the body first before sending a message
+		logger.Info().Bool("dry-run", dryRun).Send()
 		if err != nil {
 			logger.Error().Err(err).Msg("ParseForm")
 			return
@@ -185,6 +186,8 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		}
 	case "user":
 		payload, err := io.ReadAll(r.Body)
+		// we need to parse the body first before sending a message
+		logger.Info().Bool("dry-run", dryRun).Send()
 		if err != nil {
 			logger.Error().Err(err).Msg("reading data")
 			return
@@ -231,7 +234,9 @@ func (d Data) Get(name string) io.ReadCloser {
 func ParseForm(r *http.Request) (match.Data, error) {
 	err := r.ParseMultipartForm(10 << 20) // store 10 MB in memory
 	if err != nil {
-		return nil, err
+		df := make([]byte, 100)
+		n, err2 := r.Body.Read(df)
+		return nil, fmt.Errorf("%d %s %w", n, err2.Error(), err)
 	}
 
 	return Data{form: r.MultipartForm}, nil
