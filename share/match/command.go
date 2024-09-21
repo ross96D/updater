@@ -86,7 +86,7 @@ func (consumer *streamConsumer) Write(p []byte) (int, error) {
 func RunCommand(logger *zerolog.Logger, command configuration.Command) error {
 	cmd := exec.Command(command.Command, command.Args...)
 	if command.Path != "" {
-		cmd.Path = command.Path
+		cmd.Dir = command.Path
 	}
 
 	buffout := &utils.StreamBuffer{}
