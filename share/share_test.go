@@ -168,7 +168,7 @@ func TestPostActionCommand(t *testing.T) {
 		context.Background(),
 		app,
 		match.WithData(match.NoData{}),
-		match.WithDryRun(),
+		match.WithDryRun(true),
 	).RunPostAction()
 
 	require.NoError(t, err)

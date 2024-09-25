@@ -88,6 +88,7 @@ func RunCommand(logger *zerolog.Logger, command configuration.Command) error {
 	if command.Path != "" {
 		cmd.Dir = command.Path
 	}
+	logger.Info().Str("cmd", cmd.String()).Send()
 
 	buffout := &utils.StreamBuffer{}
 	cmd.Stdout = buffout

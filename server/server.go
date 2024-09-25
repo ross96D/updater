@@ -209,8 +209,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info().Msg("upload update success")
-	w.WriteHeader(200)
+	logger.Info().Msg("upload update success")
 }
 
 type Data struct {
