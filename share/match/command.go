@@ -43,12 +43,16 @@ func (consumer *streamConsumer) consume(all bool) {
 	consumer.mut.Lock()
 	defer consumer.mut.Unlock()
 
-	var logger *zerolog.Event
+	var event func() *zerolog.Event
 	switch consumer.ptype {
 	case stdout:
-		logger = consumer.logger.Info().Str("pipe", "stdout")
+		event = func() *zerolog.Event {
+			return consumer.logger.Info().Str("pipe", "stdout") //nolint: zerologlint
+		}
 	case stderr:
-		logger = consumer.logger.Warn().Str("pipe", "stderr")
+		event = func() *zerolog.Event {
+			return consumer.logger.Warn().Str("pipe", "stderr") //nolint: zerologlint
+		}
 	}
 
 	start := 0
@@ -58,14 +62,14 @@ func (consumer *streamConsumer) consume(all bool) {
 			break
 		}
 		// TODO test what happens if index + 1 equals len
-		logger.Msg(string(consumer.notConsumed[start : index+1]))
-		start = index + 1
+		event().Msg(string(consumer.notConsumed[start : start+index]))
+		start = start + index + 1
 	}
 	copy(consumer.notConsumed, consumer.notConsumed[start:])
 	consumer.notConsumed = consumer.notConsumed[:len(consumer.notConsumed)-start]
 
 	if all && len(consumer.notConsumed) > 0 {
-		logger.Msg(string(consumer.notConsumed))
+		event().Msg(string(consumer.notConsumed))
 		consumer.notConsumed = consumer.notConsumed[0:0]
 	}
 }
