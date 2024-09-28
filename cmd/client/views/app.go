@@ -10,6 +10,7 @@ import (
 	listcomp "github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
@@ -52,6 +53,7 @@ func (model *app) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return model, tea.Batch(state.GlobalStateSyncCmd, state.SaveCmd)
 
 	case state.FetchResultMsg:
+		pretty.Print("fetchResult", msg.ServerName, msg.Server.Version.String())
 		index := model.state.Find(
 			func(s *models.Server) bool {
 				return s.ServerName == msg.ServerName

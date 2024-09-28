@@ -12,6 +12,7 @@ import (
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
@@ -104,17 +105,38 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !ok {
 			return hv, nil
 		}
-		return hv, func() tea.Msg {
-			session, err := api.NewSession(*item.Value)
+		upgCmd := func() tea.Msg {
+			server := *item.Value
+			pretty.Print("getting session ")
+			session, err := api.NewSession(server)
 			if err != nil {
-				return state.ErrFetchFailMsg{ServerName: item.Value.ServerName, Err: err}
+				pretty.Print("error getting session", err)
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
 			}
+			pretty.Print("getted session, upgrading")
 			resp, err := session.Upgrade()
 			if err != nil {
+				pretty.Print("err upgrading")
 				return err
 			}
-			return toast.AddToastMsg(toast.New(resp))
+			pretty.Print("uprgrade done")
+			updateServerCmd := func() tea.Msg {
+				pretty.Print("starting udpdate of server")
+				s, err := session.List()
+				if err != nil {
+					pretty.Print("error on udpdate of server", err)
+					return state.ErrFetchFailCmd(server.ServerName, err)
+				}
+				pretty.Print("udpdate of server done")
+				return state.FetchResultMsg{ServerName: server.ServerName, Server: s}
+			}
+			return tea.Batch(Repeat(toast.AddToastMsg(toast.New(resp))), updateServerCmd)
 		}
+		addToastCmd := func() tea.Msg {
+			return toast.AddToastMsg(toast.New(
+				fmt.Sprintf("upgrading server %s", item.Value.ServerName)))
+		}
+		return hv, tea.Sequence(addToastCmd, upgCmd)
 
 	case state.GlobalStateSyncMsg:
 		hv.init()
