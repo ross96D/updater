@@ -89,6 +89,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Warn().Err(fmt.Errorf("upgradeUpdater %w", err)).Msg("flushing response")
 	}
+	r.Body.Close()
 	os.Exit(1)
 }
 
