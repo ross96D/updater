@@ -197,11 +197,16 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		err = user_handler.HandlerUserUpdate(r.Context(), payload, dryRun)
 
 		if err != nil {
-			logger.
-				Error().
-				Err(err).
-				Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
-				Send()
+			switch err.(type) {
+			case match.ErrErrors, match.ErrError:
+				logger.Error().Err(err).
+					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
+					Send()
+			default:
+				logger.Warn().Err(err).
+					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
+					Send()
+			}
 			return
 		}
 	default:
