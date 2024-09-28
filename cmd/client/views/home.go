@@ -110,13 +110,13 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			pretty.Print("getting session ")
 			session, err := api.NewSession(server)
 			if err != nil {
-				pretty.Print("error getting session", err)
+				pretty.Print("error getting session", err.Error())
 				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
 			}
 			pretty.Print("getted session, upgrading")
 			resp, err := session.Upgrade()
 			if err != nil {
-				pretty.Print("err upgrading")
+				pretty.Print("err upgrading", err.Error(), resp)
 				return err
 			}
 			pretty.Print("uprgrade done")
@@ -124,7 +124,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				pretty.Print("starting udpdate of server")
 				s, err := session.List()
 				if err != nil {
-					pretty.Print("error on udpdate of server", err)
+					pretty.Print("error on udpdate of server", err.Error())
 					return state.ErrFetchFailCmd(server.ServerName, err)
 				}
 				pretty.Print("udpdate of server done")
