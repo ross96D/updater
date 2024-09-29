@@ -117,17 +117,17 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			resp, err := session.Upgrade()
 			if err != nil {
 				pretty.Print("err upgrading", err.Error(), resp)
-				return err
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
 			}
-			pretty.Print("uprgrade done")
+			pretty.Print("upgrade done")
 			updateServerCmd := func() tea.Msg {
-				pretty.Print("starting udpdate of server")
+				pretty.Print("starting udpdate of server data")
 				s, err := session.List()
 				if err != nil {
 					pretty.Print("error on udpdate of server", err.Error())
 					return state.ErrFetchFailCmd(server.ServerName, err)
 				}
-				pretty.Print("udpdate of server done")
+				pretty.Print("udpdate of server data done")
 				return state.FetchResultMsg{ServerName: server.ServerName, Server: s}
 			}
 			return tea.Batch(Repeat(toast.AddToastMsg(toast.New(resp))), updateServerCmd)

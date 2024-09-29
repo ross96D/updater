@@ -15,6 +15,7 @@ import (
 
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/server/user_handler"
 )
 
@@ -39,8 +40,10 @@ func Request(method, url string, body io.Reader) (*http.Request, error) {
 	return request, err
 }
 
-func HttpClient() *http.Client {
-	return &http.Client{
+type httpClientOpt = func(*http.Client)
+
+func HttpClient(opts ...httpClientOpt) *http.Client {
+	c := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				// TODO make this configurable
@@ -50,6 +53,10 @@ func HttpClient() *http.Client {
 		// TODO Make this configurable???
 		Timeout: 10 * time.Second,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 var m map[string]*Session = make(map[string]*Session)
@@ -71,8 +78,14 @@ func NewSession(server models.Server) (*Session, error) {
 	mut.Lock()
 	defer mut.Unlock()
 
-	if session, ok := m[key]; ok && session.IsValid() {
-		return session, nil
+	{
+		session, ok := m[key]
+		if ok {
+			pretty.Print("session is valid", m[key].IsValid())
+			if session.IsValid() {
+				return session, nil
+			}
+		}
 	}
 
 	uri := server.Url.JoinPath("login")
@@ -156,7 +169,7 @@ func (session Session) Upgrade() (response string, err error) {
 		return
 	}
 	request.Header.Add("Authorization", "Bearer "+string(session.token))
-	resp, err := HttpClient().Do(request)
+	resp, err := HttpClient(func(c *http.Client) { c.Timeout = 120 * time.Second }).Do(request)
 	if err != nil {
 		return
 	}
@@ -208,9 +221,11 @@ func (session Session) Update(app user_handler.App, dryRun bool) (_ io.ReadClose
 }
 
 func (session Session) IsValid() bool {
-	token, err := jwt.Parse(session.token)
+	token, err := jwt.Parse(session.token, jwt.WithVerify(false))
 	if err != nil {
+		pretty.Print("error parsing token", err.Error())
 		return false
 	}
+	pretty.Print("token expiration", token.Expiration().String(), time.Now().String())
 	return time.Until(token.Expiration()) > time.Minute
 }
