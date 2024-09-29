@@ -3,16 +3,22 @@ package streamviewport
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/share/utils"
 )
 
 type endRead struct{ error }
+
+type saveFileMsg struct{ filepath string }
 
 type Opt func(m *Model)
 
@@ -40,6 +46,8 @@ type Model struct {
 	reader   io.ReadCloser
 	title    string
 	end      bool
+
+	input *textinput.Model
 }
 
 type TickMsg time.Time
@@ -62,6 +70,12 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(doTick(), readCmd)
 }
 
+func (m *Model) Enter() tea.Cmd { return nil }
+
+func (m *Model) Out() tea.Cmd {
+	return components.EscHandler(true)
+}
+
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case TickMsg:
@@ -82,10 +96,40 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case endRead:
 		m.end = true
 
+	case saveFileMsg:
+		path, err := filepath.Abs(msg.filepath)
+		if err != nil {
+			panic(err)
+		}
+		return m, func() tea.Msg {
+			f, err := os.Create(path)
+			if err != nil {
+				return err
+			}
+			_, err = f.Write(m.data.Bytes())
+			return err
+		}
+
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "Q", tea.KeyCtrlC.String():
-			return m, tea.Quit
+		if m.input == nil {
+			switch msg.String() {
+			case "q", "Q", tea.KeyCtrlC.String():
+				return m, tea.Quit
+			case "S", "s":
+				input := textinput.New()
+				m.input = &input
+				return m, tea.Sequence(components.EscHandler(false), textinput.Blink)
+			}
+		} else {
+			if msg.Type == tea.KeyEnter {
+				return m, components.MsgCmd(saveFileMsg{filepath: m.input.Value()})
+			} else if msg.Type == tea.KeyEsc {
+				m.input = nil
+				return m, components.EscHandler(true)
+			}
+			var cmd tea.Cmd
+			*m.input, cmd = m.input.Update(msg)
+			return m, cmd
 		}
 	}
 	var cmd tea.Cmd
@@ -122,7 +166,9 @@ var (
 
 func (m *Model) headerView() string {
 	var title string
-	if m.title != "" {
+	if m.input != nil {
+		title = "insert filepath: " + m.input.View()
+	} else if m.title != "" {
 		title = titleStyle.Render(m.title)
 	}
 	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(title)))

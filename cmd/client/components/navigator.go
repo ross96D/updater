@@ -2,9 +2,9 @@ package components
 
 import (
 	"sync"
-	"unsafe"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 )
 
@@ -60,27 +60,44 @@ func (s *stack) Pop() tea.Model {
 
 type navigatorPush tea.Model
 type navigatorPop struct{}
+type escHandlerMsg bool
 
 func NavigatorPush(m tea.Model) tea.Cmd {
 	return func() tea.Msg {
 		return navigatorPush(m)
 	}
 }
-
 func NavigatorPop() tea.Msg {
 	return navigatorPop{}
 }
+func EscHandler(h bool) tea.Cmd {
+	return func() tea.Msg {
+		return escHandlerMsg(h)
+	}
+}
 
-type AlertPop struct{}
-
-var StopPop = func() tea.Msg { return nil }
+type NavModel interface {
+	tea.Model
+	Enter() tea.Cmd
+	Out() tea.Cmd
+}
 
 type Navigator struct {
-	s stack
+	s         stack
+	handleEsc bool
+}
+
+func NewNavigator() *Navigator {
+	return &Navigator{handleEsc: true}
 }
 
 func (nav *Navigator) Push(m tea.Model) (tea.Model, tea.Cmd) {
 	nav.s.Push(m)
+	if m, ok := m.(NavModel); ok {
+		// TODO define if Init or Enter should be called.. probably both should be called? or not
+		// is a bit confusing having both here
+		return m, tea.Sequence(m.Init(), m.Enter())
+	}
 	return m, m.Init()
 }
 
@@ -95,23 +112,27 @@ func (nav *Navigator) View() string {
 func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case navigatorPop:
-		nav.Pop()
-		return nil
+		var cmd [2]tea.Cmd = [2]tea.Cmd{nil, nil}
+		if m, ok := nav.Pop().(NavModel); ok {
+			cmd[0] = m.Out()
+		}
+		if m, ok := nav.s.Last().(NavModel); ok {
+			cmd[1] = m.Enter()
+		}
+		return tea.Batch(cmd[0], cmd[1])
 
 	case navigatorPush:
 		_, cmd := nav.Push(msg)
 		return tea.Sequence(cmd, state.GlobalStateSyncCmd)
 
+	case escHandlerMsg:
+		pretty.Print("esc handler msg", msg)
+		nav.handleEsc = bool(msg)
+		return nil
+
 	case tea.KeyMsg:
 		// navigation go back
-		if msg.Type == tea.KeyEscape {
-			m, cmd := nav.s.Last().Update(AlertPop{})
-			nav.s.SetLast(m)
-			if nav.stopBackNavigation(cmd) {
-				m, cmd := nav.s.Last().Update(AlertPop{})
-				nav.s.SetLast(m)
-				return cmd
-			}
+		if msg.Type == tea.KeyEscape && nav.handleEsc {
 			return NavigatorPop
 		}
 	}
@@ -119,8 +140,4 @@ func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	m, cmd := nav.s.Last().Update(msg)
 	nav.s.SetLast(m)
 	return cmd
-}
-
-func (nav *Navigator) stopBackNavigation(cmd tea.Cmd) bool {
-	return unsafe.Pointer(&cmd) == unsafe.Pointer(&StopPop)
 }

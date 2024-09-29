@@ -15,6 +15,7 @@ import (
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/components/streamviewport"
 	"github.com/ross96D/updater/cmd/client/models"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/cmd/client/state"
 	"github.com/ross96D/updater/server/user_handler"
 )
@@ -37,15 +38,26 @@ var serverViewStartStreamPagerCmd = func(rc io.ReadCloser) tea.Cmd {
 	}
 }
 
+type loadingPagerMsg bool
+
 type ServerView struct {
 	Server      models.Server
 	list        list.List[*user_handler.App]
 	initialized bool
+
+	loadingPager bool
 }
 
 func (ServerView) Init() tea.Cmd {
 	return serverViewInitializeCmd
 }
+
+func (ServerView) Enter() tea.Cmd {
+	pretty.Print("ServerView.Enter()")
+	return serverViewInitializeCmd
+}
+
+func (ServerView) Out() tea.Cmd { return nil }
 
 func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -83,15 +95,17 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !ok {
 			return sv, nil
 		}
+		sv.loadingPager = true
 		_, dryRun := msg.(serverViewDryRunUpgradeSelectedMsg)
 		return sv, func() tea.Msg {
 			session, err := api.NewSession(sv.Server)
 			if err != nil {
-				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
+				return tea.Batch(components.MsgCmd(loadingPagerMsg(false)),
+					components.MsgCmd(state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}))
 			}
 			resp, err := session.Update(*item.Value, dryRun)
 			if err != nil {
-				return err
+				return tea.Batch(components.MsgCmd(err), components.MsgCmd(loadingPagerMsg(false)))
 			}
 			return serverViewStartStreamPagerCmd(resp)
 		}
@@ -99,12 +113,16 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case serverViewStartStreamPagerMsg:
 		return sv, components.NavigatorPush(streamviewport.New(msg))
 
+	case loadingPagerMsg:
+		sv.loadingPager = bool(msg)
+		return sv, nil
+
 	case state.GlobalStateSyncMsg:
 		sv.init()
 		cmd = tea.WindowSize()
 	}
 	if !sv.initialized {
-		return sv, Repeat(msg)
+		return sv, components.Repeat(msg)
 	}
 
 	m, cmd2 := sv.list.Update(msg)
@@ -114,10 +132,14 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (sv ServerView) View() string {
+	if sv.loadingPager {
+		return "LOADING..."
+	}
 	return sv.list.View()
 }
 
 func (sv *ServerView) init() {
+	sv.loadingPager = false
 	length := len(sv.Server.Apps)
 	items := make([]list.Item[*user_handler.App], 0, length)
 

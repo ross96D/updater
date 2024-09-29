@@ -51,7 +51,7 @@ func HttpClient(opts ...httpClientOpt) *http.Client {
 			},
 		},
 		// TODO Make this configurable???
-		Timeout: 10 * time.Second,
+		Timeout: 20 * time.Second,
 	}
 	for _, opt := range opts {
 		opt(c)

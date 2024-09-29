@@ -130,7 +130,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				pretty.Print("udpdate of server data done")
 				return state.FetchResultMsg{ServerName: server.ServerName, Server: s}
 			}
-			return tea.Batch(Repeat(toast.AddToastMsg(toast.New(resp))), updateServerCmd)
+			return tea.Batch(components.Repeat(toast.AddToastMsg(toast.New(resp))), updateServerCmd)
 		}
 		addToastCmd := func() tea.Msg {
 			return toast.AddToastMsg(toast.New(
@@ -144,7 +144,7 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if !hv.initialized {
-		return hv, Repeat(msg)
+		return hv, components.Repeat(msg)
 	}
 	model, cmd2 := hv.list.Update(msg)
 	cmd = tea.Batch(cmd, cmd2)

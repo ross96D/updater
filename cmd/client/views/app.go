@@ -25,7 +25,7 @@ type app struct {
 
 func NewApp(state *state.GlobalState) tea.Model {
 	var notifications list.List[toast.Toast]
-	nav := new(components.Navigator)
+	nav := components.NewNavigator()
 	_, cmd := nav.Push(HomeView{State: state})
 	return &app{
 		navigator:     nav,
