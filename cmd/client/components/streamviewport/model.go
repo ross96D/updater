@@ -13,6 +13,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ross96D/updater/cmd/client/components"
+	"github.com/ross96D/updater/cmd/client/pretty"
 	"github.com/ross96D/updater/share/utils"
 )
 
@@ -102,15 +103,23 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(err)
 		}
 		return m, func() tea.Msg {
+			pretty.Print("creating file", path)
 			f, err := os.Create(path)
 			if err != nil {
+				pretty.Print("creating file err", path, err.Error())
 				return err
 			}
 			_, err = f.Write(m.data.Bytes())
+			if err != nil {
+				pretty.Print("writing to ", path, err.Error())
+			}
 			return err
 		}
 
 	case tea.KeyMsg:
+		if msg.Type == tea.KeyCtrlC {
+			return m, tea.Quit
+		}
 		if m.input == nil {
 			switch msg.String() {
 			case "q", "Q", tea.KeyCtrlC.String():
@@ -118,7 +127,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "S", "s":
 				input := textinput.New()
 				m.input = &input
-				return m, tea.Sequence(components.EscHandler(false), textinput.Blink)
+				return m, tea.Sequence(components.EscHandler(false), m.input.Focus())
 			}
 		} else {
 			if msg.Type == tea.KeyEnter {
@@ -132,9 +141,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 	}
-	var cmd tea.Cmd
-	m.viewport, cmd = m.viewport.Update(msg)
-	return m, cmd
+	var cmd [2]tea.Cmd = [2]tea.Cmd{nil, nil}
+	m.viewport, cmd[0] = m.viewport.Update(msg)
+	if m.input != nil {
+		*m.input, cmd[1] = m.input.Update(msg)
+	}
+	return m, tea.Batch(cmd[0], cmd[1])
 }
 
 func (m *Model) View() string {
