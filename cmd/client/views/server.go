@@ -78,34 +78,18 @@ func (sv ServerView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Task:       serverViewUpgradeSelectedCmd,
 		})
 
-	case serverViewUpgradeSelectedMsg:
+	case serverViewUpgradeSelectedMsg, serverViewDryRunUpgradeSelectedMsg:
 		item, ok := sv.list.Selected()
 		if !ok {
 			return sv, nil
 		}
+		_, dryRun := msg.(serverViewDryRunUpgradeSelectedMsg)
 		return sv, func() tea.Msg {
 			session, err := api.NewSession(sv.Server)
 			if err != nil {
 				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
 			}
-			resp, err := session.Update(*item.Value, false)
-			if err != nil {
-				return err
-			}
-			return serverViewStartStreamPagerCmd(resp)
-		}
-
-	case serverViewDryRunUpgradeSelectedMsg:
-		item, ok := sv.list.Selected()
-		if !ok {
-			return sv, nil
-		}
-		return sv, func() tea.Msg {
-			session, err := api.NewSession(sv.Server)
-			if err != nil {
-				return state.ErrFetchFailMsg{ServerName: item.Value.Name, Err: err}
-			}
-			resp, err := session.Update(*item.Value, true)
+			resp, err := session.Update(*item.Value, dryRun)
 			if err != nil {
 				return err
 			}
