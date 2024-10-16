@@ -34,6 +34,9 @@ func joinErrorsMessage(errs []error) string {
 type ErrError struct{ err error }
 type ErrErrors struct{ errs []error }
 
+func NewErrError(err error) ErrError      { return ErrError{err: err} }
+func NewErrErrors(errs []error) ErrErrors { return ErrErrors{errs: errs} }
+
 func (e ErrErrors) Error() string { return joinErrorsMessage(e.errs) }
 func (e ErrError) Error() string  { return e.err.Error() }
 func (ErrErrors) Level() string   { return "error" }

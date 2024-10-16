@@ -120,13 +120,13 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 	log.Info().Interface("user app", app).Send()
 	list := share.Config().Apps
 	if app.Index >= len(list) {
-		return errors.New("HandlerUserUpdate invalid index")
+		return match.NewErrError(errors.New("HandlerUserUpdate invalid index"))
 	}
 	application := list[app.Index]
 
 	data, err := NewGithubReleaseData(application)
 	if err != nil {
-		return err
+		return match.NewErrError(err)
 	}
 
 	return match.Update(ctx, application, match.WithData(data), match.WithDryRun(dryRun))

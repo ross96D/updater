@@ -199,6 +199,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			switch err.(type) {
+			// TODO needs to refactor this because all real errors would need to be of this type
 			case match.ErrErrors, match.ErrError:
 				logger.Error().Err(err).
 					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
