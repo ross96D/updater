@@ -33,6 +33,7 @@ func TestHandleUserAppsList(t *testing.T) {
 			Index: 0,
 			Application: configuration.Application{
 				AuthToken: "-",
+				Service:   "nothing",
 				Assets: []configuration.Asset{
 					{
 						Name:        "-",

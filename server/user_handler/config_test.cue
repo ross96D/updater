@@ -4,6 +4,7 @@ user_jwt_expiry: "2m"
 apps: [
 	{
 		auth_token: "-"
+		service:    "nothing"
 
 		assets: [
 			{
