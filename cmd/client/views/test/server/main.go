@@ -22,10 +22,10 @@ func main() {
 					AuthToken: "token",
 					Assets: []configuration.Asset{
 						{
-							Name:        "Asset1",
-							SystemPath:  "path/to",
-							ServicePath: "service",
-							Unzip:       true,
+							Name:       "Asset1",
+							SystemPath: "path/to",
+							Service:    "service",
+							Unzip:      true,
 						},
 					},
 				},
@@ -36,10 +36,10 @@ func main() {
 					AuthToken: "token",
 					Assets: []configuration.Asset{
 						{
-							Name:        "Asset1",
-							SystemPath:  "path/to",
-							ServicePath: "service",
-							Unzip:       true,
+							Name:       "Asset1",
+							SystemPath: "path/to",
+							Service:    "service",
+							Unzip:      true,
 						},
 					},
 				},
@@ -50,10 +50,10 @@ func main() {
 					AuthToken: "token",
 					Assets: []configuration.Asset{
 						{
-							Name:        "Asset1",
-							SystemPath:  "path/to",
-							ServicePath: "service",
-							Unzip:       true,
+							Name:       "Asset1",
+							SystemPath: "path/to",
+							Service:    "service",
+							Unzip:      true,
 						},
 					},
 				},

@@ -36,9 +36,9 @@ func TestHandleUserAppsList(t *testing.T) {
 				Service:   "nothing",
 				Assets: []configuration.Asset{
 					{
-						Name:        "-",
-						ServicePath: "-",
-						SystemPath:  "-",
+						Name:       "-",
+						Service:    "-",
+						SystemPath: "-",
 					},
 					{
 						Name:       "asset1",
@@ -57,9 +57,9 @@ func TestHandleUserAppsList(t *testing.T) {
 				AuthToken: "-",
 				Assets: []configuration.Asset{
 					{
-						Name:        "--",
-						ServicePath: "-",
-						SystemPath:  "-",
+						Name:       "--",
+						Service:    "-",
+						SystemPath: "-",
 						Command: &configuration.Command{
 							Command: "cmd",
 							Args:    []string{"arg1", "arg2"},

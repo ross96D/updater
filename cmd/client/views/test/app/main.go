@@ -23,12 +23,12 @@ func main() {
 						AuthToken: "token",
 						Assets: []configuration.Asset{
 							{
-								Name:        "asset1",
-								ServicePath: "service1",
+								Name:    "asset1",
+								Service: "service1",
 							},
 							{
-								Name:        "asset2",
-								ServicePath: "service2",
+								Name:    "asset2",
+								Service: "service2",
 							},
 						},
 					},
@@ -39,12 +39,12 @@ func main() {
 						AuthToken: "token",
 						Assets: []configuration.Asset{
 							{
-								Name:        "asset1",
-								ServicePath: "service1",
+								Name:    "asset1",
+								Service: "service1",
 							},
 							{
-								Name:        "asset2",
-								ServicePath: "service2",
+								Name:    "asset2",
+								Service: "service2",
 							},
 						},
 					},
@@ -61,12 +61,12 @@ func main() {
 						AuthToken: "token",
 						Assets: []configuration.Asset{
 							{
-								Name:        "asset1",
-								ServicePath: "service1",
+								Name:    "asset1",
+								Service: "service1",
 							},
 							{
-								Name:        "asset2",
-								ServicePath: "service2",
+								Name:    "asset2",
+								Service: "service2",
 							},
 						},
 					},
@@ -77,12 +77,12 @@ func main() {
 						AuthToken: "token",
 						Assets: []configuration.Asset{
 							{
-								Name:        "asset1",
-								ServicePath: "service1",
+								Name:    "asset1",
+								Service: "service1",
 							},
 							{
-								Name:        "asset2",
-								ServicePath: "service2",
+								Name:    "asset2",
+								Service: "service2",
 							},
 						},
 					},

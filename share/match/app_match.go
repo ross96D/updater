@@ -152,7 +152,7 @@ func (u *appUpdater) UpdateTaskAssets() error {
 
 	for _, v := range u.app.Assets {
 		// if v.ServicePath == "" then is not a Task Asset
-		if v.ServicePath == "" {
+		if v.Service == "" {
 			continue
 		}
 
@@ -168,7 +168,7 @@ func (u *appUpdater) UpdateAdditionalAssets() error {
 	var errs []error = make([]error, 0)
 	for _, v := range u.app.Assets {
 		// if v.ServicePath != "" then is not an Additional Asset
-		if v.ServicePath != "" {
+		if v.Service != "" {
 			continue
 		}
 		fnCopy, err := u.updateAsset(v)
@@ -191,17 +191,17 @@ func (u *appUpdater) updateTask(asset configuration.Asset) (err error) {
 	}
 
 	// TODO this needs a mutex?
-	u.log.Info().Msgf("stop %s", asset.ServicePath)
-	if err = u.io.ServiceStop(asset.ServicePath); err != nil {
-		u.log.Error().Err(err).Msgf("error stoping %s", asset.ServicePath)
+	u.log.Info().Msgf("stop %s", asset.Service)
+	if err = u.io.ServiceStop(asset.Service); err != nil {
+		u.log.Error().Err(err).Msgf("error stoping %s", asset.Service)
 		return ErrError{fmt.Errorf("updateTask Stop() %w", err)}
 	}
 
 	defer func() {
-		u.log.Info().Msgf("start %s", asset.ServicePath)
-		if err := u.io.ServiceStart(asset.ServicePath); err != nil {
+		u.log.Info().Msgf("start %s", asset.Service)
+		if err := u.io.ServiceStart(asset.Service); err != nil {
 			// TODO Should i fail here?
-			u.log.Error().Err(err).Msgf("error starting %s", asset.ServicePath)
+			u.log.Error().Err(err).Msgf("error starting %s", asset.Service)
 		}
 	}()
 

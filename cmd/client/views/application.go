@@ -83,7 +83,7 @@ func (av AppView) content() string {
 
 	for _, asset := range av.App.Assets {
 		builder.WriteString(asset.Name + "\n")
-		builder.WriteString(ident + keyStyle.Render("service: ") + "\t" + asset.ServicePath + "\n")
+		builder.WriteString(ident + keyStyle.Render("service: ") + "\t" + asset.Service + "\n")
 		builder.WriteString(ident + keyStyle.Render("system path: ") + "\t" + asset.SystemPath + "\n")
 		builder.WriteString(ident + keyStyle.Render("unzip: ") + "\t" + strconv.FormatBool(asset.Unzip) + "\n")
 		if asset.Command != nil {

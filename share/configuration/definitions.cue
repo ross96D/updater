@@ -14,9 +14,10 @@ base_path?:             string // path where the temporal files used by the app 
 }
 
 #Application: {
-	name?:       string
-	auth_token?: string
-	service?:    string
+	name?:         string
+	auth_token?:   string
+	service?:      string
+	service_type?: "nssm" | "taskservice"
 	assets!: [...#Asset]
 
 	// use this to set a command to be run after succesfully update 
@@ -33,9 +34,10 @@ base_path?:             string // path where the temporal files used by the app 
 
 #Asset: {
 	// the name of the form field
-	name!:        string
-	service?:     string
-	system_path!: string
+	name!:         string
+	service?:      string
+	service_type?: "nssm" | "taskservice"
+	system_path!:  string
 
 	// if keeps the previous version with at .old at the end
 	keep_old: bool | *false

@@ -15,9 +15,9 @@ func TestApplicationJson(t *testing.T) {
 			AuthToken: "token",
 			Assets: []configuration.Asset{
 				{
-					Name:        "asset",
-					ServicePath: "task_path",
-					SystemPath:  "sys_path",
+					Name:       "asset",
+					Service:    "task_path",
+					SystemPath: "sys_path",
 				},
 			},
 		},
@@ -55,9 +55,9 @@ func TestConfigurationJson(t *testing.T) {
 					AuthToken: "token",
 					Assets: []configuration.Asset{
 						{
-							Name:        "asset",
-							ServicePath: "task_path",
-							SystemPath:  "sys_path",
+							Name:       "asset",
+							Service:    "task_path",
+							SystemPath: "sys_path",
 							Command: &configuration.Command{
 								Command: "cmd",
 								Path:    "some/path",

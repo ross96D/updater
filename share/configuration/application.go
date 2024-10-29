@@ -13,6 +13,8 @@ type Application struct {
 
 	Service string `json:"service"`
 
+	ServiceType string `json:"service_type"`
+
 	Assets []Asset `json:"assets"`
 
 	Command *Command `json:"cmd"`
