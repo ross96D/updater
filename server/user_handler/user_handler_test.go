@@ -21,7 +21,10 @@ func TestHandleUserAppsList(t *testing.T) {
 	b := buff.Bytes()
 	require.True(t, err == nil, "%w", err)
 
-	var apps []user_handler.App
+	type Apps struct {
+		Apps []user_handler.App `json:"apps"`
+	}
+	var apps Apps
 	err = json.Unmarshal(b, &apps)
 	require.NoError(t, err)
 
@@ -67,8 +70,8 @@ func TestHandleUserAppsList(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(expected), len(apps))
-	for i, a := range apps {
+	assert.Equal(t, len(expected), len(apps.Apps))
+	for i, a := range apps.Apps {
 		require.Equal(t, expected[i], a)
 	}
 }
