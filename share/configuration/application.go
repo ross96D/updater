@@ -11,7 +11,7 @@ type Application struct {
 
 	AuthToken string `json:"auth_token"`
 
-	Service string `json:"field"`
+	Service string `json:"service"`
 
 	Assets []Asset `json:"assets"`
 
