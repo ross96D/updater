@@ -7,15 +7,9 @@ import (
 	"os/exec"
 )
 
-type TaskService struct{}
+type SystemctlService struct{}
 
-func New() (*TaskService, error) {
-	return &TaskService{}, nil
-}
-
-func (ts *TaskService) Disconnect() {}
-
-func (ts *TaskService) Stop(name string) error {
+func (ts SystemctlService) Stop(name string) error {
 	cmd := exec.Command("systemctl", "stop", name)
 	out, err := cmd.Output()
 	if err != nil {
@@ -24,7 +18,7 @@ func (ts *TaskService) Stop(name string) error {
 	return nil
 }
 
-func (ts *TaskService) Run(name string) error {
+func (ts SystemctlService) Start(name string) error {
 	cmd := exec.Command("systemctl", "start", name)
 	out, err := cmd.Output()
 	if err != nil {
@@ -33,22 +27,6 @@ func (ts *TaskService) Run(name string) error {
 	return nil
 }
 
-func Stop(name string) error {
-	ts, err := New()
-	if err != nil {
-		return err
-	}
-	return ts.Stop(name)
-}
-
-func Start(name string) error {
-	ts, err := New()
-	if err != nil {
-		return err
-	}
-	return ts.Run(name)
-}
-
-func RestartWithZombieChild() {
-
+func NewService(service ServiceType) Service {
+	return SystemctlService{}
 }

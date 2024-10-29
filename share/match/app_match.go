@@ -9,6 +9,7 @@ import (
 
 	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share/configuration"
+	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/rs/zerolog"
 )
 
@@ -103,13 +104,13 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 
 	if u.app.Service != "" {
 		u.log.Info().Msgf("stoping app level service %s", u.app.Service)
-		err = u.io.ServiceStop(u.app.Service)
+		err = u.io.ServiceStop(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
 		if err != nil {
 			return err
 		}
 		defer func() {
 			u.log.Info().Msgf("starting app level service %s", u.app.Service)
-			errServiceStart := u.io.ServiceStart(u.app.Service)
+			errServiceStart := u.io.ServiceStart(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
 			// include error
 			err = PackError(errServiceStart, err)
 		}()
@@ -192,14 +193,14 @@ func (u *appUpdater) updateTask(asset configuration.Asset) (err error) {
 
 	// TODO this needs a mutex?
 	u.log.Info().Msgf("stop %s", asset.Service)
-	if err = u.io.ServiceStop(asset.Service); err != nil {
+	if err = u.io.ServiceStop(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
 		u.log.Error().Err(err).Msgf("error stoping %s", asset.Service)
 		return ErrError{fmt.Errorf("updateTask Stop() %w", err)}
 	}
 
 	defer func() {
 		u.log.Info().Msgf("start %s", asset.Service)
-		if err := u.io.ServiceStart(asset.Service); err != nil {
+		if err := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
 			// TODO Should i fail here?
 			u.log.Error().Err(err).Msgf("error starting %s", asset.Service)
 		}

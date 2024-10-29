@@ -14,8 +14,8 @@ import (
 type IO interface {
 	RunCommand(*zerolog.Logger, configuration.Command) error
 	Unzip(string) error
-	ServiceStart(string) error
-	ServiceStop(string) error
+	ServiceStart(string, taskservice.ServiceType) error
+	ServiceStop(string, taskservice.ServiceType) error
 	CopyFromReader(io.Reader, string) error
 	RenameSafe(string, string) error
 	Remove(string) error
@@ -31,12 +31,12 @@ func (implIO) Unzip(path string) error {
 	return utils.Unzip(path)
 }
 
-func (implIO) ServiceStart(name string) error {
-	return taskservice.Start(name)
+func (i implIO) ServiceStart(name string, st taskservice.ServiceType) error {
+	return taskservice.NewService(st).Start(name)
 }
 
-func (implIO) ServiceStop(name string) error {
-	return taskservice.Stop(name)
+func (i implIO) ServiceStop(name string, st taskservice.ServiceType) error {
+	return taskservice.NewService(st).Stop(name)
 }
 
 func (implIO) CopyFromReader(reader io.Reader, dst string) error {
@@ -68,11 +68,11 @@ func (dryRunIO) Unzip(_ string) error {
 	return nil
 }
 
-func (dryRunIO) ServiceStart(_ string) error {
+func (dryRunIO) ServiceStart(_ string, _ taskservice.ServiceType) error {
 	return nil
 }
 
-func (dryRunIO) ServiceStop(_ string) error {
+func (dryRunIO) ServiceStop(_ string, _ taskservice.ServiceType) error {
 	return nil
 }
 

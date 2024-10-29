@@ -3,6 +3,8 @@
 package taskservice
 
 import (
+	"os/exec"
+
 	"github.com/ross96D/taskmaster"
 	"github.com/rs/zerolog/log"
 )
@@ -11,7 +13,9 @@ type TaskService struct {
 	service taskmaster.TaskService
 }
 
-func New() (*TaskService, error) {
+var ts *TaskService
+
+func newTS() (*TaskService, error) {
 	ts, err := taskmaster.Connect()
 	if err != nil {
 		return nil, err
@@ -19,10 +23,6 @@ func New() (*TaskService, error) {
 	taskService := new(TaskService)
 	taskService.service = ts
 	return taskService, nil
-}
-
-func (ts *TaskService) Disconnect() {
-	ts.service.Disconnect()
 }
 
 func (ts *TaskService) Stop(path string) error {
@@ -38,7 +38,7 @@ func (ts *TaskService) Stop(path string) error {
 	return task.Stop()
 }
 
-func (ts *TaskService) Run(path string) error {
+func (ts *TaskService) Start(path string) error {
 	task, err := ts.service.GetRegisteredTask(path)
 	if err != nil {
 		return err
@@ -47,12 +47,10 @@ func (ts *TaskService) Run(path string) error {
 	return err
 }
 
-var ts *TaskService
-
 func get() (*TaskService, error) {
 	var err error
 	if ts == nil {
-		ts, err = New()
+		ts, err = newTS()
 	}
 	if ts != nil && !ts.service.IsConnected() {
 		ts = nil
@@ -61,33 +59,21 @@ func get() (*TaskService, error) {
 	return ts, err
 }
 
-func close() {
-	ts.Disconnect()
-	ts = nil
+type NNSMService struct{}
+
+func (NNSMService) Stop(name string) error {
+	return exec.Command("nssm.exe", "stop", name).Run()
 }
 
-func Stop(path string) error {
-	if path == "" {
-		log.Warn().Msg("task path is empty. No op")
-		return nil
-	}
-
-	ts, err := get()
-	if err != nil {
-		return err
-	}
-	return ts.Stop(path)
+func (NNSMService) Start(name string) error {
+	return exec.Command("nssm.exe", "start", name).Run()
 }
 
-func Start(path string) error {
-	if path == "" {
-		log.Warn().Msg("task path is empty. No op")
-		return nil
+func NewService(service ServiceType) Service {
+	if service == NNSM {
+		return NNSMService{}
+	} else {
+		resp, _ := get()
+		return resp
 	}
-
-	ts, err := get()
-	if err != nil {
-		return err
-	}
-	return ts.Run(path)
 }
