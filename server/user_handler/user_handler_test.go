@@ -13,9 +13,10 @@ import (
 )
 
 func TestHandleUserAppsList(t *testing.T) {
-	share.MustInit("config_test.cue")
+	err := share.Init("config_test.cue")
+	require.NoError(t, err)
 	buff := bytes.NewBuffer([]byte{})
-	err := user_handler.HandleUserAppsList(buff)
+	err = user_handler.HandleUserAppsList(buff)
 	require.NoError(t, err)
 
 	b := buff.Bytes()
@@ -36,7 +37,7 @@ func TestHandleUserAppsList(t *testing.T) {
 				Service:   "nothing",
 				Assets: []configuration.Asset{
 					{
-						Name:       "-",
+						Name:       "asset0",
 						Service:    "-",
 						SystemPath: "-",
 					},
@@ -45,7 +46,7 @@ func TestHandleUserAppsList(t *testing.T) {
 						SystemPath: "path1",
 					},
 					{
-						Name:       "asset1",
+						Name:       "asset2",
 						SystemPath: "path1",
 					},
 				},

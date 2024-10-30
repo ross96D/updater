@@ -65,8 +65,114 @@ func TestUpdateApp(t *testing.T) {
 	}
 }
 
+func TestDependencyCyclicError(t *testing.T) {
+	errConfig := `
+	port:            11111
+	user_secret_key: ""
+	user_jwt_expiry: "2m"
+	apps: [
+		{
+			assets_dependency: {
+				"asset1": ["asset2"]
+				"asset2": ["asset3"]
+				"asset3": ["asset1"]
+			}
+			auth_token: "-"
+			service:    "nothing"
+	
+			assets: [
+				{
+					name:        "asset1"
+					service:     "-"
+					system_path: "-"
+				},
+				{
+					name:        "asset2"
+					system_path: "path1"
+				},
+				{
+					name:        "asset3"
+					system_path: "path1"
+				},
+			]
+		},
+		{
+			auth_token: "-"
+	
+			assets: [
+				{
+					name:        "asset2"
+					service:     "-"
+					system_path: "-"
+					cmd: {
+						command: "cmd"
+						args: ["arg1", "arg2"]
+						path: "some/path"
+					}
+				},
+			]
+		},
+	]
+	`
+	err := share.ReloadString(errConfig)
+	require.Error(t, err)
+}
+
+func TestDependencyNoCyclicError(t *testing.T) {
+	errConfig := `
+	port:            11111
+	user_secret_key: ""
+	user_jwt_expiry: "2m"
+	apps: [
+		{
+			assets_dependency: {
+				"asset1": ["asset2"]
+				"asset2": ["asset3"]
+			}
+			auth_token: "-"
+			service:    "nothing"
+	
+			assets: [
+				{
+					name:        "asset1"
+					service:     "-"
+					system_path: "-"
+				},
+				{
+					name:        "asset2"
+					system_path: "path1"
+				},
+				{
+					name:        "asset3"
+					system_path: "path1"
+				},
+			]
+		},
+		{
+			auth_token: "-"
+	
+			assets: [
+				{
+					name:        "asset2"
+					service:     "-"
+					system_path: "-"
+					cmd: {
+						command: "cmd"
+						args: ["arg1", "arg2"]
+						path: "some/path"
+					}
+				},
+			]
+		},
+	]
+	`
+	err := share.ReloadString(errConfig)
+	require.NoError(t, err)
+}
+
 func TestReload(t *testing.T) {
-	share.MustInit("config_test.cue")
+	err := share.Init("config_test.cue")
+	require.NoError(t, err)
 	old := share.Config()
 
 	expected := configuration.Configuration{
@@ -79,7 +185,7 @@ func TestReload(t *testing.T) {
 	}
 	require.Equal(t, expected, old)
 
-	err := share.Reload("config_test_reload.cue")
+	err = share.Reload("config_test_reload.cue")
 	require.NoError(t, err)
 	reloaded := share.Config()
 

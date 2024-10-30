@@ -16,13 +16,17 @@ type cuerror struct{ error cuerrors.Error }
 
 func (err cuerror) Error() string {
 	result := strings.Builder{}
-	position := err.error.Position().Position()
-	if position.IsValid() {
-		result.WriteString(position.String())
-		result.WriteString(" ")
+	errs := cuerrors.Errors(err.error)
+	for _, err := range errs {
+		position := err.Position().Position()
+		if position.IsValid() {
+			result.WriteString(position.String())
+			result.WriteString(" ")
+		}
+		format, args := err.Msg()
+		result.WriteString(fmt.Sprintf(format, args...))
+		result.WriteByte('\n')
 	}
-	format, args := err.error.Msg()
-	result.WriteString(fmt.Sprintf(format, args...))
 	return result.String()
 }
 

@@ -8,7 +8,7 @@ apps: [
 
 		assets: [
 			{
-				name:        "-"
+				name:        "asset0"
 				service:     "-"
 				system_path: "-"
 			},
@@ -17,7 +17,7 @@ apps: [
 				system_path: "path1"
 			},
 			{
-				name:        "asset1"
+				name:        "asset2"
 				system_path: "path1"
 			},
 		]
