@@ -42,6 +42,12 @@ func Request(method, url string, body io.Reader) (*http.Request, error) {
 
 type httpClientOpt = func(*http.Client)
 
+func WithTimeout(timeout time.Duration) httpClientOpt {
+	return func(c *http.Client) {
+		c.Timeout = timeout
+	}
+}
+
 func HttpClient(opts ...httpClientOpt) *http.Client {
 	c := &http.Client{
 		Transport: &http.Transport{
@@ -169,7 +175,7 @@ func (session Session) Upgrade() (response string, err error) {
 		return
 	}
 	request.Header.Add("Authorization", "Bearer "+string(session.token))
-	resp, err := HttpClient(func(c *http.Client) { c.Timeout = 120 * time.Second }).Do(request)
+	resp, err := HttpClient(WithTimeout(240 * time.Second)).Do(request)
 	if err != nil {
 		return
 	}
@@ -207,7 +213,7 @@ func (session Session) Update(app user_handler.App, dryRun bool) (_ io.ReadClose
 	if dryRun {
 		request.Header.Set("dry-run", "true")
 	}
-	resp, err := HttpClient().Do(request)
+	resp, err := HttpClient(WithTimeout(240 * time.Second)).Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("doing request %w", err)
 	}
