@@ -2,11 +2,11 @@ package server_test
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"hash/crc32"
 	"io"
-	"math/rand/v2"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -202,11 +202,9 @@ func TestUpdateEnpoint(t *testing.T) {
 }
 
 func GetData(sizeInBytes uint64) io.Reader {
-	buff := bytes.NewBuffer([]byte{})
-	for i := 0; i < int(sizeInBytes); i++ {
-		buff.WriteByte(byte(rand.N(256)))
-	}
-	return buff
+	b := make([]byte, sizeInBytes)
+	rand.Reader.Read(b) //nolint errcheck
+	return bytes.NewReader(b)
 }
 
 func TestParseMultipartForm(t *testing.T) {
