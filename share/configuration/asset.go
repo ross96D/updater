@@ -9,3 +9,8 @@ type Asset struct {
 	Unzip       bool     `json:"unzip"`
 	Command     *Command `json:"cmd"`
 }
+
+type AssetOrder struct {
+	Asset
+	Independent bool
+}

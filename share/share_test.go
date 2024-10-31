@@ -127,7 +127,10 @@ func TestDependencyNoCyclicError(t *testing.T) {
 		{
 			assets_dependency: {
 				"asset1": ["asset2"]
-				"asset2": ["asset3"]
+				"asset2": ["asset3", "asset5"]
+				"asset7": ["asset3", "asset5", "asset1"]
+				"asset5": ["asset3"]
+				"asset6": ["asset7", "asset1"]
 			}
 			auth_token: "-"
 			service:    "nothing"
@@ -135,8 +138,7 @@ func TestDependencyNoCyclicError(t *testing.T) {
 			assets: [
 				{
 					name:        "asset1"
-					service:     "-"
-					system_path: "-"
+					system_path: "path1"
 				},
 				{
 					name:        "asset2"
@@ -144,6 +146,22 @@ func TestDependencyNoCyclicError(t *testing.T) {
 				},
 				{
 					name:        "asset3"
+					system_path: "path1"
+				},
+				{
+					name:        "asset4"
+					system_path: "path1"
+				},
+				{
+					name:        "asset5"
+					system_path: "path1"
+				},
+				{
+					name:        "asset6"
+					system_path: "path1"
+				},
+				{
+					name:        "asset7"
 					system_path: "path1"
 				},
 			]
@@ -168,6 +186,67 @@ func TestDependencyNoCyclicError(t *testing.T) {
 	`
 	err := share.ReloadString(errConfig)
 	require.NoError(t, err)
+	// "asset1": ["asset2"]
+	// "asset2": ["asset3", "asset5"]
+	// "asset7": ["asset3", "asset5", "asset1"]
+	// "asset5": ["asset3"]
+	// "asset6": ["asset7", "asset1"]
+	expected := []configuration.AssetOrder{
+		{
+			Asset: configuration.Asset{
+				Name:       "asset3",
+				SystemPath: "path1",
+			},
+			Independent: true,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset4",
+				SystemPath: "path1",
+			},
+			Independent: true,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset5",
+				SystemPath: "path1",
+			},
+			Independent: false,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset2",
+				SystemPath: "path1",
+			},
+			Independent: false,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset1",
+				SystemPath: "path1",
+			},
+			Independent: false,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset7",
+				SystemPath: "path1",
+			},
+			Independent: false,
+		},
+		{
+			Asset: configuration.Asset{
+				Name:       "asset6",
+				SystemPath: "path1",
+			},
+			Independent: false,
+		},
+	}
+	for i := 0; i < len(share.Config().Apps[0].AsstesOrder); i++ {
+		println(share.Config().Apps[0].AsstesOrder[i].Name, expected[i].Name)
+		require.Equal(t, expected[i], share.Config().Apps[0].AsstesOrder[i])
+	}
+	require.Equal(t, expected, share.Config().Apps[0].AsstesOrder)
 }
 
 func TestReload(t *testing.T) {
@@ -213,6 +292,9 @@ func TestReload(t *testing.T) {
 		},
 		Users:    []configuration.User{},
 		BasePath: share.DefaultPath,
+	}
+	for i := 0; i < len(expected.Apps); i++ {
+		expected.Apps[i].AsstesOrder = reloaded.Apps[i].AsstesOrder
 	}
 	require.Equal(t, expected, reloaded)
 }

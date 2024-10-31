@@ -74,6 +74,7 @@ func TestHandleUserAppsList(t *testing.T) {
 
 	assert.Equal(t, len(expected), len(apps.Apps))
 	for i, a := range apps.Apps {
+		a.AsstesOrder = nil
 		require.Equal(t, expected[i], a)
 	}
 }
