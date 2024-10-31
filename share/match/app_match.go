@@ -1,6 +1,7 @@
 package match
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -83,6 +84,10 @@ type NoData struct{}
 
 func (NoData) Get(name string) io.ReadCloser { return nil }
 
+type EmptyData struct{}
+
+func (EmptyData) Get(name string) io.ReadCloser { return io.NopCloser(bytes.NewReader([]byte{})) }
+
 type UpdateOpts func(*appUpdater)
 
 func WithDryRun(dryRun bool) UpdateOpts {
@@ -116,10 +121,9 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 		}()
 	}
 
-	err1 := u.UpdateAdditionalAssets()
-	err2 := u.UpdateTaskAssets()
+	err1 := u.UpdateAssets()
 	err3 := u.RunPostAction()
-	err = PackError(err1, err2, err3)
+	err = PackError(err1, err3)
 	return
 }
 
@@ -148,38 +152,24 @@ func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...U
 	return appUpd
 }
 
-func (u *appUpdater) UpdateTaskAssets() error {
+func (u *appUpdater) UpdateAssets() error {
 	var errs []error = make([]error, 0)
-
-	for _, v := range u.app.Assets {
-		// if v.ServicePath == "" then is not a Task Asset
-		if v.Service == "" {
-			continue
-		}
-
-		if err := u.updateTask(v); err != nil {
-			errs = append(errs, err)
-			continue
-		}
-	}
-	return PackError(errs...)
-}
-
-func (u *appUpdater) UpdateAdditionalAssets() error {
-	var errs []error = make([]error, 0)
-	for _, v := range u.app.Assets {
-		// if v.ServicePath != "" then is not an Additional Asset
-		if v.Service != "" {
-			continue
-		}
-		fnCopy, err := u.updateAsset(v)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if err = fnCopy(); err != nil {
-			errs = append(errs, err)
-			continue
+	for _, asset := range u.app.AsstesOrder {
+		// if asset.Independent this could be done concurrently
+		if asset.Service != "" {
+			if err := u.updateTask(asset.Asset); err != nil {
+				errs = append(errs, err)
+			}
+		} else {
+			var fnCopy func() (err error)
+			var err error
+			if fnCopy, err = u.updateAsset(asset.Asset); err != nil {
+				errs = append(errs, err)
+			} else {
+				if err = fnCopy(); err != nil {
+					errs = append(errs, err)
+				}
+			}
 		}
 	}
 	return PackError(errs...)

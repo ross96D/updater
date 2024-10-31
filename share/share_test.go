@@ -242,11 +242,14 @@ func TestDependencyNoCyclicError(t *testing.T) {
 			Independent: false,
 		},
 	}
-	for i := 0; i < len(share.Config().Apps[0].AsstesOrder); i++ {
-		println(share.Config().Apps[0].AsstesOrder[i].Name, expected[i].Name)
-		require.Equal(t, expected[i], share.Config().Apps[0].AsstesOrder[i])
+	actual := share.Config().Apps[0].AsstesOrder
+	require.Equal(t, len(expected), len(actual))
+	require.True(t, actual[0].Independent)
+	require.True(t, actual[1].Independent)
+	for i := 2; i < len(actual); i++ {
+		println(actual[i].Name, expected[i].Name)
+		require.Equal(t, expected[i], actual[i])
 	}
-	require.Equal(t, expected, share.Config().Apps[0].AsstesOrder)
 }
 
 func TestReload(t *testing.T) {

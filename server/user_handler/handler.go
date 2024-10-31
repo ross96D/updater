@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v60/github"
+	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/match"
@@ -123,12 +124,22 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 		return match.NewErrError(errors.New("HandlerUserUpdate invalid index"))
 	}
 	application := list[app.Index]
-
-	data, err := NewGithubReleaseData(application)
-	if err != nil {
-		return match.NewErrError(err)
+	if application.GithubRelease == nil {
+		return errors.New("no github repo configured")
 	}
 
+	logger := logger.ResponseWithLogger.FromContext(ctx)
+	logger.Info().Msgf("Requesting release from github.com/%s/%s ", application.GithubRelease.Owner, application.GithubRelease.Repo)
+	var data match.Data
+	if !dryRun {
+		data, err = NewGithubReleaseData(application)
+		if err != nil {
+			logger.Info().Msg("Requesting release failed")
+			return match.NewErrError(err)
+		}
+	} else {
+		data = match.EmptyData{}
+	}
 	return match.Update(ctx, application, match.WithData(data), match.WithDryRun(dryRun))
 }
 
