@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 	"unsafe"
 
 	"github.com/ross96D/updater/logger"
@@ -154,7 +155,46 @@ func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...U
 
 func (u *appUpdater) UpdateAssets() error {
 	var errs []error = make([]error, 0)
-	for _, asset := range u.app.AsstesOrder {
+	mut := &sync.Mutex{}
+	append_errors := func(err error) {
+		mut.Lock()
+		errs = append(errs, err)
+		mut.Unlock()
+	}
+
+	wg := &sync.WaitGroup{}
+	var i = 0
+	// executes independent assets  concurrently
+	for ; i < len(u.app.AsstesOrder); i++ {
+		asset := u.app.AsstesOrder[i]
+		if !asset.Independent {
+			break
+		}
+		wg.Add(1)
+		go func() {
+			if asset.Service != "" {
+				if err := u.updateTask(asset.Asset); err != nil {
+					append_errors(err)
+				}
+			} else {
+				var fnCopy func() (err error)
+				var err error
+				if fnCopy, err = u.updateAsset(asset.Asset); err != nil {
+					append_errors(err)
+				} else {
+					if err = fnCopy(); err != nil {
+						append_errors(err)
+					}
+				}
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	for ; i < len(u.app.AsstesOrder); i++ {
+		asset := u.app.AsstesOrder[i]
 		// if asset.Independent this could be done concurrently
 		if asset.Service != "" {
 			if err := u.updateTask(asset.Asset); err != nil {
