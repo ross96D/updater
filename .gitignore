@@ -10,3 +10,5 @@ share/test_*/
 
 debug.log
 .vscode/launch.json
+
+tmp
