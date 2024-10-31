@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -21,16 +22,25 @@ type queue struct {
 	messages [256]message
 	head     uint8
 	tail     uint8
+
+	mut sync.RWMutex
 }
 
 func (q *queue) InQueue() uint8 {
+	q.mut.RLock()
 	// uses uint8 overflow
-	return q.tail - q.head
+	r := q.tail - q.head
+	q.mut.RUnlock()
+	return r
 }
 
 func (q *queue) Space() uint8 {
+	q.mut.RLock()
 	// uses uint8 overflow
-	return (q.head - 1) - q.tail
+	r := (q.head - 1) - q.tail
+	q.mut.RUnlock()
+	return r
+
 }
 
 func (q *queue) push(m message) {
@@ -38,6 +48,7 @@ func (q *queue) push(m message) {
 		return
 	}
 
+	q.mut.Lock()
 	// copy data as the incoming message can become corrupted
 	var mnew message
 	if q.messages[q.tail] != nil && cap(q.messages[q.tail]) >= len(m) {
@@ -49,14 +60,17 @@ func (q *queue) push(m message) {
 	copy(mnew, m)
 	q.messages[q.tail] = mnew
 	q.tail++
+	q.mut.Unlock()
 }
 
 func (q *queue) pop() (message, bool) {
 	if q.InQueue() == 0 {
 		return nil, false
 	}
+	q.mut.Lock()
 	result := q.messages[q.head]
 	q.head++
+	q.mut.Unlock()
 	return result, true
 }
 
