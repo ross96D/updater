@@ -188,11 +188,10 @@ func TestUpdateEnpoint(t *testing.T) {
 			level := r.FindSubmatch(utils.StripAnsiBytes(last))[r.SubexpIndex("Level")]
 			switch data.expectError {
 			case noerror:
-				assert.NotEqual(t, "ERR", string(level))
-				assert.NotEqual(t, "WRN", string(level))
+				assert.Equal(t, "INF", string(level))
 
 			case nofatal:
-				assert.NotEqual(t, "ERR", string(level))
+				assert.Equal(t, "WRN", string(level))
 
 			case fatal:
 				assert.Equal(t, "ERR", string(level))
