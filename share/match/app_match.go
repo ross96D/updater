@@ -171,15 +171,19 @@ func (u *appUpdater) UpdateAssets() error {
 			break
 		}
 		wg.Add(1)
+		assetLogger := u.log.With().Logger()
+		assetLogger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+			return c.Str("asset", asset.Name)
+		})
 		go func() {
 			if asset.Service != "" {
-				if err := u.updateTask(asset.Asset); err != nil {
+				if err := u.updateTask(assetLogger, asset.Asset); err != nil {
 					append_errors(err)
 				}
 			} else {
 				var fnCopy func() (err error)
 				var err error
-				if fnCopy, err = u.updateAsset(asset.Asset); err != nil {
+				if fnCopy, err = u.updateAsset(assetLogger, asset.Asset); err != nil {
 					append_errors(err)
 				} else {
 					if err = fnCopy(); err != nil {
@@ -195,15 +199,18 @@ func (u *appUpdater) UpdateAssets() error {
 
 	for ; i < len(u.app.AsstesOrder); i++ {
 		asset := u.app.AsstesOrder[i]
-		// if asset.Independent this could be done concurrently
+		assetLogger := u.log.With().Logger()
+		assetLogger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+			return c.Str("asset", asset.Name)
+		})
 		if asset.Service != "" {
-			if err := u.updateTask(asset.Asset); err != nil {
+			if err := u.updateTask(assetLogger, asset.Asset); err != nil {
 				errs = append(errs, err)
 			}
 		} else {
 			var fnCopy func() (err error)
 			var err error
-			if fnCopy, err = u.updateAsset(asset.Asset); err != nil {
+			if fnCopy, err = u.updateAsset(assetLogger, asset.Asset); err != nil {
 				errs = append(errs, err)
 			} else {
 				if err = fnCopy(); err != nil {
@@ -215,35 +222,35 @@ func (u *appUpdater) UpdateAssets() error {
 	return PackError(errs...)
 }
 
-func (u *appUpdater) updateTask(asset configuration.Asset) (err error) {
+func (u *appUpdater) updateTask(logger zerolog.Logger, asset configuration.Asset) (err error) {
 	var fnCopy func() error
-	if fnCopy, err = u.updateAsset(asset); err != nil {
+	if fnCopy, err = u.updateAsset(logger, asset); err != nil {
 		return fmt.Errorf("updateTask %w", err)
 	}
 
 	// TODO this needs a mutex?
-	u.log.Info().Msgf("stop %s", asset.Service)
+	logger.Info().Msgf("stop %s", asset.Service)
 	if err = u.io.ServiceStop(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
-		u.log.Error().Err(err).Msgf("error stoping %s", asset.Service)
+		logger.Error().Err(err).Msgf("error stoping %s", asset.Service)
 		return ErrError{fmt.Errorf("updateTask Stop() %w", err)}
 	}
 
 	defer func() {
-		u.log.Info().Msgf("start %s", asset.Service)
+		logger.Info().Msgf("start %s", asset.Service)
 		if err := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
 			// TODO Should i fail here?
-			u.log.Error().Err(err).Msgf("error starting %s", asset.Service)
+			logger.Error().Err(err).Msgf("error starting %s", asset.Service)
 		}
 	}()
 
 	return fnCopy()
 }
 
-func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err error), err error) {
+func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asset) (fnCopy func() (err error), err error) {
 	data := u.seek(asset)
 	if data == nil {
 		msg := "updateAsset() no match " + asset.Name
-		u.log.Warn().Msg(msg)
+		logger.Warn().Msg(msg)
 		return nil, errors.New(msg)
 	}
 
@@ -259,28 +266,28 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 			u.io.Remove(asset.SystemPath) //nolint: errcheck
 			err2 := u.io.RenameSafe(SystemPathOld, asset.SystemPath)
 			if err2 != nil {
-				u.log.Error().Err(err2).Msgf("move fail %s to %s", SystemPathOld, asset.SystemPath)
+				logger.Error().Err(err2).Msgf("move fail %s to %s", SystemPathOld, asset.SystemPath)
 			}
 		}
 
-		u.log.Info().Msgf("Copying from %s to %s", asset.Name, asset.SystemPath)
+		logger.Info().Msgf("Copying from %s to %s", asset.Name, asset.SystemPath)
 		if err = u.io.CopyFromReader(data, asset.SystemPath); err != nil {
-			u.log.Error().Err(err).Msgf("Copying from %s to %s. Rollback, move %s to %s", asset.Name, asset.SystemPath, SystemPathOld, asset.SystemPath)
+			logger.Error().Err(err).Msgf("Copying from %s to %s. Rollback, move %s to %s", asset.Name, asset.SystemPath, SystemPathOld, asset.SystemPath)
 			rollback()
 			return ErrError{err}
 		}
 
 		if asset.Unzip {
-			u.log.Info().Msg("unzip: " + asset.SystemPath)
+			logger.Info().Msg("unzip: " + asset.SystemPath)
 			if err = u.io.Unzip(asset.SystemPath); err != nil {
-				u.log.Error().Err(err).Msg("unzip: " + asset.SystemPath)
+				logger.Error().Err(err).Msg("unzip: " + asset.SystemPath)
 				rollback()
 				return ErrError{err}
 			}
 		}
 
 		if asset.Command != nil {
-			logger := u.log.With().Logger()
+			logger := logger.With().Logger()
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
 				return c.Str("asset", asset.Name)
 			})
@@ -293,7 +300,7 @@ func (u *appUpdater) updateAsset(asset configuration.Asset) (fnCopy func() (err 
 		if !asset.KeepOld {
 			u.io.Remove(SystemPathOld) //nolint: errcheck
 		}
-		u.log.Info().Msgf("Asset %s updated successfully", asset.Name)
+		logger.Info().Msgf("Asset %s updated successfully", asset.Name)
 		return nil
 	}
 	return
