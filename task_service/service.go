@@ -16,8 +16,6 @@ const (
 func ServiceTypeFrom(t string) ServiceType {
 	switch t {
 	case "nnsm":
-		return TaskSched
-	case "systemctl":
 		return NNSM
 	case "tasksched":
 		return TaskSched
