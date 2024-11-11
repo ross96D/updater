@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/bin/python3.10
 import subprocess
 import argparse
 from typing import List, cast
