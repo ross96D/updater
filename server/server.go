@@ -57,6 +57,7 @@ func (s *Server) setHandlers() {
 	s.router.Group(func(r chi.Router) {
 		r.Use(auth.AuthMiddelware)
 		r.Get("/list", List)
+		r.Get("/config", Config)
 		r.Group(func(r chi.Router) {
 			r.Use(logger.ResponseWithLogger)
 			r.Post("/update", Update)
@@ -93,6 +94,20 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 	os.Exit(1)
 }
 
+func Config(w http.ResponseWriter, r *http.Request) {
+	data, err := share.ReadConfigFile()
+	if err != nil {
+		log.Error().Err(err).Send()
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	w.WriteHeader(200)
+	_, err = w.Write(data)
+	if err != nil {
+		log.Error().Err(err).Msg("sending config file")
+	}
+}
+
 func Reload(w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -100,14 +115,19 @@ func Reload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-
-	// TODO is this right? i am not shure because this is only usefull on testing.. maybe use a header to confirm that we want to use the default config file
 	if len(data) == 0 {
-		err = share.Reload("config.cue")
-	} else {
-		err = share.ReloadString(string(data))
+		http.Error(w, "invalid: emtpy config", 500)
+		return
 	}
+
+	err = share.ReloadString(string(data))
 	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	err = share.ReplaceConfigFile(data)
+	if err != nil {
+		log.Error().Err(err).Msg("replacing config file")
 		http.Error(w, err.Error(), 500)
 		return
 	}

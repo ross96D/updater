@@ -14,6 +14,21 @@ import (
 )
 
 var config configuration.Configuration
+var configPath string
+
+func ConfigPath() string {
+	return configPath
+}
+
+func ReplaceConfigFile(data []byte) error {
+	f, err := os.Create(configPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	return err
+}
 
 var DefaultPath string = "nothing for now"
 
@@ -28,6 +43,7 @@ func Init(path string) error {
 	if err = changeConfig(newConfig); err != nil {
 		return err
 	}
+	configPath = path
 	return nil
 }
 
@@ -225,6 +241,10 @@ func ReloadString(data string) error {
 		return err
 	}
 	return changeConfig(newConfig)
+}
+
+func ReadConfigFile() ([]byte, error) {
+	return os.ReadFile(configPath)
 }
 
 func Reload(path string) error {
