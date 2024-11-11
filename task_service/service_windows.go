@@ -62,11 +62,11 @@ func get() (*TaskService, error) {
 type NNSMService struct{}
 
 func (NNSMService) Stop(name string) error {
-	return exec.Command("nssm.exe", "stop", name).Run()
+	return exec.Command("nssm", "stop", name).Run()
 }
 
 func (NNSMService) Start(name string) error {
-	return exec.Command("nssm.exe", "start", name).Run()
+	return exec.Command("nssm", "start", name).Run()
 }
 
 func NewService(service ServiceType) Service {
