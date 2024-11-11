@@ -2,13 +2,16 @@ package views
 
 import (
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/ross96D/updater/cmd/client/api"
 	"github.com/ross96D/updater/cmd/client/components"
 	"github.com/ross96D/updater/cmd/client/components/confirmation_dialog"
+	"github.com/ross96D/updater/cmd/client/components/input_text"
 	"github.com/ross96D/updater/cmd/client/components/list"
 	"github.com/ross96D/updater/cmd/client/components/toast"
 	"github.com/ross96D/updater/cmd/client/models"
@@ -23,6 +26,10 @@ type homeAskDeleteSelectedMsg struct{}
 type homeDeleteSelectedMsg struct{}
 type homeAskUpgradeSelectedMsg struct{}
 type homeUpgradeSelectedMsg struct{}
+type homeRequestConfigMsg struct{}
+type homeConfigSelectedMsg struct{ string }
+type homeRequestReloadMsg struct{}
+type homeReloadSelectedMsg struct{ string }
 
 var homeViewInitializeMsg = func() tea.Msg { return homeViewInitialize{} }
 var homeViewSelectItemMsg = func() tea.Msg { return homeViewSelectItem{} }
@@ -31,6 +38,10 @@ var homeAskDeleteSelectedCmd = func() tea.Msg { return homeAskDeleteSelectedMsg{
 var homeDeleteSelectedCmd = func() tea.Msg { return homeDeleteSelectedMsg{} }
 var homeAskUpgradeSelectedCmd = func() tea.Msg { return homeAskUpgradeSelectedMsg{} }
 var homeUpgradeSelectedCmd = func() tea.Msg { return homeUpgradeSelectedMsg{} }
+var homeRequestConfigCmd = func() tea.Msg { return homeRequestConfigMsg{} }
+var homeConfigSelectedCmd = func(path string) tea.Cmd { return func() tea.Msg { return homeConfigSelectedMsg{path} } }
+var homeRequestReloadCmd = func() tea.Msg { return homeRequestReloadMsg{} }
+var homeReloadSelectedCmd = func(path string) tea.Cmd { return func() tea.Msg { return homeReloadSelectedMsg{path} } }
 
 type HomeView struct {
 	State       *state.GlobalState
@@ -138,6 +149,76 @@ func (hv HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return hv, tea.Sequence(addToastCmd, upgCmd)
 
+	case homeRequestConfigMsg:
+		return hv, components.NavigatorPush(&input_text.Model{
+			Title:     "downloaded configuration file name",
+			AcceptKey: tea.Key{Type: tea.KeyEnter},
+			AcceptCmd: homeConfigSelectedCmd,
+		})
+
+	case homeConfigSelectedMsg:
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		configCmd := func() tea.Msg {
+			server := *item.Value
+			session, err := api.NewSession(server)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
+			}
+			resp, err := session.Config()
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
+			}
+			defer resp.Close()
+			f, err := os.Create(msg.string)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			_, err = io.Copy(f, resp)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: fmt.Errorf("io.Copy %w", err)}
+			}
+			return toast.AddToastMsg(toast.New("config saved to " + msg.string))
+		}
+		return hv, configCmd
+
+	case homeRequestReloadMsg:
+		return hv, components.NavigatorPush(&input_text.Model{
+			Title:     "downloaded configuration file name",
+			AcceptKey: tea.Key{Type: tea.KeyEnter},
+			AcceptCmd: homeReloadSelectedCmd,
+		})
+
+	case homeReloadSelectedMsg:
+		item, ok := hv.list.Selected()
+		if !ok {
+			return hv, nil
+		}
+		reloadCmd := func() tea.Msg {
+			server := *item.Value
+			session, err := api.NewSession(server)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
+			}
+			f, err := os.Open(msg.string)
+			if err != nil {
+				return err
+			}
+
+			_, err = session.Reload(f)
+			if err != nil {
+				return state.ErrFetchFailMsg{ServerName: server.ServerName, Err: err}
+			}
+			return tea.Batch(
+				state.Configuration().State.FetchCmdBy(server),
+				components.MsgCmd(toast.AddToastMsg(toast.New("config reloaded from "+msg.string))),
+			)
+		}
+		return hv, reloadCmd
+
 	case state.GlobalStateSyncMsg:
 		hv.init()
 		cmd = tea.WindowSize()
@@ -229,6 +310,24 @@ func (hv *HomeView) init() {
 					),
 					Action: func() tea.Cmd {
 						return homeAskUpgradeSelectedCmd
+					},
+				},
+				{
+					Key: key.NewBinding(
+						key.WithKeys("c", "C"),
+						key.WithHelp("c", "updgrade server"),
+					),
+					Action: func() tea.Cmd {
+						return homeRequestConfigCmd
+					},
+				},
+				{
+					Key: key.NewBinding(
+						key.WithKeys("r", "R"),
+						key.WithHelp("r", "updgrade server"),
+					),
+					Action: func() tea.Cmd {
+						return homeRequestReloadCmd
 					},
 				},
 			},

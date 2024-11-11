@@ -34,6 +34,15 @@ func (err ErrNetworkMsg) Error() string {
 	return ErrNetwork(err).Error()
 }
 
+func CheckStatus(response *http.Response) error {
+	if response.StatusCode < 400 {
+		return nil
+	}
+	defer response.Body.Close()
+	errstr, _ := io.ReadAll(response.Body)
+	return fmt.Errorf("status: %d - %s", response.StatusCode, errstr)
+}
+
 func Request(method, url string, body io.Reader) (*http.Request, error) {
 	request, err := http.NewRequestWithContext(context.Background(), method, url, body)
 	request.Header.Set("User-Agent", "deplo-client")
@@ -125,6 +134,10 @@ type Session struct {
 	token      []byte
 }
 
+func (session Session) ServerName() string {
+	return session.servername
+}
+
 func (session Session) List() (server user_handler.Server, err error) {
 	defer func() {
 		if err != nil {
@@ -143,18 +156,13 @@ func (session Session) List() (server user_handler.Server, err error) {
 	}
 	request.Header.Add("Authorization", "Bearer "+string(session.token))
 	resp, err := HttpClient().Do(request)
-
 	if err != nil {
 		return
 	}
-	b, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode > 400 {
-		if b == nil {
-			b = []byte("")
-		}
-		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
+	if err = CheckStatus(resp); err != nil {
 		return
 	}
+	b, _ := io.ReadAll(resp.Body)
 	err = json.Unmarshal(b, &server)
 	return
 }
@@ -179,12 +187,12 @@ func (session Session) Upgrade() (response string, err error) {
 	if err != nil {
 		return
 	}
+	if err = CheckStatus(resp); err != nil {
+		return
+	}
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return
-	}
-	if resp.StatusCode > 400 {
-		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
 	}
 	response = string(b)
 	return
@@ -217,10 +225,8 @@ func (session Session) Update(app user_handler.App, dryRun bool) (_ io.ReadClose
 	if err != nil {
 		return nil, fmt.Errorf("doing request %w", err)
 	}
-	if resp.StatusCode >= 400 {
-		b, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		err = fmt.Errorf("status: %d - %s", resp.StatusCode, string(b))
+
+	if err = CheckStatus(resp); err != nil {
 		return nil, err
 	}
 	return resp.Body, nil
@@ -234,4 +240,63 @@ func (session Session) IsValid() bool {
 	}
 	pretty.Print("token expiration", token.Expiration().String(), time.Now().String())
 	return time.Until(token.Expiration()) > time.Minute
+}
+
+func (session Session) Config() (response io.ReadCloser, err error) {
+	defer func() {
+		if err != nil {
+			err = ErrNetworkMsg{
+				ServerName: session.servername,
+				Message:    err.Error(),
+			}
+		}
+	}()
+	uri := session.url.JoinPath("config")
+
+	request, err := Request(http.MethodGet, uri.String(), nil)
+	if err != nil {
+		return
+	}
+	request.Header.Add("Authorization", "Bearer "+string(session.token))
+	resp, err := HttpClient().Do(request)
+	if err != nil {
+		return
+	}
+	if err = CheckStatus(resp); err != nil {
+		return
+	}
+	response = resp.Body
+	return
+}
+
+func (session Session) Reload(data io.Reader) (response string, err error) {
+	defer func() {
+		if err != nil {
+			err = ErrNetworkMsg{
+				ServerName: session.servername,
+				Message:    err.Error(),
+			}
+		}
+	}()
+	uri := session.url.JoinPath("reload")
+
+	request, err := Request(http.MethodPost, uri.String(), data)
+	if err != nil {
+		return
+	}
+	request.Header.Add("Authorization", "Bearer "+string(session.token))
+
+	resp, err := HttpClient().Do(request)
+	if err != nil {
+		return
+	}
+	if err = CheckStatus(resp); err != nil {
+		return
+	}
+	respstr, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	response = string(respstr)
+	return
 }

@@ -127,6 +127,31 @@ var ErrFetchFailCmd = func(name string, err error) tea.Cmd {
 	}
 }
 
+func (gs *GlobalState) FetchCmdBy(server models.Server) tea.Cmd {
+	if gs.servers == nil {
+		gs.servers = &[]models.Server{}
+	}
+	f := func(server models.Server) tea.Cmd {
+		return func() tea.Msg {
+			session, err := api.NewSession(server)
+			if err != nil {
+				return ErrFetchFailCmd(server.ServerName, err)
+			}
+			s, err := session.List()
+			if err != nil {
+				return ErrFetchFailCmd(server.ServerName, err)
+			}
+			return FetchResultMsg{ServerName: server.ServerName, Server: s}
+		}
+	}
+	for _, s := range *gs.servers {
+		if s.ServerName == server.ServerName {
+			return f(server)
+		}
+	}
+	return nil
+}
+
 func (gs *GlobalState) FetchCmd() tea.Cmd {
 	if gs.servers == nil {
 		gs.servers = &[]models.Server{}
