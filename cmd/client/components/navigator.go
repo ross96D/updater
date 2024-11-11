@@ -53,9 +53,9 @@ func (s *stack) Pop() tea.Model {
 	if l == 1 {
 		return s.list[l-1]
 	}
+	model := s.list[l-1]
 	s.list = s.list[:l-1]
-
-	return s.list[l-2]
+	return model
 }
 
 type navigatorPush tea.Model
@@ -113,8 +113,11 @@ func (nav *Navigator) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case navigatorPop:
 		var cmd [2]tea.Cmd = [2]tea.Cmd{nil, nil}
-		if m, ok := nav.Pop().(NavModel); ok {
+		asds := nav.Pop()
+		if m, ok := asds.(NavModel); ok {
 			cmd[0] = m.Out()
+		} else {
+			pretty.Print(asds)
 		}
 		if m, ok := nav.s.Last().(NavModel); ok {
 			cmd[1] = m.Enter()
