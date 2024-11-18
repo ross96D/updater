@@ -163,6 +163,24 @@ func (u *appUpdater) UpdateAssets() error {
 	}
 
 	wg := &sync.WaitGroup{}
+	var updateAsset = func(logger zerolog.Logger, asset configuration.Asset, wg *sync.WaitGroup) {
+		if asset.Service != "" {
+			if err := u.updateTask(logger, asset); err != nil {
+				append_errors(err)
+			}
+		} else {
+			var fnCopy func() (err error)
+			var err error
+			if fnCopy, err = u.updateAsset(logger, asset); err != nil {
+				append_errors(err)
+			} else {
+				if err = fnCopy(); err != nil {
+					append_errors(err)
+				}
+			}
+		}
+		wg.Done()
+	}
 	var i = 0
 	// executes independent assets  concurrently
 	for ; i < len(u.app.AsstesOrder); i++ {
@@ -175,24 +193,7 @@ func (u *appUpdater) UpdateAssets() error {
 		assetLogger.UpdateContext(func(c zerolog.Context) zerolog.Context {
 			return c.Str("asset", asset.Name)
 		})
-		go func() {
-			if asset.Service != "" {
-				if err := u.updateTask(assetLogger, asset.Asset); err != nil {
-					append_errors(err)
-				}
-			} else {
-				var fnCopy func() (err error)
-				var err error
-				if fnCopy, err = u.updateAsset(assetLogger, asset.Asset); err != nil {
-					append_errors(err)
-				} else {
-					if err = fnCopy(); err != nil {
-						append_errors(err)
-					}
-				}
-			}
-			wg.Done()
-		}()
+		go updateAsset(assetLogger, asset.Asset, wg)
 	}
 
 	wg.Wait()
