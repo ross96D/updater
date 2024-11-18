@@ -18,7 +18,7 @@ require (
 	github.com/sanity-io/litter v1.5.5
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/sys v0.25.0
+	golang.org/x/sys v0.27.0
 )
 
 require (
@@ -33,7 +33,6 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/hmdsefi/gograph v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
@@ -67,5 +66,6 @@ require (
 require (
 	github.com/andrewstuart/limio v0.0.0-20180925070603-17c081b6f2f5
 	github.com/charmbracelet/x/ansi v0.2.3
+	github.com/hmdsefi/gograph v0.4.2
 	github.com/ross96D/go-utils/list v0.0.0-20240917013915-97146f3e6dde
 )
