@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/utils"
@@ -101,14 +100,14 @@ func RunCommand(logger *zerolog.Logger, command configuration.Command) error {
 
 	outconsumer := &streamConsumer{logger: logger, ptype: stdout}
 	errconsumer := &streamConsumer{logger: logger, ptype: stdout}
-	//nolint errcheck
-	go io.Copy(outconsumer, buffout)
-	//nolint errcheck
-	go io.Copy(errconsumer, bufferr)
 
-	cmd.WaitDelay = time.Millisecond
+	go io.Copy(outconsumer, buffout) //nolint errcheck
+	go io.Copy(errconsumer, bufferr) //nolint errcheck
+
 	err := cmd.Run()
 
+	buffout.End.Store(true)
+	bufferr.End.Store(true)
 	outconsumer.isClosed.Store(true)
 	errconsumer.isClosed.Store(true)
 	outconsumer.consume(true)
