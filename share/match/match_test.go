@@ -17,6 +17,7 @@ func TestCommand(t *testing.T) {
 
 	err := match.RunCommand(&log.Logger, configuration.Command{
 		Command: "ls",
+		Path:    "/",
 	})
 	require.NoError(t, err)
 }
