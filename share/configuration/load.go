@@ -3,7 +3,6 @@ package configuration
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -23,8 +22,7 @@ func (err cuerror) Error() string {
 			result.WriteString(position.String())
 			result.WriteString(" ")
 		}
-		format, args := err.Msg()
-		result.WriteString(fmt.Sprintf(format, args...))
+		result.WriteString(err.Error())
 		result.WriteByte('\n')
 	}
 	return result.String()

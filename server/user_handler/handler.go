@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/logger"
@@ -140,6 +141,7 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 	} else {
 		data = match.EmptyData{}
 	}
+	time.Sleep(time.Second)
 	return match.Update(ctx, application, match.WithData(data), match.WithDryRun(dryRun))
 }
 
