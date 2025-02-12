@@ -34,7 +34,10 @@ func joinErrorsMessage(errs []error) string {
 	return unsafe.String(&b[0], len(b))
 }
 
+// Error that indicates a fail in the update
 type ErrError struct{ err error }
+
+// A collection of errors that indicates fail in the update
 type ErrErrors struct{ errs []error }
 
 func NewErrError(err error) ErrError      { return ErrError{err: err} }
