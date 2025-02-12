@@ -3,6 +3,7 @@ package configuration
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -51,4 +52,21 @@ func (d Duration) GoDuration() time.Duration {
 type User struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
+}
+
+type Command struct {
+	Command string   `json:"command"`
+	Args    []string `json:"args"`
+	Path    string   `json:"path"`
+	Timeout Duration `json:"timeout"`
+}
+
+func (c Command) String() string {
+	builder := strings.Builder{}
+	if c.Path != "" {
+		builder.WriteString(c.Path + ": ")
+	}
+	builder.WriteString(c.Command + " ")
+	builder.WriteString(strings.Join(c.Args, " "))
+	return builder.String()
 }

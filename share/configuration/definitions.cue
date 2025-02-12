@@ -20,7 +20,7 @@ base_path?:             string // path where the temporal files used by the app 
 	service_type?: "nssm" | "taskservice"
 	assets!: [...#Asset]
 
-	// Declares an assets dependency. 
+	// Declares an assets dependency.
 	// write it like:
 	//     assets_dependency: {
 	//         "asset1": ["asset2", "asset3"]
@@ -29,7 +29,7 @@ base_path?:             string // path where the temporal files used by the app 
 	// make sure not to write a cyclic dependency
 	assets_dependency?: [string]: [...string]
 
-	// use this to set a command to be run after succesfully update 
+	// use this to set a command to be run after succesfully update
 	cmd?: #Command
 
 	github_release?: #GithubRelease
@@ -60,4 +60,10 @@ base_path?:             string // path where the temporal files used by the app 
 	command!: string
 	args?: [...string]
 	path?: string
+
+	// When the command timeout the execution will continue assuming command success
+	// and the command output should be given to the in another form.
+	//
+	// This means that the on timeout the command must not be killed.
+	timeout: time.Duration() | *"5m"
 }

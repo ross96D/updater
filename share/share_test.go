@@ -79,7 +79,7 @@ func TestDependencyCyclicError(t *testing.T) {
 			}
 			auth_token: "-"
 			service:    "nothing"
-	
+
 			assets: [
 				{
 					name:        "asset1"
@@ -98,7 +98,7 @@ func TestDependencyCyclicError(t *testing.T) {
 		},
 		{
 			auth_token: "-"
-	
+
 			assets: [
 				{
 					name:        "asset2"
@@ -134,7 +134,7 @@ func TestDependencyNoCyclicError(t *testing.T) {
 			}
 			auth_token: "-"
 			service:    "nothing"
-	
+
 			assets: [
 				{
 					name:        "asset1"
@@ -168,7 +168,7 @@ func TestDependencyNoCyclicError(t *testing.T) {
 		},
 		{
 			auth_token: "-"
-	
+
 			assets: [
 				{
 					name:        "asset2"
@@ -290,6 +290,7 @@ func TestReload(t *testing.T) {
 				Command: &configuration.Command{
 					Command: "python",
 					Args:    []string{"-f", "-s"},
+					Timeout: configuration.Duration(5 * time.Minute),
 				},
 			},
 		},
