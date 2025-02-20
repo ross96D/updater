@@ -63,5 +63,10 @@ func Load(userConfigPath string) (c Configuration, err error) {
 }
 
 func LoadString(userConfig string) (c Configuration, err error) {
+	// 70 is the number of lines in definitions.cue
+	// when i tried to count the number of lines with strings.Count(userConfig, "\")
+	// it gave me 69 wich is wrong.
+	//
+	// So i let this for now... TODO make sure this is always sync with definitions.cue
 	return _load(definitions+"\n"+userConfig, 70)
 }
