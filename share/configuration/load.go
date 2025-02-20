@@ -11,14 +11,18 @@ import (
 	cuerrors "cuelang.org/go/cue/errors"
 )
 
-type cuerror struct{ error cuerrors.Error }
+type cuerror struct {
+	error cuerrors.Error
+	lines uint
+}
 
-func (err cuerror) Error() string {
+func (cerr cuerror) Error() string {
 	result := strings.Builder{}
-	errs := cuerrors.Errors(err.error)
+	errs := cuerrors.Errors(cerr.error)
 	for _, err := range errs {
 		position := err.Position().Position()
 		if position.IsValid() {
+			position.Line -= int(cerr.lines)
 			result.WriteString(position.String())
 			result.WriteString(" ")
 		}
@@ -31,14 +35,14 @@ func (err cuerror) Error() string {
 //go:embed definitions.cue
 var definitions string
 
-func _load(data string) (c Configuration, err error) {
+func _load(data string, lines uint) (c Configuration, err error) {
 	ctx := cuecontext.New()
 	value := ctx.CompileString(data)
 
 	var config Configuration
 	err = value.Decode(&config)
 	if err, ok := err.(cuerrors.Error); ok && err != nil {
-		return config, cuerror{err}
+		return config, cuerror{err, lines}
 	}
 	return config, err
 }
@@ -59,5 +63,5 @@ func Load(userConfigPath string) (c Configuration, err error) {
 }
 
 func LoadString(userConfig string) (c Configuration, err error) {
-	return _load(definitions + "\n" + userConfig)
+	return _load(definitions+"\n"+userConfig, 70)
 }
