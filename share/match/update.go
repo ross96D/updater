@@ -114,20 +114,16 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 	if u.app.Service != "" {
 		u.log.Info().Msgf("stoping app level service %s", u.app.Service)
 		err = u.io.ServiceStop(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
-		if err != nil {
-			return err
-		}
 		defer func() {
 			u.log.Info().Msgf("starting app level service %s", u.app.Service)
 			errServiceStart := u.io.ServiceStart(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
-			// include error
 			err = PackError(errServiceStart, err)
 		}()
 	}
 
 	err1 := u.UpdateAssets()
 	err3 := u.RunPostAction()
-	err = PackError(err1, err3)
+	err = PackError(err, err1, err3)
 	return
 }
 
@@ -235,19 +231,20 @@ func (u *appUpdater) updateTask(logger zerolog.Logger, asset configuration.Asset
 	// TODO this needs a mutex?
 	logger.Info().Msgf("stop %s", asset.Service)
 	if err = u.io.ServiceStop(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
-		logger.Error().Err(err).Msgf("error stoping %s", asset.Service)
-		return ErrError{fmt.Errorf("updateTask Stop() %w", err)}
+		logger.Warn().Err(err).Msgf("error stoping %s", asset.Service)
+		err = fmt.Errorf("updateTask Stop() %w", err)
 	}
 
 	defer func() {
 		logger.Info().Msgf("start %s", asset.Service)
-		if err := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
-			// TODO Should i fail here?
-			logger.Error().Err(err).Msgf("error starting %s", asset.Service)
+		if err1 := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
+			logger.Warn().Err(err1).Msgf("error starting %s", asset.Service)
+			err = PackError(err, err1)
 		}
 	}()
 
-	return fnCopy()
+	err1 := fnCopy()
+	return PackError(err, err1)
 }
 
 func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asset) (fnCopy func() (err error), err error) {
