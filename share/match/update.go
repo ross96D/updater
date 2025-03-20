@@ -261,7 +261,7 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 		if asset.CommandPre != nil {
 			logger := logger.With().Logger()
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
-				return c.Str("asset", asset.Name)
+				return c.Str("asset", asset.Name).Str("kind", "pre")
 			})
 			logger.Info().Msg("Running pre action commnad")
 			err = u.io.RunCommand(&logger, *asset.Command)
@@ -304,7 +304,7 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 		if asset.Command != nil {
 			logger := logger.With().Logger()
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
-				return c.Str("asset", asset.Name)
+				return c.Str("asset", asset.Name).Str("kind", "post")
 			})
 			logger.Info().Msg("Running post action command")
 			err = u.io.RunCommand(&logger, *asset.Command)

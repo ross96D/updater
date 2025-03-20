@@ -44,6 +44,7 @@ func CheckStatus(response *http.Response) error {
 }
 
 func Request(method, url string, body io.Reader) (*http.Request, error) {
+	// TODO this function sometime throws, wrap this to get the panic error message
 	request, err := http.NewRequestWithContext(context.Background(), method, url, body)
 	request.Header.Set("User-Agent", "deplo-client")
 	return request, err
