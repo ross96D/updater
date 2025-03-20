@@ -120,10 +120,11 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 			err = PackError(errServiceStart, err)
 		}()
 	}
+	err1 := u.RunPreAction()
 
-	err1 := u.UpdateAssets()
+	err2 := u.UpdateAssets()
 	err3 := u.RunPostAction()
-	err = PackError(err, err1, err3)
+	err = PackError(err, err1, err2, err3)
 	return
 }
 
