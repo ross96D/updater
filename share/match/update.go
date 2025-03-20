@@ -264,7 +264,7 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 				return c.Str("asset", asset.Name).Str("kind", "pre")
 			})
 			logger.Info().Msg("Running pre action commnad")
-			err = u.io.RunCommand(&logger, *asset.Command)
+			err = u.io.RunCommand(&logger, *asset.CommandPre)
 			logger.Info().Msg("Finished running pre action commnad")
 			if err != nil {
 				return err
