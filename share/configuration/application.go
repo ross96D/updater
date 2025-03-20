@@ -19,6 +19,8 @@ type Application struct {
 
 	AssetsDependency map[string][]string `json:"assets_dependency"`
 
+	CommandPre *Command `json:"cmd_pre"`
+
 	Command *Command `json:"cmd"`
 
 	GithubRelease *GithubRelease `json:"github_release"`

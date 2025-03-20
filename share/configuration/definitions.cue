@@ -29,6 +29,8 @@ base_path?:             string // path where the temporal files used by the app 
 	// make sure not to write a cyclic dependency
 	assets_dependency?: [string]: [...string]
 
+	// use this to set a command to be run before an update
+    cmd_pre?: #Command
 	// use this to set a command to be run after succesfully update
 	cmd?: #Command
 
@@ -53,6 +55,10 @@ base_path?:             string // path where the temporal files used by the app 
 
 	// if this is set to true, the asset will be decompressed
 	unzip: bool | *false
+
+	// use this to set a command to be run before an asset update
+    cmd_pre?: #Command
+	// use this to set a command to be run after succesfully update the asset
 	cmd?:  #Command
 }
 

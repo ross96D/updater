@@ -7,6 +7,7 @@ type Asset struct {
 	ServiceType string   `json:"service_type"`
 	KeepOld     bool     `json:"keep_old"`
 	Unzip       bool     `json:"unzip"`
+	CommandPre  *Command `json:"cmd_pre"`
 	Command     *Command `json:"cmd"`
 }
 

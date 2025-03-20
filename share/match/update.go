@@ -257,6 +257,20 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 
 	fnCopy = func() (err error) {
 		defer data.Close()
+
+		if asset.CommandPre != nil {
+			logger := logger.With().Logger()
+			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+				return c.Str("asset", asset.Name)
+			})
+			logger.Info().Msg("Running pre action commnad")
+			err = u.io.RunCommand(&logger, *asset.Command)
+			logger.Info().Msg("Finished running pre action commnad")
+			if err != nil {
+				return err
+			}
+		}
+
 		SystemPathOld := asset.SystemPath + ".old"
 
 		if err = u.io.RenameSafe(asset.SystemPath, SystemPathOld); err != nil {
@@ -292,7 +306,9 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
 				return c.Str("asset", asset.Name)
 			})
+			logger.Info().Msg("Running post action command")
 			err = u.io.RunCommand(&logger, *asset.Command)
+			logger.Info().Msg("Finished running post action command")
 			if err != nil {
 				return err
 			}
@@ -307,10 +323,22 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 	return
 }
 
+func (u *appUpdater) RunPreAction() error {
+	if u.app.CommandPre == nil {
+		return nil
+	}
+	u.log.Info().Msg("Running pre action command")
+	err := u.io.RunCommand(u.log, *u.app.CommandPre)
+	u.log.Info().Msg("Finish running pre action command")
+	return err
+}
+
 func (u *appUpdater) RunPostAction() error {
 	if u.app.Command == nil {
 		return nil
 	}
+	u.log.Info().Msg("Running post action command")
 	err := u.io.RunCommand(u.log, *u.app.Command)
+	u.log.Info().Msg("Finish running post action command")
 	return err
 }
