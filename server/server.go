@@ -178,7 +178,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	requestCtx := r.Context()
 	childCtx := context.WithoutCancel(requestCtx)
-	timeout := time.NewTimer(1 * time.Microsecond)
+	timeout := time.NewTimer(60 * time.Second)
 	taskChan := make(chan struct{}, 0)
 
 	logger, handler := logger.ResponseWithLogger.FromContext(childCtx)
@@ -254,7 +254,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	select {
 	case <-timeout.C:
 		logger.Warn().Msgf("timeout happen keep watching at: %s", handler.FileName())
-		handler.SendAll(time.NewTimer(time.Microsecond))
+		handler.SendAll(time.NewTimer(time.Second))
 	case <-taskChan:
 		timeout.Stop()
 	}
