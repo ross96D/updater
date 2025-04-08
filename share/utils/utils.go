@@ -91,3 +91,33 @@ func StripAnsi(s string) string {
 func StripAnsiBytes(b []byte) []byte {
 	return reAnsi.ReplaceAll(b, []byte{})
 }
+
+const TmpDirSubDirectory = "__updater__001020"
+
+func TempDirectory() string {
+	tmp := os.TempDir()
+	return filepath.Join(tmp, TmpDirSubDirectory)
+}
+
+func CreateTempFile() (path string, file *os.File, err error) {
+	dir := TempDirectory()
+	stat, err := os.Stat(dir)
+	if err != nil {
+		err := os.MkdirAll(dir, 0777)
+		Assert(err == nil, "CreateTempFile os.MkdirAll fail with %s", err)
+	} else {
+		Assert(stat.IsDir(), "CreateTempFile expected base directory is not a directory %s", dir)
+	}
+	file, err = os.CreateTemp(dir, "")
+	if err != nil {
+		return "", nil, err
+	}
+	return filepath.Join(dir, file.Name()), file, nil
+}
+
+func Assert(condition bool, message string, args ...any) {
+	if !condition {
+		message = fmt.Sprintf(message, args)
+		panic(message)
+	}
+}

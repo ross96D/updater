@@ -1,12 +1,14 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -174,69 +176,88 @@ func List(w http.ResponseWriter, r *http.Request) {
 }
 
 func Update(w http.ResponseWriter, r *http.Request) {
-	logger := logger.ResponseWithLogger.FromContext(r.Context())
+	requestCtx := r.Context()
+	childCtx := context.WithoutCancel(requestCtx)
+	timeout := time.NewTimer(1 * time.Microsecond)
+	taskChan := make(chan struct{}, 0)
+
+	logger, handler := logger.ResponseWithLogger.FromContext(childCtx)
 
 	dryRun := r.Header.Get("dry-run") == "true"
 
-	switch r.Context().Value(auth.TypeKey) {
-	case "webhook":
-		app := r.Context().Value(auth.AppValueKey).(configuration.Application)
+	go func(ctx context.Context, channel chan<- struct{}) {
+		defer func() {
+			handler.End()
+			channel <- struct{}{}
+		}()
+		switch r.Context().Value(auth.TypeKey) {
+		case "webhook":
+			app := ctx.Value(auth.AppValueKey).(configuration.Application)
 
-		data, err := ParseForm(r)
-		// we need to parse the body first before sending a message
-		logger.Info().Bool("dry-run", dryRun).Send()
-		if err != nil {
-			logger.Error().Err(err).Msg("ParseForm")
-			return
-		}
-
-		err = match.Update(r.Context(), app, match.WithData(data), match.WithDryRun(dryRun))
-
-		if err != nil {
-			switch err.(type) {
-			case match.ErrErrors, match.ErrError:
-				logger.Error().Err(err).
-					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
-					Send()
-			default:
-				logger.Warn().Err(err).
-					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
-					Send()
+			data, err := ParseForm(r)
+			// we need to parse the body first before sending a message
+			logger.Info().Bool("dry-run", dryRun).Send()
+			if err != nil {
+				logger.Error().Err(err).Msg("ParseForm")
+				return
 			}
-			return
-		}
-	case "user":
-		payload, err := io.ReadAll(r.Body)
-		// we need to parse the body first before sending a message
-		logger.Info().Bool("dry-run", dryRun).Send()
-		if err != nil {
-			logger.Error().Err(err).Msg("reading data")
-			return
-		}
-		defer r.Body.Close()
 
-		err = user_handler.HandlerUserUpdate(r.Context(), payload, dryRun)
+			err = match.Update(ctx, app, match.WithData(data), match.WithDryRun(dryRun))
 
-		if err != nil {
-			switch err.(type) {
-			// TODO needs to refactor this because all real errors would need to be of this type
-			case match.ErrErrors, match.ErrError:
-				logger.Error().Err(err).
-					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
-					Send()
-			default:
-				logger.Warn().Err(err).
-					Str("reqID", utils.Ignore2(hlog.IDFromCtx(r.Context())).String()).
-					Send()
+			if err != nil {
+				switch err.(type) {
+				case match.ErrErrors, match.ErrError:
+					logger.Error().Err(err).
+						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
+						Send()
+				default:
+					logger.Warn().Err(err).
+						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
+						Send()
+				}
+				return
 			}
+		case "user":
+			payload, err := io.ReadAll(r.Body)
+			// we need to parse the body first before sending a message
+			logger.Info().Bool("dry-run", dryRun).Send()
+			if err != nil {
+				logger.Error().Err(err).Msg("reading data")
+				return
+			}
+			defer r.Body.Close()
+
+			err = user_handler.HandlerUserUpdate(ctx, payload, dryRun)
+
+			if err != nil {
+				switch err.(type) {
+				// TODO needs to refactor this because all real errors would need to be of this type
+				case match.ErrErrors, match.ErrError:
+					logger.Error().Err(err).
+						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
+						Send()
+				default:
+					logger.Warn().Err(err).
+						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
+						Send()
+				}
+				return
+			}
+		default:
+			http.Error(w, "unsupported: "+ctx.Value(auth.TypeKey).(string), 500)
 			return
 		}
-	default:
-		http.Error(w, "unsupported: "+r.Context().Value(auth.TypeKey).(string), 500)
-		return
+
+		logger.Info().Msg("upload update success")
+	}(childCtx, taskChan)
+
+	select {
+	case <-timeout.C:
+		logger.Warn().Msgf("timeout happen keep watching at: %s", handler.FileName())
+		handler.SendAll(time.NewTimer(time.Microsecond))
+	case <-taskChan:
+		timeout.Stop()
 	}
-
-	logger.Info().Msg("upload update success")
 }
 
 type Data struct {

@@ -129,7 +129,7 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 		return errors.New("no github repo configured")
 	}
 
-	logger := logger.ResponseWithLogger.FromContext(ctx)
+	logger, _ := logger.ResponseWithLogger.FromContext(ctx)
 	logger.Info().Msgf("Requesting release from github.com/%s/%s ", application.GithubRelease.Owner, application.GithubRelease.Repo)
 	var data match.Data
 	if !dryRun {

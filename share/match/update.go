@@ -140,9 +140,10 @@ func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 }
 
 func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...UpdateOpts) *appUpdater {
+	l, _ := logger.ResponseWithLogger.FromContext(ctx)
 	appUpd := &appUpdater{
 		app: app,
-		log: logger.ResponseWithLogger.FromContext(ctx),
+		log: l,
 		io:  implIO{},
 	}
 

@@ -2,22 +2,25 @@ package logger
 
 import (
 	"context"
-	"io"
+	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/ross96D/updater/share/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 type message []byte
 
-// small and simple implementation of a queue
+// small and simple implementation of a CircularQueue
 // not thread safe
-type queue struct {
+type CircularQueue struct {
 	// if queue gets filled incoming messages will be dropped
 	messages [256]message
 	head     uint8
@@ -26,7 +29,7 @@ type queue struct {
 	mut sync.RWMutex
 }
 
-func (q *queue) InQueue() uint8 {
+func (q *CircularQueue) InQueue() uint8 {
 	q.mut.RLock()
 	// uses uint8 overflow
 	r := q.tail - q.head
@@ -34,7 +37,7 @@ func (q *queue) InQueue() uint8 {
 	return r
 }
 
-func (q *queue) Space() uint8 {
+func (q *CircularQueue) Space() uint8 {
 	q.mut.RLock()
 	// uses uint8 overflow
 	r := (q.head - 1) - q.tail
@@ -43,7 +46,7 @@ func (q *queue) Space() uint8 {
 
 }
 
-func (q *queue) push(m message) {
+func (q *CircularQueue) push(m message) {
 	if q.Space() == 0 {
 		return
 	}
@@ -63,7 +66,7 @@ func (q *queue) push(m message) {
 	q.mut.Unlock()
 }
 
-func (q *queue) pop() (message, bool) {
+func (q *CircularQueue) pop() (message, bool) {
 	if q.InQueue() == 0 {
 		return nil, false
 	}
@@ -74,104 +77,191 @@ func (q *queue) pop() (message, bool) {
 	return result, true
 }
 
-func (q *queue) Write(p []byte) (int, error) {
+func (q *CircularQueue) Write(p []byte) (int, error) {
 	q.push(message(p))
 	return len(p), nil
 }
 
-type responseHandler struct {
-	ctx        context.Context
-	controller *http.ResponseController
-	writer     http.ResponseWriter
-	q          *queue
-	endCh      chan bool
-	notify     chan bool
+type fileWriter struct {
+	file     *os.File
+	filepath string
 }
 
-func (handler *responseHandler) write(m message) error {
-	_, err := handler.writer.Write(m)
+func (w *fileWriter) write(m message) error {
+	_, err := w.file.Write(m)
 	if err != nil {
 		return err
 	}
-	return handler.controller.Flush()
+	// TODO Should we sync here????
+	// Maybe is necessary for showing up to date content on the web
+	return w.file.Sync()
 }
 
-func (handler *responseHandler) sendAll() {
+type responseWriter struct {
+	ctx        context.Context
+	controller *http.ResponseController
+	writer     http.ResponseWriter
+}
+
+type CtxExpired string
+
+func (CtxExpired) Error() string {
+	return "context expired"
+}
+
+const errCtxExpired CtxExpired = ""
+
+func (w *responseWriter) write(m message) error {
+	if w.ctx.Err() != nil {
+		return errCtxExpired
+	}
+	_, err := w.writer.Write(m)
+	if err != nil {
+		return err
+	}
+	return w.controller.Flush()
+}
+
+type Handler struct {
+	resp  *responseWriter
+	file  fileWriter
+	queue *CircularQueue
+
+	sendSignal chan struct{}
+	endSignal  chan struct{}
+
+	isHandling atomic.Bool
+}
+
+func (h *Handler) FileName() string {
+	return filepath.Base(h.file.file.Name())
+}
+
+func (h *Handler) Write(p []byte) (int, error) {
+	return h.queue.Write(p)
+}
+
+func NewHandler(w http.ResponseWriter, r *http.Request) *Handler {
+	_, file, err := utils.CreateTempFile()
+	utils.Assert(err == nil, "NewHandler failed to create temp file %s", err)
+
+	sendSignal := make(chan struct{})
+	endSignal := make(chan struct{})
+
+	return &Handler{
+		sendSignal: sendSignal,
+		endSignal:  endSignal,
+
+		queue: &CircularQueue{},
+
+		resp: &responseWriter{
+			ctx:        r.Context(),
+			writer:     w,
+			controller: http.NewResponseController(w),
+		},
+		file: fileWriter{
+			file: file,
+		},
+	}
+}
+
+func (h *Handler) write(m message) error {
+	var err1 error
+	if h.resp != nil {
+		err1 = h.resp.write(m)
+		if err1 == errCtxExpired {
+			err1 = nil
+			h.resp = nil
+		}
+	}
+	err2 := h.file.write(m)
+	return errors.Join(err1, err2)
+}
+
+func (h *Handler) sendAll() {
 	for {
-		m, ok := handler.q.pop()
+		m, ok := h.queue.pop()
 		if !ok {
 			break
 		}
-		if err := handler.write(m); err != nil {
+		if err := h.write(m); err != nil {
 			log.Debug().Err(err).Caller().Send()
 			break
 		}
 	}
 }
 
-func (handler *responseHandler) handle() {
-	handler.endCh = make(chan bool)
+func (h *Handler) Handle() {
+	h.isHandling.Store(true)
 	for {
 		select {
-		case <-handler.ctx.Done():
-			handler.sendAll()
+		case <-h.endSignal:
 			goto end
-		case <-handler.endCh:
-			handler.sendAll()
-			goto end
+		case <-h.sendSignal:
+			h.sendAll()
+			// notify the sendAll finished
+			h.sendSignal <- struct{}{}
 		default:
-			m, ok := handler.q.pop()
+			m, ok := h.queue.pop()
 			if !ok {
 				// allow context switch and reduce cpu pressure
 				time.Sleep(100 * time.Microsecond)
 				continue
 			}
-			if err := handler.write(m); err != nil {
+			if err := h.write(m); err != nil {
 				log.Debug().Err(err).Caller().Send()
 				goto end
 			}
 		}
 	}
 end:
-	if handler.notify != nil {
-		handler.notify <- true
+	h.isHandling.Store(false)
+}
+
+func (h *Handler) SendAll(timeout *time.Timer) {
+	// guard invalid calls to channels
+	if !h.isHandling.Load() {
+		return
+	}
+	h.sendSignal <- struct{}{}
+	select {
+	case <-h.sendSignal:
+	case <-timeout.C:
 	}
 }
 
-func (handler *responseHandler) end() {
-	handler.notify = make(chan bool)
-	handler.endCh <- true
+func (h *Handler) End() {
+	// guard invalid calls to channels
+	if !h.isHandling.Load() {
+		return
+	}
+	h.sendSignal <- struct{}{}
 	t := time.NewTimer(100 * time.Millisecond)
 	select {
-	case <-handler.notify:
+	case <-h.sendSignal:
 	case <-t.C:
+		go func() {
+			h.endSignal <- struct{}{}
+		}()
 	}
 }
 
-func New(ctx context.Context, logger zerolog.Logger, responseWriter http.ResponseWriter, logWriter io.Writer) (l zerolog.Logger, end func()) {
-	queue := &queue{}
-	handler := &responseHandler{
-		controller: http.NewResponseController(responseWriter),
-		writer:     responseWriter,
-		q:          queue,
-		ctx:        ctx,
-	}
+func New(logger zerolog.Logger, r *http.Request, w http.ResponseWriter) (handler *Handler, l *zerolog.Logger, err error) {
+	handler = NewHandler(w, r)
 	wait := atomic.Bool{}
 	wait.Store(true)
 	go func() {
 		wait.Store(false)
-		handler.handle()
+		handler.Handle()
 	}()
 	// allow the handler to be run first
 	for wait.Load() {
 		runtime.Gosched()
 	}
-	writer := zerolog.MultiLevelWriter(
-		zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-			w.Out = queue
-		}),
-		logWriter,
-	)
-
-	return logger.Output(writer), handler.end
+	writer := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
+		w.Out = handler
+	})
+	logger = logger.Output(writer)
+	l = &logger
+	return
 }

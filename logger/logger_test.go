@@ -1,33 +1,34 @@
 package logger_test
 
 import (
-	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/ross96D/updater/logger"
+	"github.com/ross96D/updater/share/utils"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLogger(t *testing.T) {
-	buff := bytes.Buffer{}
-	consoleWriter := zerolog.NewConsoleWriter(func(w *zerolog.ConsoleWriter) {
-		w.Out = &buff
-	})
+	var path string
+	logg := zerolog.New(nil).With().Timestamp().Int("test", 0).Logger()
 	testLogger := func(w http.ResponseWriter, r *http.Request) {
-		logger, endFunc := logger.New(
-			r.Context(),
-			zerolog.New(nil).With().Timestamp().Int("test", 0).Logger(),
+		handler, logger, err := logger.New(
+			logg,
+			r,
 			w,
-			consoleWriter,
 		)
+		require.NoError(t, err)
 		for i := 0; i < 5000; i++ {
 			logger.Info().Msg("test")
 		}
-		endFunc()
+		path = filepath.Join(utils.TempDirectory(), handler.FileName())
+		handler.End()
 	}
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
@@ -40,5 +41,8 @@ func TestLogger(t *testing.T) {
 	data, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 
-	require.Equal(t, buff.String(), string(data))
+	buff, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	require.Equal(t, string(buff), string(data))
 }
