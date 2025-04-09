@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
+	"html/template"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/websocket"
 	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/server/auth"
 	"github.com/ross96D/updater/server/user_handler"
@@ -23,6 +26,9 @@ import (
 	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
 )
+
+//go:embed view_file.html
+var viewFile string
 
 type Server struct {
 	router   *chi.Mux
@@ -54,6 +60,9 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) setHandlers() {
+	templ, err := template.New("").Parse(viewFile)
+	utils.Assert(err == nil, "template.New.Parse failed %s", err)
+
 	s.router.Use(middleware.Recoverer)
 	s.router.Use(logger.LoggerMiddleware)
 	s.router.Group(func(r chi.Router) {
@@ -66,6 +75,27 @@ func (s *Server) setHandlers() {
 		})
 		r.Post("/reload", Reload)
 		r.Post("/upgrade", Upgrade)
+	})
+	s.router.Group(func(r chi.Router) {
+		r.Get("/view/{file}", func(w http.ResponseWriter, r *http.Request) {
+			file := chi.URLParam(r, "file")
+			if file == "" {
+				w.WriteHeader(404)
+				return
+			}
+			templ.Execute(w, struct{ FileName string }{
+				FileName: file,
+			})
+		})
+		r.Handle(
+			"/ws/{file}",
+			webSocketHandler{
+				upgrader: websocket.Upgrader{
+					ReadBufferSize:  4086,
+					WriteBufferSize: 4086,
+				},
+			},
+		)
 	})
 	s.router.Post("/login", Login)
 }

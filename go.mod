@@ -66,6 +66,8 @@ require (
 require (
 	github.com/andrewstuart/limio v0.0.0-20180925070603-17c081b6f2f5
 	github.com/charmbracelet/x/ansi v0.2.3
+	github.com/fsnotify/fsnotify v1.4.7
+	github.com/gorilla/websocket v1.5.3
 	github.com/hmdsefi/gograph v0.4.2
 	github.com/ross96D/go-utils/list v0.0.0-20240917013915-97146f3e6dde
 )
