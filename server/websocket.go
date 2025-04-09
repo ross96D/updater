@@ -103,11 +103,7 @@ func watchFile(ctx context.Context, path string, file *os.File) (<-chan message,
 			select {
 			case event := <-w.Events:
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					println("-------------------------- RECIEVE fsnotify.Write  -------------------------------")
-					// read file and look for diff with repect of previous file
-					// file.Seek(offset, 0)
 					data, err := io.ReadAll(file)
-					print("------------------ DATA LEN ", len(data), "----------------")
 					chn <- message{err: err, data: data}
 				}
 			case <-ctx.Done():
@@ -124,13 +120,11 @@ func writeData(conn *websocket.Conn, file *os.File) error {
 		n, err := file.Read(buffer[:])
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				println("-------------------------- END writeData -------------------------------")
 				return nil
 			} else {
 				return err
 			}
 		}
-		println("-------------------------- SEND MESSAGE IN WRITE DATA  -------------------------------")
 		conn.SetWriteDeadline(time.Now().Add(30 * time.Second))
 		err = conn.WriteMessage(websocket.TextMessage, buffer[0:n])
 		if err != nil {
