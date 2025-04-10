@@ -283,7 +283,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case <-timeout.C:
-		logger.Warn().Msgf("timeout happen keep watching at: %s", handler.FileName())
+		logger.Warn().Msgf("processing update request too long, the update will continue and you can watch the logs at: %s/view/%s", r.Host, handler.FileName())
 		handler.SendAll(time.NewTimer(time.Second))
 	case <-taskChan:
 		timeout.Stop()
