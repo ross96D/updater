@@ -60,8 +60,6 @@ var ResponseWithLogger responseWithLogger = func(next http.Handler) http.Handler
 		handler, logger, err := New(log.Logger, r, w)
 		utils.Assert(err == nil, "could not create logger %s", err)
 
-		logger.Info().Msgf("temp file name is %s", handler.FileName())
-
 		r = r.WithContext((responseWithLogger)(nil).WithContex(r.Context(), &result{
 			logger:  logger,
 			handler: handler,
