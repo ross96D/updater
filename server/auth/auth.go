@@ -55,6 +55,10 @@ func AuthMiddelware(next http.Handler) http.Handler {
 	})
 }
 
+func CheckAuthToken(token []byte) bool {
+	return checkUserToken(token, []byte(share.Config().UserSecretKey)) == nil
+}
+
 func parseUserToken(rawToken []byte) (token []byte, err error) {
 	i := 0
 	for ; i < len(rawToken); i++ {

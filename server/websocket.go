@@ -12,6 +12,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
+	"github.com/ross96D/updater/server/auth"
 	"github.com/ross96D/updater/share/utils"
 )
 
@@ -45,6 +46,18 @@ func (wsh webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	conn.SetReadDeadline(time.Now().Add(15 * time.Second))
+	mtype, data, err := conn.ReadMessage()
+	if err != nil {
+		return
+	}
+	if mtype != websocket.TextMessage {
+		return
+	}
+	if !auth.CheckAuthToken(data) {
+		return
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
