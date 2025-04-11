@@ -1,6 +1,6 @@
 module github.com/ross96D/updater
 
-go 1.23.0
+go 1.24.0
 
 require (
 	cuelang.org/go v0.8.0
