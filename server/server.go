@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -211,7 +212,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	timeout := time.NewTimer(60 * time.Second)
 	taskChan := make(chan struct{}, 0)
 
-	logger, handler := logger.ResponseWithLogger.FromContext(childCtx)
+	logger, handler := logger.LoggerCtx_FromContext(childCtx)
 
 	dryRun := r.Header.Get("dry-run") == "true"
 
@@ -224,7 +225,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		case "webhook":
 			app := ctx.Value(auth.AppValueKey).(configuration.Application)
 
-			data, err := ParseForm(r)
+			data, err := TempFileData_ParseForm(r)
 			// we need to parse the body first before sending a message
 			logger.Info().Bool("dry-run", dryRun).Send()
 			if err != nil {
@@ -290,11 +291,33 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type Data struct {
+type filedata struct {
+	file *os.File
+	path string
+}
+type TempFileData struct {
+	data map[string]filedata
+}
+
+func (d TempFileData) Get(name string) io.ReadCloser {
+	if v, ok := d.data[name]; ok {
+		return v.file
+	}
+	return nil
+}
+
+func (d TempFileData) Clean() {
+	for _, v := range d.data {
+		v.file.Close()
+		os.Remove(v.path)
+	}
+}
+
+type StreamData struct {
 	form *multipart.Form
 }
 
-func (d Data) Get(name string) io.ReadCloser {
+func (d StreamData) Get(name string) io.ReadCloser {
 	headers, ok := d.form.File[name]
 	if !ok || len(headers) == 0 {
 		return nil
@@ -308,7 +331,19 @@ func (d Data) Get(name string) io.ReadCloser {
 	return r
 }
 
-func ParseForm(r *http.Request) (match.Data, error) {
+func (d StreamData) Clean() {}
+
+func StreamData_ParseForm(r *http.Request) (match.Data, error) {
+	err := r.ParseMultipartForm(10 << 20) // store 10 MB in memory
+	if err != nil {
+		df := make([]byte, 100)
+		n, err2 := r.Body.Read(df)
+		return nil, fmt.Errorf("%d %s %w", n, err2.Error(), err)
+	}
+	return StreamData{form: r.MultipartForm}, nil
+}
+
+func TempFileData_ParseForm(r *http.Request) (match.Data, error) {
 	err := r.ParseMultipartForm(10 << 20) // store 10 MB in memory
 	if err != nil {
 		df := make([]byte, 100)
@@ -316,5 +351,28 @@ func ParseForm(r *http.Request) (match.Data, error) {
 		return nil, fmt.Errorf("%d %s %w", n, err2.Error(), err)
 	}
 
-	return Data{form: r.MultipartForm}, nil
+	result := make(map[string]filedata)
+	for k, v := range r.MultipartForm.File {
+		mf, err := v[0].Open()
+		if err != nil {
+			return nil, fmt.Errorf("file %s  multipartForm.Open %w", k, err)
+		}
+		f, err := os.CreateTemp("", "__tempfile_updater_")
+		if err != nil {
+			return nil, fmt.Errorf("file %s createTemp %w", k, err)
+		}
+		_, err = io.Copy(f, mf)
+		if err != nil {
+			return nil, fmt.Errorf("file %s copy to temp file %w", k, err)
+		}
+		_, err = f.Seek(0, 0)
+		if err != nil {
+			return nil, fmt.Errorf("file %s seek %w", k, err)
+		}
+		result[k] = filedata{
+			file: f,
+			path: filepath.Join(os.TempDir(), f.Name()),
+		}
+	}
+	return TempFileData{data: result}, nil
 }

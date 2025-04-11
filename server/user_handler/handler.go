@@ -40,6 +40,7 @@ func NewGithubReleaseData(app configuration.Application) (match.Data, error) {
 	return GithubReleaseData{client: client, release: release}, nil
 }
 
+func (gd GithubReleaseData) Clean() {}
 func (gd GithubReleaseData) Get(name string) io.ReadCloser {
 	if name == "" {
 		return nil
@@ -129,7 +130,7 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 		return errors.New("no github repo configured")
 	}
 
-	logger, _ := logger.ResponseWithLogger.FromContext(ctx)
+	logger, _ := logger.LoggerCtx_FromContext(ctx)
 	logger.Info().Msgf("Requesting release from github.com/%s/%s ", application.GithubRelease.Owner, application.GithubRelease.Repo)
 	var data match.Data
 	if !dryRun {

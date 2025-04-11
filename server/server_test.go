@@ -31,11 +31,11 @@ func TestUpdateEnpoint(t *testing.T) {
 	port:            7432
 	user_secret_key: "secret_key"
 	user_jwt_expiry: "2h"
-	
+
 	apps: [
 		{
 			auth_token: "identifier-secret-token"
-	
+
 			assets: [
 				{
 					name:        "zipped"
@@ -233,7 +233,7 @@ func TestParseMultipartForm(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	func(w http.ResponseWriter, r *http.Request) {
-		data, err := server.ParseForm(r)
+		data, err := server.StreamData_ParseForm(r)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return

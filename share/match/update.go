@@ -82,15 +82,18 @@ func PackError(errs ...error) error {
 
 type Data interface {
 	Get(name string) io.ReadCloser
+	Clean()
 }
 
 type NoData struct{}
 
 func (NoData) Get(name string) io.ReadCloser { return nil }
+func (NoData) Clean()                        {}
 
 type EmptyData struct{}
 
 func (EmptyData) Get(name string) io.ReadCloser { return io.NopCloser(bytes.NewReader([]byte{})) }
+func (EmptyData) Clean()                        {}
 
 type UpdateOpts func(*appUpdater)
 
@@ -110,6 +113,7 @@ func WithData(data Data) UpdateOpts {
 
 func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) (err error) {
 	u := NewAppUpdater(ctx, app, opts...)
+	defer u.data.Clean()
 
 	if u.app.Service != "" {
 		u.log.Info().Msgf("stoping app level service %s", u.app.Service)
@@ -140,7 +144,7 @@ func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {
 }
 
 func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...UpdateOpts) *appUpdater {
-	l, _ := logger.ResponseWithLogger.FromContext(ctx)
+	l, _ := logger.LoggerCtx_FromContext(ctx)
 	appUpd := &appUpdater{
 		app: app,
 		log: l,

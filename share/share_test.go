@@ -13,10 +13,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share"
 	"github.com/ross96D/updater/share/configuration"
 	"github.com/ross96D/updater/share/match"
 	"github.com/ross96D/updater/share/utils"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,6 +28,7 @@ const testSysPath = "test_sys_path"
 
 type TestData map[string]io.Reader
 
+func (t TestData) Clean() {}
 func (t TestData) Get(name string) io.ReadCloser {
 	return io.NopCloser(t[name])
 }
@@ -356,9 +359,8 @@ func TestPostActionCommand(t *testing.T) {
 			Args:    []string{"-n", "test"},
 		},
 	}
-
 	err := match.NewAppUpdater(
-		context.Background(),
+		logger.LoggerCtx_WithContex(context.Background(), &log.Logger, nil),
 		app,
 		match.WithData(match.NoData{}),
 		match.WithDryRun(true),
