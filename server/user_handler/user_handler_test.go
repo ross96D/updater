@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/ross96D/updater/server/user_handler"
 	"github.com/ross96D/updater/share"
@@ -66,7 +65,6 @@ func TestHandleUserAppsList(t *testing.T) {
 							Command: "cmd",
 							Args:    []string{"arg1", "arg2"},
 							Path:    "some/path",
-							Timeout: configuration.Duration(5 * time.Minute),
 						},
 					},
 				},

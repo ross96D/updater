@@ -294,7 +294,6 @@ func TestReload(t *testing.T) {
 				Command: &configuration.Command{
 					Command: "python",
 					Args:    []string{"-f", "-s"},
-					Timeout: configuration.Duration(5 * time.Minute),
 					Env: map[string]string{
 						"ENV1": "VAL1",
 						"ENV2": "VAL2",

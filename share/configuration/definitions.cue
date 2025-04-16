@@ -70,10 +70,4 @@ base_path?:             string // path where the temporal files used by the app 
 	// Additional enviroments variables that should be passed to the command.
 	// The current process enviroment variables are passed.
 	env?: [string]: string
-
-	// When the command timeout the execution will continue assuming command success
-	// and the command output should be given to the in another form.
-	//
-	// This means that the on timeout the command must not be killed.
-	timeout: time.Duration() | *"5m"
 }

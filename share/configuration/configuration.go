@@ -59,7 +59,6 @@ type Command struct {
 	Args    []string          `json:"args"`
 	Path    string            `json:"path"`
 	Env     map[string]string `json:"env"`
-	Timeout Duration          `json:"timeout"`
 }
 
 func (c Command) String() string {
