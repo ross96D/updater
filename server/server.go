@@ -184,6 +184,7 @@ func List(w http.ResponseWriter, r *http.Request) {
 func Update(w http.ResponseWriter, r *http.Request) {
 	requestCtx := r.Context()
 	childCtx := context.WithoutCancel(requestCtx)
+	// TODO make this configurable
 	timeout := time.NewTimer(60 * time.Second)
 	taskChan := make(chan struct{}, 0)
 
