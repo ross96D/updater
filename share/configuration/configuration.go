@@ -55,10 +55,11 @@ type User struct {
 }
 
 type Command struct {
-	Command string   `json:"command"`
-	Args    []string `json:"args"`
-	Path    string   `json:"path"`
-	Timeout Duration `json:"timeout"`
+	Command string            `json:"command"`
+	Args    []string          `json:"args"`
+	Path    string            `json:"path"`
+	Env     map[string]string `json:"env"`
+	Timeout Duration          `json:"timeout"`
 }
 
 func (c Command) String() string {

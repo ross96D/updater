@@ -16,6 +16,11 @@ apps: [
 		cmd: {
 			command: "python"
 			args: ["-f", "-s"]
+			env: {
+                "ENV1": "VAL1",
+                "ENV2": "VAL2",
+			    "ENV3": "VAL3",
+			}
 		}
 	},
 ]

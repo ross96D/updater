@@ -66,6 +66,7 @@ base_path?:             string // path where the temporal files used by the app 
 	command!: string
 	args?: [...string]
 	path?: string
+	env?: [string]: string
 
 	// When the command timeout the execution will continue assuming command success
 	// and the command output should be given to the in another form.
