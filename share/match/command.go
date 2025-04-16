@@ -3,7 +3,9 @@ package match
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -86,11 +88,24 @@ func (consumer *streamConsumer) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+func parseEnvMap(envs map[string]string) []string {
+	env := make([]string, 0, len(envs))
+	for k, v := range envs {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	return env
+}
+
 func RunCommand(logger *zerolog.Logger, command configuration.Command) error {
 	// TODO [configuration.Command] has a timeout field. We need to create two streams.
 	// One will send the logs to the response and another will save it to a file
 
 	cmd := exec.Command(command.Command, command.Args...)
+	if command.Env != nil && len(command.Env) > 0 {
+		env := os.Environ()
+		env = append(env, parseEnvMap(command.Env)...)
+		cmd.Env = env
+	}
 	if command.Path != "" {
 		cmd.Dir = command.Path
 	}
