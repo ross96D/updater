@@ -97,9 +97,6 @@ func parseEnvMap(envs map[string]string) []string {
 }
 
 func RunCommand(logger *zerolog.Logger, command configuration.Command) error {
-	// TODO [configuration.Command] has a timeout field. We need to create two streams.
-	// One will send the logs to the response and another will save it to a file
-
 	cmd := exec.Command(command.Command, command.Args...)
 	if command.Env != nil && len(command.Env) > 0 {
 		env := os.Environ()
