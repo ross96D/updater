@@ -66,6 +66,9 @@ base_path?:             string // path where the temporal files used by the app 
 	command!: string
 	args?: [...string]
 	path?: string
+
+	// Additional enviroments variables that should be passed to the command.
+	// The current process enviroment variables are passed.
 	env?: [string]: string
 
 	// When the command timeout the execution will continue assuming command success
