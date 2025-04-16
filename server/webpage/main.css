@@ -1,0 +1,184 @@
+:root {
+    --color-primary: rgb(81 91 146);
+    --color-surface-tint: rgb(81 91 146);
+    --color-on-primary: rgb(255 255 255);
+    --color-primary-container: rgb(222 224 255);
+    --color-on-primary-container: rgb(57 67 121);
+    --color-secondary: rgb(91 93 114);
+    --color-on-secondary: rgb(255 255 255);
+    --color-secondary-container: rgb(224 225 249);
+    --color-on-secondary-container: rgb(67 70 89);
+    --color-tertiary: rgb(119 83 109);
+    --color-on-tertiary: rgb(255 255 255);
+    --color-tertiary-container: rgb(255 215 241);
+    --color-on-tertiary-container: rgb(93 60 85);
+    --color-error: rgb(186 26 26);
+    --color-on-error: rgb(255 255 255);
+    --color-error-container: rgb(255 218 214);
+    --color-on-error-container: rgb(147 0 10);
+    --color-background: rgb(251 248 255);
+    --color-on-background: rgb(27 27 33);
+    --color-surface: rgb(251 248 255);
+    --color-on-surface: rgb(27 27 33);
+    --color-surface-variant: rgb(227 225 236);
+    --color-on-surface-variant: rgb(70 70 79);
+    --color-outline: rgb(118 118 128);
+    --color-outline-variant: rgb(199 197 208);
+    --color-shadow: rgb(0 0 0);
+    --color-scrim: rgb(0 0 0);
+    --color-inverse-surface: rgb(48 48 54);
+    --color-inverse-on-surface: rgb(242 239 247);
+    --color-inverse-primary: rgb(186 195 255);
+    --color-primary-fixed: rgb(222 224 255);
+    --color-on-primary-fixed: rgb(11 21 75);
+    --color-primary-fixed-dim: rgb(186 195 255);
+    --color-on-primary-fixed-variant: rgb(57 67 121);
+    --color-secondary-fixed: rgb(224 225 249);
+    --color-on-secondary-fixed: rgb(24 26 44);
+    --color-secondary-fixed-dim: rgb(195 197 221);
+    --color-on-secondary-fixed-variant: rgb(67 70 89);
+    --color-tertiary-fixed: rgb(255 215 241);
+    --color-on-tertiary-fixed: rgb(45 18 40);
+    --color-tertiary-fixed-dim: rgb(230 186 215);
+    --color-on-tertiary-fixed-variant: rgb(93 60 85);
+    --color-surface-dim: rgb(219 217 224);
+    --color-surface-bright: rgb(251 248 255);
+    --color-surface-container-lowest: rgb(255 255 255);
+    --color-surface-container-low: rgb(245 242 250);
+    --color-surface-container: rgb(239 237 244);
+    --color-surface-container-high: rgb(233 231 239);
+    --color-surface-container-highest: rgb(228 225 233);
+}
+html {
+    background: var(--color-background);
+    color: var(--color-on-background);
+    margin: 0.1rem;
+}
+body {
+    width: 70%;
+    margin: auto;
+}
+@keyframes show {
+    from {
+        display: none;
+        opacity: 0;
+    }
+    to {
+        display: block;
+        opacity: 1;
+    }
+}
+button {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: 0.5rem;
+    border: none;
+    transition: all 0.1s;
+    min-height: 1.5rem;
+    min-width: 1.5rem;
+    margin: 0.1rem;
+    font-size: medium;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+}
+button:active {
+    scale: 0.9;
+}
+button:foucus {
+    border-color: var(--color-primary);
+    outline: 0.1rem solid var(--color-primary);
+}
+button:hover {
+    cursor: pointer;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    scale: 1.1;
+}
+input {
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    font-size: medium;
+    border-radius: 0.3rem;
+    border-color: var(--color-outline);
+    margin: 0.1rem;
+}
+input:focus {
+    border-color: var(--color-outline);
+    border-color: var(--color-primary);
+    outline: 0.1rem solid var(--color-primary);
+}
+.error {
+    background: var(--color-error);
+    color: var(--color-on-error);
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.1rem;
+    padding-bottom: 0.2rem;
+    border-radius: 0.5rem;
+}
+.container {
+    font-family: monospace;
+    border: solid 0.15rem var(--color-tertiary);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.6);
+}
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background-color: rgba(0, 0, 0, 0.75);
+    padding-top: 5rem;
+}
+.hide {
+    display: none;
+}
+.show {
+    animation: show 0.2s;
+    display: block;
+}
+.modal-body {
+    border-radius: 0.5rem;
+    border: 0.2rem solid var(--color-primary);
+    padding: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    margin: auto;
+    max-width: 30rem;
+    width: 90%;
+    transition: all 1s;
+}
+.icon-btn {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    border: none;
+    border-radius: 50%;
+    width: 2.5rem;
+    height: 2.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    stroke: var(--color-on-primary);
+}
+.icon-btn:hover {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    scale: 1.1;
+    stroke: var(--color-on-primary-container);
+}
+.icon-btn:active {
+    scale: 0.9;
+}

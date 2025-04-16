@@ -1,4 +1,4 @@
-package server
+package webpage
 
 import (
 	"context"
@@ -16,11 +16,11 @@ import (
 	"github.com/ross96D/updater/share/utils"
 )
 
-type webSocketHandler struct {
-	upgrader websocket.Upgrader
+type WebSocketHandler struct {
+	Upgrader websocket.Upgrader
 }
 
-func (wsh webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (wsh WebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "file")
 	if filename == "" {
 		w.WriteHeader(400)
@@ -40,7 +40,7 @@ func (wsh webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	conn, err := wsh.upgrader.Upgrade(w, r, nil)
+	conn, err := wsh.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -56,6 +56,9 @@ func (wsh webSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !auth.CheckAuthToken(data) {
+		return
+	}
+	if err = conn.WriteMessage(websocket.TextMessage, []byte("ACK")); err != nil {
 		return
 	}
 

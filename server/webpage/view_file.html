@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+        <link rel="stylesheet" type="text/css" href="/assets/main.css">
+    </head>
+    <body>
+        <button
+            id="login-btn"
+            class="icon-btn"
+            onclick="openModal()"
+        >
+            <svg
+                id="icon-login"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                class="hide"
+            >
+                <path
+                    d="M14 19.2857L15.8 21L20 17M4 21C4 17.134 7.13401 14 11 14C12.4872 14
+                        13.8662 14.4638 15 15.2547M15 7C15 9.20914 13.2091 11 11 11C8.79086
+                        11 7 9.20914 7 7C7 4.79086 8.79086 3 11 3C13.2091 3 15 4.79086 15 7Z"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </svg>
+
+            <svg
+                id="icon-logout"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <path
+                    d="M15 16L20 21M20 16L15 21M4 21C4 17.134 7.13401 14 11 14M15 7C15 9.20914
+                        13.2091 11 11 11C8.79086 11 7 9.20914 7 7C7 4.79086 8.79086 3 11 3C13.2091
+                        3 15 4.79086 15 7Z"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </svg>
+        </button>
+
+        <h2 style="text-align: center">Log file</h2>
+        <div id="console" class="container"></div>
+    </body>
+    <div id="modal" class="modal hide">
+        <div id="modal-body" class="modal-body">
+            <h2>User is not logged. Please introduce the credentials</h2>
+            <div id="form" style="display: grid;">
+                <label for="input_name">Name</label>
+                <input onkeypress="hideError()" id="input_name" type="text" ></input>
+                <label for="input_password">Password</label>
+                <input onkeypress="hideError()" id="input_password" type="text"></input>
+                <div>
+                    <button type="button" onclick="sendForm()">Login</button>
+                    <button type="button" onclick="closeModal()">Close</button>
+                </div>
+                <label id="credentials_error" class="error hide">Wrong credentials</label>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+    import { default as  AnsiUp }  from "/assets/ansi_up.mjs"
+
+    function login() {
+        let token = localStorage.getItem("token");
+        if (token) {
+            switchLoginStatusSvg();
+            return token;
+        }
+        openModal();
+        return undefined;
+    }
+
+    async function requestLogin(name, password) {
+        let response = await fetch("/login", {
+            method: "POST",
+            headers: {
+                Authorization: `basic ${btoa(`${name}:${password}`)}`
+            }
+        });
+        if (response.status >= 400) {
+            throw new Error(`status code ${response.status}\n${await response.text()}`)
+        }
+        let token = await response.text()
+        return token;
+    }
+
+    function getSocket() {
+        var __socket__;
+        return __socket__;
+    }
+
+    function getLogData() {
+        let ansi_up = new AnsiUp();
+        let text = "";
+        let consoleDiv = document.getElementById("console");
+        // remove all children
+        while (consoleDiv.firstChild) {
+            consoleDiv.removeChild(consoleDiv.firstChild);
+        }
+        let div = document.createElement("div");
+        consoleDiv.appendChild(div);
+
+        let auth = login();
+        if (auth == undefined) {
+            return;
+        }
+
+        let socket = getSocket();
+        if (socket) {
+            socket.close();
+        }
+        socket = new WebSocket("/ws/{{.FileName}}");
+
+        let authenticating = undefined;
+        socket.onopen = (event) => {
+            authenticating = true;
+            socket.send(auth);
+        };
+
+        socket.onclose = (event) => {
+            if (authenticating) {
+                localStorage.removeItem("token")
+                getLogData()
+            }
+        }
+
+        socket.onmessage = (event) => {
+            if (authenticating) {
+                if (event.data == "ACK") {
+                    authenticating = false
+                    return;
+                } else {
+                    console.error("Invalid response during authentication, expected ACK got ", event.data);
+                }
+            }
+
+            text += event.data;
+            let lines = text.split("\n");
+            for (let line of lines) {
+                let trueLines = line.split("\\n")
+                for (let line of trueLines) {
+                    let cns = ansi_up.ansi_to_html(line);
+                    if (cns) {
+                        let element = document.createElement("div");
+                        element.innerHTML = cns;
+                        div.appendChild(element);
+                    }
+                }
+            }
+            if (lines.length > 1) {
+                text = "";
+            }
+        };
+    }
+
+    function openModal() {
+        document.getElementById("modal").classList.add("open");
+        document.getElementById("modal").classList.remove("hide");
+    }
+
+    function closeModal() {
+        document.getElementById("modal").classList.add("hide");
+        document.getElementById("modal").classList.remove("open");
+    }
+
+    function hideError() {
+        document.getElementById("credentials_error").classList.remove("show");
+        document.getElementById("credentials_error").classList.add("hide");
+    }
+
+    function switchLoginStatusSvg() {
+        document.getElementById("icon-login").classList.toggle("hide");
+        document.getElementById("icon-logout").classList.toggle("hide");
+    }
+
+    function sendForm() {
+        let name = document.getElementById("input_name").value;
+        let password = document.getElementById("input_password").value;
+
+        requestLogin(name, password).then(
+            (token) => {
+                localStorage.setItem("token", token);
+                closeModal();
+                getLogData();
+            },
+            (reason) => {
+                document.getElementById("credentials_error").classList.add("show");
+                return;
+            }
+        )
+    }
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.hideError = hideError;
+    window.switchLoginStatusSvg = switchLoginStatusSvg;
+    window.sendForm = sendForm;
+
+    getLogData();
+
+    </script>
+</html>
