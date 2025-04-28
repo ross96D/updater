@@ -67,7 +67,7 @@ func (s *Server) setHandlers() {
 			r.Use(logger.ResponseWithLogger)
 			r.Post("/update", Update)
 		})
-		r.Post("/reload", Reload)
+		r.Post("/reload", ReloadConfig)
 		r.Post("/upgrade", Upgrade)
 	})
 	s.router.Group(func(r chi.Router) {
@@ -83,7 +83,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request) {
 	}
 	err := upgrade.Upgrade(upgrade.Updater)
 	if err == upgrade.ErrUpToDate {
-		_, _ = w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	if err != nil {
@@ -116,7 +116,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Reload(w http.ResponseWriter, r *http.Request) {
+func ReloadConfig(w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Error().Err(err).Send()
