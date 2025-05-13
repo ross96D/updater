@@ -139,6 +139,12 @@ func ReloadConfig(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	err = user_handler.HandleUserAppsList(w)
+	if err != nil {
+		// log here
+		// maybe this is not necesary? this would panic or error or something like that
+		http.Error(w, err.Error(), 500)
+	}
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
