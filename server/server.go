@@ -23,6 +23,7 @@ import (
 	"github.com/ross96D/updater/share/match"
 	"github.com/ross96D/updater/share/utils"
 	"github.com/ross96D/updater/upgrade"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
 )
@@ -215,19 +216,14 @@ func Update(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			err = match.Update(ctx, app, match.WithData(data), match.WithDryRun(dryRun))
+			joinerr := match.Update(ctx, app, match.WithData(data), match.WithDryRun(dryRun))
 
-			if err != nil {
-				switch err.(type) {
-				case match.ErrErrors, match.ErrError:
-					logger.Error().Err(err).
-						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
-						Send()
-				default:
-					logger.Warn().Err(err).
-						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
-						Send()
-				}
+			if joinerr.IsNotEmpty() {
+				logger := logger.With().Logger()
+				logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+					return c.Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String())
+				})
+				joinerr.Log(&logger)
 				return
 			}
 		case "user":
@@ -240,20 +236,14 @@ func Update(w http.ResponseWriter, r *http.Request) {
 			}
 			defer r.Body.Close()
 
-			err = user_handler.HandlerUserUpdate(ctx, payload, dryRun)
+			joinerr := user_handler.HandlerUserUpdate(ctx, payload, dryRun)
 
-			if err != nil {
-				switch err.(type) {
-				// TODO needs to refactor this because all real errors would need to be of this type
-				case match.ErrErrors, match.ErrError:
-					logger.Error().Err(err).
-						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
-						Send()
-				default:
-					logger.Warn().Err(err).
-						Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String()).
-						Send()
-				}
+			if joinerr.IsNotEmpty() {
+				logger := logger.With().Logger()
+				logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
+					return c.Str("reqID", utils.Ignore2(hlog.IDFromCtx(ctx)).String())
+				})
+				joinerr.Log(&logger)
 				return
 			}
 		default:

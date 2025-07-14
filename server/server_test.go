@@ -191,7 +191,7 @@ func TestUpdateEnpoint(t *testing.T) {
 				assert.Equal(t, "INF", string(level))
 
 			case nofatal:
-				assert.Equal(t, "WRN", string(level))
+				assert.Equal(t, "WRN", string(level), string(body))
 
 			case fatal:
 				assert.Equal(t, "ERR", string(level))

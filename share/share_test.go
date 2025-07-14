@@ -60,8 +60,8 @@ func TestUpdateApp(t *testing.T) {
 	data := make(map[string]io.Reader)
 	data["asset1"] = createRandomData(500)
 
-	err = match.Update(context.Background(), app, match.WithData(TestData(data)))
-	require.NoError(t, err)
+	joinerr := match.Update(context.Background(), app, match.WithData(TestData(data)))
+	require.True(t, joinerr.IsEmpty())
 
 	for k, v := range app.Assets {
 		_, err := os.Stat(v.SystemPath)

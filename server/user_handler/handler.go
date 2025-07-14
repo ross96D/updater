@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/ross96D/updater/logger"
@@ -114,20 +113,23 @@ func GetReleaseRepository(app configuration.Application) (*github.RepositoryRele
 	return client.Repositories.GetLatestRelease(context.TODO(), app.GithubRelease.Owner, app.GithubRelease.Repo)
 }
 
-func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
+func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) (errs match.JoinErrors) {
 	var app App
 	err := json.Unmarshal(payload, &app)
 	if err != nil {
-		return fmt.Errorf("HandlerUserUpdate Unmarshall() %w", err)
+		errs.Add(fmt.Errorf("HandlerUserUpdate Unmarshall() %w", err))
+		return
 	}
 	log.Info().Interface("user app", app).Send()
 	list := share.Config().Apps
 	if app.Index >= len(list) {
-		return match.NewErrError(errors.New("HandlerUserUpdate invalid index"))
+		errs.Add(errors.New("HandlerUserUpdate invalid index"))
+		return
 	}
 	application := list[app.Index]
 	if application.GithubRelease == nil {
-		return errors.New("no github repo configured")
+		errs.Add(errors.New("no github repo configured"))
+		return
 	}
 
 	logger, _ := logger.LoggerCtx_FromContext(ctx)
@@ -137,12 +139,12 @@ func HandlerUserUpdate(ctx context.Context, payload []byte, dryRun bool) error {
 		data, err = NewGithubReleaseData(application)
 		if err != nil {
 			logger.Info().Msg("Requesting release failed")
-			return match.NewErrError(err)
+			errs.Add(err)
+			return
 		}
 	} else {
 		data = match.EmptyData{}
 	}
-	time.Sleep(time.Second)
 	return match.Update(ctx, application, match.WithData(data), match.WithDryRun(dryRun))
 }
 

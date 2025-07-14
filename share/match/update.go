@@ -7,78 +7,12 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"unsafe"
 
 	"github.com/ross96D/updater/logger"
 	"github.com/ross96D/updater/share/configuration"
 	taskservice "github.com/ross96D/updater/task_service"
 	"github.com/rs/zerolog"
 )
-
-type ErrLevel interface {
-	error
-	Level() string
-}
-
-func joinErrorsMessage(errs []error) string {
-	if len(errs) == 1 {
-		return errs[0].Error()
-	}
-
-	b := []byte(errs[0].Error())
-	for _, err := range errs[1:] {
-		b = append(b, '\t')
-		b = append(b, err.Error()...)
-	}
-	// At this point, b has at least one byte '\n'.
-	return unsafe.String(&b[0], len(b))
-}
-
-// Error that indicates a fail in the update
-type ErrError struct{ err error }
-
-// A collection of errors that indicates fail in the update
-type ErrErrors struct{ errs []error }
-
-func NewErrError(err error) ErrError      { return ErrError{err: err} }
-func NewErrErrors(errs []error) ErrErrors { return ErrErrors{errs: errs} }
-
-func (e ErrErrors) Error() string { return joinErrorsMessage(e.errs) }
-func (e ErrError) Error() string  { return e.err.Error() }
-func (ErrErrors) Level() string   { return "error" }
-func (ErrError) Level() string    { return "error" }
-
-func PackError(errs ...error) error {
-	if len(errs) == 0 {
-		return nil
-	}
-	if len(errs) == 1 {
-		return errs[0]
-	}
-
-	isError := false
-	noNilErrs := make([]error, 0, len(errs))
-	for _, err := range errs {
-		if err == nil {
-			continue
-		}
-		if _, ok := err.(ErrError); ok {
-			isError = true
-		}
-		if _, ok := err.(ErrErrors); ok {
-			isError = true
-		}
-		noNilErrs = append(noNilErrs, err)
-	}
-	if len(noNilErrs) == 0 {
-		return nil
-	}
-
-	if isError {
-		return ErrErrors{noNilErrs}
-	}
-	return errors.Join(noNilErrs...)
-}
 
 type Data interface {
 	Get(name string) io.ReadCloser
@@ -111,24 +45,28 @@ func WithData(data Data) UpdateOpts {
 	}
 }
 
-func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) (err error) {
+func Update(ctx context.Context, app configuration.Application, opts ...UpdateOpts) (errs JoinErrors) {
 	u := NewAppUpdater(ctx, app, opts...)
 	defer u.data.Clean()
 
 	if u.app.Service != "" {
 		u.log.Info().Msgf("stoping app level service %s", u.app.Service)
-		err = u.io.ServiceStop(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
+		err := u.io.ServiceStop(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
+		errs.Add(err)
 		defer func() {
 			u.log.Info().Msgf("starting app level service %s", u.app.Service)
 			errServiceStart := u.io.ServiceStart(u.app.Service, taskservice.ServiceTypeFrom(app.ServiceType))
-			err = PackError(errServiceStart, err)
+			errs.Add(errServiceStart)
 		}()
 	}
-	err1 := u.RunPreAction()
+	err := u.RunPreAction()
+	errs.Add(err)
 
 	err2 := u.UpdateAssets()
-	err3 := u.RunPostAction()
-	err = PackError(err, err1, err2, err3)
+	errs.Concat(err2)
+
+	err = u.RunPostAction()
+	errs.Add(err)
 	return
 }
 
@@ -158,29 +96,32 @@ func NewAppUpdater(ctx context.Context, app configuration.Application, opts ...U
 	return appUpd
 }
 
-func (u *appUpdater) UpdateAssets() error {
-	var errs []error = make([]error, 0)
+func (u *appUpdater) UpdateAssets() (errs JoinErrors) {
 	mut := &sync.Mutex{}
-	append_errors := func(err error) {
+	append_errors := func(joinerr *JoinErrors, err ...error) {
 		mut.Lock()
-		errs = append(errs, err)
+		if joinerr != nil {
+			errs.Concat(*joinerr)
+		}
+		for _, e := range err {
+			errs.Add(e)
+		}
 		mut.Unlock()
 	}
 
 	wg := &sync.WaitGroup{}
 	var updateAsset = func(logger zerolog.Logger, asset configuration.Asset, wg *sync.WaitGroup) {
 		if asset.Service != "" {
-			if err := u.updateTask(logger, asset); err != nil {
-				append_errors(err)
-			}
+			err := u.updateTask(logger, asset)
+			append_errors(&err)
 		} else {
 			var fnCopy func() (err error)
 			var err error
 			if fnCopy, err = u.updateAsset(logger, asset); err != nil {
-				append_errors(err)
+				append_errors(nil, err)
 			} else {
 				if err = fnCopy(); err != nil {
-					append_errors(err)
+					append_errors(nil, err)
 				}
 			}
 		}
@@ -210,47 +151,49 @@ func (u *appUpdater) UpdateAssets() error {
 			return c.Str("asset", asset.Name)
 		})
 		if asset.Service != "" {
-			if err := u.updateTask(assetLogger, asset.Asset); err != nil {
-				errs = append(errs, err)
-			}
+			err := u.updateTask(assetLogger, asset.Asset)
+			errs.Concat(err)
 		} else {
 			var fnCopy func() (err error)
 			var err error
 			if fnCopy, err = u.updateAsset(assetLogger, asset.Asset); err != nil {
-				errs = append(errs, err)
+				errs.Add(err)
 			} else {
 				if err = fnCopy(); err != nil {
-					errs = append(errs, err)
+					errs.Add(err)
 				}
 			}
 		}
 	}
-	return PackError(errs...)
+	return
 }
 
-func (u *appUpdater) updateTask(logger zerolog.Logger, asset configuration.Asset) (err error) {
+func (u *appUpdater) updateTask(logger zerolog.Logger, asset configuration.Asset) (errs JoinErrors) {
 	var fnCopy func() error
+	var err error
 	if fnCopy, err = u.updateAsset(logger, asset); err != nil {
-		return fmt.Errorf("updateTask %w", err)
+		errs.Add(FmtFromInnerError("updateTask %w", err))
+		return
 	}
 
 	// TODO this needs a mutex?
 	logger.Info().Msgf("stop %s", asset.Service)
 	if err = u.io.ServiceStop(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
 		logger.Warn().Err(err).Msgf("error stoping %s", asset.Service)
-		err = fmt.Errorf("updateTask Stop() %w", err)
+		errs.Add(ErrWarning{fmt.Errorf("updateTask Stop() %w", err)})
 	}
 
 	defer func() {
 		logger.Info().Msgf("start %s", asset.Service)
-		if err1 := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
-			logger.Warn().Err(err1).Msgf("error starting %s", asset.Service)
-			err = PackError(err, err1)
+		if err := u.io.ServiceStart(asset.Service, taskservice.ServiceTypeFrom(asset.ServiceType)); err != nil {
+			logger.Warn().Err(err).Msgf("error starting %s", asset.Service)
+			errs.Add(ErrError{err})
 		}
 	}()
 
-	err1 := fnCopy()
-	return PackError(err, err1)
+	err = fnCopy()
+	errs.Add(err)
+	return
 }
 
 func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asset) (fnCopy func() (err error), err error) {
@@ -258,7 +201,7 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 	if data == nil {
 		msg := "updateAsset() no match " + asset.Name
 		logger.Warn().Msg(msg)
-		return nil, errors.New(msg)
+		return nil, ErrWarning{errors.New(msg)}
 	}
 
 	fnCopy = func() (err error) {
