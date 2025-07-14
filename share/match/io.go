@@ -19,6 +19,7 @@ type IO interface {
 	CopyFromReader(io.Reader, string) error
 	RenameSafe(string, string) error
 	Remove(string) error
+	CreateCronjobConfiguration(serviceName string, jobs []cronJob) error
 }
 
 type implIO struct{}
@@ -49,6 +50,10 @@ func (implIO) RenameSafe(oldpath string, newpath string) error {
 
 func (implIO) Remove(path string) error {
 	return os.Remove(path)
+}
+
+func (implIO) CreateCronjobConfiguration(serviceName string, jobs []cronJob) error {
+	return createCronjobConfiguration(serviceName, jobs)
 }
 
 type dryRunIO struct{}
@@ -85,5 +90,9 @@ func (dryRunIO) RenameSafe(_ string, _ string) error {
 }
 
 func (dryRunIO) Remove(_ string) error {
+	return nil
+}
+
+func (dryRunIO) CreateCronjobConfiguration(serviceName string, jobs []cronJob) error {
 	return nil
 }

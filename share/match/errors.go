@@ -52,6 +52,19 @@ func (e JoinErrors) IsEmpty() bool {
 	return len(e.errs) == 0
 }
 
+func (e JoinErrors) LevelIsError() bool {
+	for _, err := range e.errs {
+		if err, ok := err.(ErrLevel); ok {
+			if err.Error() == "error" {
+				return true
+			}
+		} else {
+			return true
+		}
+	}
+	return false
+}
+
 func (e JoinErrors) IsNotEmpty() bool {
 	return len(e.errs) != 0
 }

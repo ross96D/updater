@@ -59,7 +59,14 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 			errs.Add(errServiceStart)
 		}()
 	}
-	err := u.RunPreAction()
+
+	jobs, err := ValidateCronJobConfiguration(u.getJobContent())
+	if err != nil {
+		errs.Add(err)
+		return
+	}
+
+	err = u.RunPreAction()
 	errs.Add(err)
 
 	err2 := u.UpdateAssets()
@@ -67,6 +74,11 @@ func Update(ctx context.Context, app configuration.Application, opts ...UpdateOp
 
 	err = u.RunPostAction()
 	errs.Add(err)
+
+	if !errs.LevelIsError() {
+		u.io.CreateCronjobConfiguration(app.Name, jobs)
+	}
+
 	return
 }
 
@@ -75,6 +87,18 @@ type appUpdater struct {
 	log  *zerolog.Logger
 	data Data
 	io   IO
+}
+
+func (u appUpdater) getJobContent() []byte {
+	jobReader := u.data.Get("__jobs")
+	if jobReader == nil {
+		return []byte{}
+	}
+	data, err := io.ReadAll(jobReader)
+	if err != nil {
+		return []byte{}
+	}
+	return data
 }
 
 func (u appUpdater) seek(asset configuration.Asset) io.ReadCloser {

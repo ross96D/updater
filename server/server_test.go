@@ -138,6 +138,26 @@ func TestUpdateEnpoint(t *testing.T) {
 			useImpl:     true,
 			expectError: nofatal,
 		},
+		{
+			name: "cronJob error",
+			assets: []testAsset{
+				{
+					name: "__jobs",
+					data: "{\"invalid\": \"data\"}",
+				},
+			},
+			expectError: fatal,
+		},
+		{
+			name: "cronJob no error",
+			assets: []testAsset{
+				{
+					name: "__jobs",
+					data: "{\"name\": \"cronjob_name\", \"command\": \"echo Some\", \"time\": \"* * * * *\"}",
+				},
+			},
+			expectError: nofatal,
+		},
 	}
 	t.Cleanup(func() {
 		err = os.Rename(
@@ -188,13 +208,13 @@ func TestUpdateEnpoint(t *testing.T) {
 			level := r.FindSubmatch(utils.StripAnsiBytes(last))[r.SubexpIndex("Level")]
 			switch data.expectError {
 			case noerror:
-				assert.Equal(t, "INF", string(level))
+				assert.Equal(t, "INF", string(level), string(body))
 
 			case nofatal:
 				assert.Equal(t, "WRN", string(level), string(body))
 
 			case fatal:
-				assert.Equal(t, "ERR", string(level))
+				assert.Equal(t, "ERR", string(level), string(body))
 
 			}
 		})
