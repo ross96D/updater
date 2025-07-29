@@ -231,6 +231,8 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 	fnCopy = func() (err error) {
 		defer data.Close()
 
+		logger.Info().Msgf("Processing asset %s", asset.Name)
+
 		if asset.CommandPre != nil {
 			logger := logger.With().Logger()
 			logger.UpdateContext(func(c zerolog.Context) zerolog.Context {
@@ -247,7 +249,7 @@ func (u *appUpdater) updateAsset(logger zerolog.Logger, asset configuration.Asse
 		SystemPathOld := asset.SystemPath + ".old"
 
 		if err = u.io.RenameSafe(asset.SystemPath, SystemPathOld); err != nil {
-			return ErrError{err}
+			return fmt.Errorf("RenameSafe failed: %w", err)
 		}
 
 		rollback := func() {
