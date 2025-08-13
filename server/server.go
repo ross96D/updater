@@ -75,6 +75,11 @@ func (s *Server) setHandlers() {
 		webpage.WebHandlers(r)
 	})
 	s.router.Post("/login", Login)
+	s.router.Get("/ready", http.HandlerFunc(_OK))
+}
+
+func _OK(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
 }
 
 func Upgrade(w http.ResponseWriter, r *http.Request) {
